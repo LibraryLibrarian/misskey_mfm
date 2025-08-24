@@ -1,0 +1,15 @@
+{
+  "debug.internalConsoleOptions": "openOnSessionStart",
+  "dart.flutterSdkPath": ".fvm/flutter_sdk",
+  "[dart]": {
+    "editor.defaultFormatter": "Dart-Code.dart-code",
+    "editor.formatOnSave": true,
+    "editor.formatOnType": true,
+    "editor.rulers": [80],
+    "editor.selectionHighlight": false,
+    "editor.tabCompletion": "onlySnippets",
+    "editor.wordBasedSuggestions": "off",
+  },
+  "editor.formatOnSaveMode": "file",
+  "dart.lineLength": 80,
+}
