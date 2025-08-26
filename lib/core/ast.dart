@@ -52,6 +52,13 @@ class CenterNode extends MfmNode {
   const CenterNode(this.children);
 }
 
+/// インラインノード：インラインコード（` ... `）を表す
+class InlineCodeNode extends MfmNode {
+  /// コード内容（プレーンテキスト）
+  final String code;
+  const InlineCodeNode(this.code);
+}
+
 /// インラインノード：リンク [label](url) / ?[label](url)を表す
 class LinkNode extends MfmNode {
   /// サイレントリンクかどうか（?プレフィックスの有無）

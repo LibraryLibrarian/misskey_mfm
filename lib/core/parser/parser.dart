@@ -6,6 +6,7 @@ import 'inline/italic.dart';
 import 'inline/small.dart';
 import 'block/quote.dart';
 import 'block/center.dart';
+import 'inline/inline_code.dart';
 
 /// MFM（Misskey Flavored Markdown）メインパーサー
 ///
@@ -21,8 +22,10 @@ class MfmParser {
     final italicTag = ItalicParser().buildTagWithInner(inline);
     final italicAlt2 = ItalicParser().buildAlt2();
     final smallTag = SmallParser().buildWithInner(inline);
+    final inlineCode = InlineCodeParser().buildWithFallback();
 
     final stopper =
+        char('`') |
         string('</center>') |
         string('<center>') |
         string('</small>') |
@@ -39,7 +42,8 @@ class MfmParser {
     );
     final oneChar = any().map<MfmNode>((dynamic c) => TextNode(c as String));
     inline.set(
-      (smallTag |
+      (inlineCode |
+              smallTag |
               boldTag |
               italicTag |
               bold |
