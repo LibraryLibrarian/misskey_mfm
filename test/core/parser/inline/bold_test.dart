@@ -98,4 +98,40 @@ void main() {
       expect(result is Failure, isTrue);
     });
   });
+
+  group('BoldTagParser（太字タグ <b>…</b>）', () {
+    test('<b>abc</b> を太字ノードとして解析できる', () {
+      final m = MfmParser().build();
+      final result = m.parse('<b>abc</b>');
+      expect(result is Success, isTrue);
+      final nodes = (result as Success).value as List<MfmNode>;
+      expect(nodes.length, 1);
+      expect(nodes[0], isA<BoldNode>());
+      final bold = nodes[0] as BoldNode;
+      expect(bold.children.length, 1);
+      expect((bold.children.first as TextNode).text, 'abc');
+    });
+
+    test('<b>123\\n~~abc~~\\n123</b> を改行・strike含みで太字ノードとして解析できる', () {
+      final m = MfmParser().build();
+      final result = m.parse('<b>123\n~~abc~~\n123</b>');
+      expect(result is Success, isTrue);
+      final nodes = (result as Success).value as List<MfmNode>;
+      expect(nodes.length, 1);
+      final bold = nodes[0] as BoldNode;
+      expect(bold.children.length, 1);
+      expect((bold.children.first as TextNode).text, '123\n~~abc~~\n123');
+    });
+
+    test('<b>abc*123*abc</b> の中のitalic構文はテキストとして扱われる', () {
+      final m = MfmParser().build();
+      final result = m.parse('<b>abc*123*abc</b>');
+      expect(result is Success, isTrue);
+      final nodes = (result as Success).value as List<MfmNode>;
+      expect(nodes.length, 1);
+      final bold = nodes[0] as BoldNode;
+      expect(bold.children.length, 1);
+      expect((bold.children.first as TextNode).text, 'abc*123*abc');
+    });
+  });
 }
