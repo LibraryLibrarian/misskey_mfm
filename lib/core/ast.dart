@@ -45,6 +45,13 @@ class QuoteNode extends MfmNode {
   const QuoteNode(this.children);
 }
 
+/// ブロックノード：中央寄せ（&lt;center&gt; ... &lt;/center&gt;）を表す
+class CenterNode extends MfmNode {
+  /// 子ノードのリスト（中央寄せ内の内容）
+  final List<MfmNode> children;
+  const CenterNode(this.children);
+}
+
 /// インラインノード：リンク [label](url) / ?[label](url)を表す
 class LinkNode extends MfmNode {
   /// サイレントリンクかどうか（?プレフィックスの有無）

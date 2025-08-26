@@ -5,6 +5,7 @@ import 'inline/bold.dart';
 import 'inline/italic.dart';
 import 'inline/small.dart';
 import 'block/quote.dart';
+import 'block/center.dart';
 
 /// MFM（Misskey Flavored Markdown）メインパーサー
 ///
@@ -22,6 +23,8 @@ class MfmParser {
     final smallTag = SmallParser().buildWithInner(inline);
 
     final stopper =
+        string('</center>') |
+        string('<center>') |
         string('</small>') |
         string('<small>') |
         string('</b>') |
@@ -47,11 +50,11 @@ class MfmParser {
           .cast<MfmNode>(),
     );
 
-    // blocks（現状: 引用のみ、複数行対応の簡易版）
+    // blocks: quote / center
     final quote = QuoteParser().build();
-    final blocks = quote;
+    final center = CenterParser().buildWithInner(inline);
+    final blocks = center | quote;
 
-    // 全体構成: ブロックで始まればブロック、そうでなければインラインの列
     final start = (blocks | inline)
         .plus()
         .map(
