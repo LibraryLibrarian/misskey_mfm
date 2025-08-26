@@ -71,18 +71,27 @@ void main() {
       expect(nodes.length, 1);
       expect(nodes[0], isA<BoldNode>());
       final bold = nodes[0] as BoldNode;
-      expect(bold.children.length, 1);
-      expect((bold.children[0] as TextNode).text, 'bold *italic* text');
+      expect(bold.children.length, 3);
+      expect(bold.children[0], isA<TextNode>());
+      expect((bold.children[0] as TextNode).text, 'bold ');
+      expect(bold.children[1], isA<ItalicNode>());
+      expect(bold.children[2], isA<TextNode>());
+      expect((bold.children[2] as TextNode).text, ' text');
     });
 
     test('複雑なネスト構造を解析できる', () {
       final result = parser.parse('**bold *italic **nested** text* more**');
       expect(result is Success, isTrue);
       final nodes = (result as Success).value as List<MfmNode>;
-      expect(nodes.length, 3);
+      expect(nodes.length, 1);
       expect(nodes[0], isA<BoldNode>());
-      expect(nodes[1], isA<TextNode>());
-      expect(nodes[2], isA<BoldNode>());
+      final bold = nodes[0] as BoldNode;
+      expect(bold.children.first, isA<TextNode>());
+      expect((bold.children.first as TextNode).text, 'bold ');
+      expect(bold.children.last, isA<TextNode>());
+      expect((bold.children.last as TextNode).text, ' more');
+      // 中間に少なくとも1つ以上の斜体が存在する
+      expect(bold.children.whereType<ItalicNode>().isNotEmpty, isTrue);
     });
 
     test('プレーンテキストのみを解析できる', () {

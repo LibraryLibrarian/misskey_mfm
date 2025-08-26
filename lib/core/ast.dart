@@ -38,6 +38,13 @@ class SmallNode extends MfmNode {
   const SmallNode(this.children);
 }
 
+/// ブロックノード：引用（行頭の "> "）を表す
+class QuoteNode extends MfmNode {
+  /// 子ノードのリスト（引用の内容）
+  final List<MfmNode> children;
+  const QuoteNode(this.children);
+}
+
 /// インラインノード：リンク [label](url) / ?[label](url)を表す
 class LinkNode extends MfmNode {
   /// サイレントリンクかどうか（?プレフィックスの有無）
