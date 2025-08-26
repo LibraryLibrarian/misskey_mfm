@@ -15,12 +15,15 @@ class MfmParser {
     // 再帰的 inline 合成
     final SettableParser<MfmNode> inline = undefined();
 
-    final bold = BoldParser().buildWithFallback();
+    final bold = BoldParser().buildWithInner(inline);
+    final boldTag = BoldParser().buildTagWithInner(inline);
     final italicAsterisk = ItalicParser().buildWithInner(inline);
     final italicTag = ItalicParser().buildTagWithInner(inline);
     final italicAlt2 = ItalicParser().buildAlt2();
 
     final stopper =
+        string('</b>') |
+        string('<b>') |
         string('</i>') |
         string('<i>') |
         string('**') |
@@ -34,7 +37,13 @@ class MfmParser {
     final oneChar = any().map<MfmNode>((dynamic c) => TextNode(c as String));
 
     inline.set(
-      (italicTag | bold | italicAlt2 | italicAsterisk | textParser | oneChar)
+      (boldTag |
+              italicTag |
+              bold |
+              italicAlt2 |
+              italicAsterisk |
+              textParser |
+              oneChar)
           .cast<MfmNode>(),
     );
 
