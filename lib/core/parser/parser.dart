@@ -3,22 +3,36 @@ import '../ast.dart';
 import 'common/utils.dart';
 import 'inline/bold.dart';
 import 'inline/italic.dart';
+import 'core/nest.dart';
 
 /// MFM（Misskey Flavored Markdown）メインパーサー
 ///
 /// 各構文パーサーを統合し、適切な優先順位で解析を行う
 class MfmParser {
+  /// コンストラクタ
+  ///
+  /// [nestLimit]ネスト上限（nullなら無制限）。既定は20
+  MfmParser({int? nestLimit}) : _nestState = NestState(limit: nestLimit ?? 20);
+
+  final NestState _nestState;
+
   /// パーサーを構築して返す
   ///
   /// 戻り値: MFMテキストを解析するパーサー
   Parser<List<MfmNode>> build() {
-    // 再帰的 inline 合成
     final SettableParser<MfmNode> inline = undefined();
 
-    final bold = BoldParser().buildWithInner(inline);
-    final boldTag = BoldParser().buildTagWithInner(inline);
-    final italicAsterisk = ItalicParser().buildWithInner(inline);
-    final italicTag = ItalicParser().buildTagWithInner(inline);
+    // 再帰で利用されるinlineを、nest経由で制限を効かせつつ渡す
+    final bold = BoldParser().buildWithInner(nest(inline, state: _nestState));
+    final boldTag = BoldParser().buildTagWithInner(
+      nest(inline, state: _nestState),
+    );
+    final italicAsterisk = ItalicParser().buildWithInner(
+      nest(inline, state: _nestState),
+    );
+    final italicTag = ItalicParser().buildTagWithInner(
+      nest(inline, state: _nestState),
+    );
     final italicAlt2 = ItalicParser().buildAlt2();
 
     final stopper =
@@ -33,7 +47,6 @@ class MfmParser {
       (dynamic v) => TextNode(v as String),
     );
 
-    // 1文字テキスト
     final oneChar = any().map<MfmNode>((dynamic c) => TextNode(c as String));
 
     inline.set(
