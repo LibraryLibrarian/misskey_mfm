@@ -76,11 +76,9 @@ class ItalicParser {
     final parser = seqOrText(start, nest(inline), end).map<MfmNode>((
       dynamic v,
     ) {
-      if (v is String) {
-        return TextNode(v);
-      }
-      final List<dynamic> parts = v as List<dynamic>;
-      final List<MfmNode> children = (parts[1] as List).cast<MfmNode>();
+      if (v is String) return TextNode(v);
+      final parts = v as List<dynamic>;
+      final children = (parts[1] as List).cast<MfmNode>();
       return ItalicNode(mergeAdjacentTextNodes(children));
     });
     return parser;
