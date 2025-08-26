@@ -1,7 +1,6 @@
 import 'package:petitparser/petitparser.dart';
 import '../../ast.dart';
 import '../common/utils.dart';
-import '../common/text.dart';
 import '../core/seq_or_text.dart';
 import '../core/nest.dart';
 
@@ -28,8 +27,8 @@ class BoldParser {
 
   /// 太字ノードのパーサー（seqOrText + nest 版）
   ///
-  /// mfm.js の `seqOrText`/`nest` を参考にした合成。
-  /// 現状は `nest` が簡易版のため、`inner` は `nest(inline)` ではなくテキストベース。
+  /// mfm.js の `seqOrText`/`nest` を参考にした合成
+  /// 現状は `nest` が簡易版のため、`inner` は `nest(inline)` ではなくテキストベース
   Parser<MfmNode> buildWithInner(Parser<MfmNode> inline) {
     final start = string('**');
     final end = string('**');

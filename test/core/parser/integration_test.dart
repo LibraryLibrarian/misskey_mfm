@@ -47,10 +47,11 @@ void main() {
       final result = parser.parse('**bold** *italic*');
       expect(result is Success, isTrue);
       final nodes = (result as Success).value as List<MfmNode>;
-      expect(nodes.length, 2);
+      expect(nodes.length, 3);
       expect(nodes[0], isA<BoldNode>());
       expect(nodes[1], isA<TextNode>());
-      expect((nodes[1] as TextNode).text, ' *italic*');
+      expect((nodes[1] as TextNode).text, ' ');
+      expect(nodes[2], isA<ItalicNode>());
     });
 
     test('斜体内に太字をネストできる', () {
