@@ -7,6 +7,7 @@ import 'inline/small.dart';
 import 'block/quote.dart';
 import 'block/center.dart';
 import 'inline/inline_code.dart';
+import 'block/code_block.dart';
 
 /// MFM（Misskey Flavored Markdown）メインパーサー
 ///
@@ -54,10 +55,11 @@ class MfmParser {
           .cast<MfmNode>(),
     );
 
-    // blocks: quote / center
-    final quote = QuoteParser().build();
+    // blocks: code block > center > quote
+    final codeBlock = CodeBlockParser().build();
     final center = CenterParser().buildWithInner(inline);
-    final blocks = center | quote;
+    final quote = QuoteParser().build();
+    final blocks = codeBlock | center | quote;
 
     final start = (blocks | inline)
         .plus()

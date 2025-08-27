@@ -116,3 +116,13 @@ class PlainNode extends MfmNode {
   final List<MfmNode> children;
   const PlainNode(this.children);
 }
+
+/// ブロックノード：コードブロック（``` ... ```）を表す
+class CodeBlockNode extends MfmNode {
+  /// コード内容（複数行対応）
+  final String code;
+
+  /// 言語（省略可）
+  final String? language;
+  const CodeBlockNode({required this.code, this.language});
+}
