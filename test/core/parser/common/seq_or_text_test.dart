@@ -12,13 +12,13 @@ void main() {
     test('完全一致ならシーケンスとして成功', () {
       final parser = seqOrText(start, inner, end);
       final result = parser.parse('*abc*');
-      expect(result.isSuccess, isTrue);
+      expect(result is Success, isTrue);
     });
 
     test('endが無い場合はフォールバックでテキスト', () {
       final parser = seqOrText(start, inner, end);
       final result = parser.parse('*abc');
-      expect(result.isSuccess, isTrue);
+      expect(result is Success, isTrue);
       expect(result.value is String, isTrue);
       expect(result.value as String, '*abc');
     });
