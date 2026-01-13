@@ -10,12 +10,12 @@ class InlineCodeParser {
   Parser<MfmNode> build() {
     final backtick = char('`');
     final notNewlineOrAcute =
-        (char('\n').not() & char('´').not() & backtick.not() & any());
+        char('\n').not() & char('´').not() & backtick.not() & any();
     final inner = notNewlineOrAcute.starLazy(backtick).flatten();
 
     return (backtick & inner & backtick).map<MfmNode>((dynamic v) {
       final parts = v as List<dynamic>;
-      final String code = parts[1] as String;
+      final code = parts[1] as String;
       return InlineCodeNode(code);
     });
   }

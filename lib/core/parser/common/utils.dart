@@ -9,8 +9,8 @@ import '../../ast.dart';
 ///
 /// 戻り値: マージされたノードリスト
 List<MfmNode> mergeAdjacentTextNodes(Iterable<MfmNode> nodes) {
-  final List<MfmNode> result = <MfmNode>[];
-  final StringBuffer buffer = StringBuffer();
+  final result = <MfmNode>[];
+  final buffer = StringBuffer();
 
   /// バッファに蓄積されたテキストをTextNodeとして追加し、バッファをクリアする
   void flush() {
@@ -20,7 +20,7 @@ List<MfmNode> mergeAdjacentTextNodes(Iterable<MfmNode> nodes) {
     }
   }
 
-  for (final MfmNode node in nodes) {
+  for (final node in nodes) {
     if (node is TextNode) {
       buffer.write(node.text);
     } else {

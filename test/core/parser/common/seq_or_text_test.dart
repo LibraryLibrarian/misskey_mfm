@@ -1,6 +1,6 @@
-import 'package:test/test.dart';
-import 'package:petitparser/petitparser.dart';
 import 'package:misskey_mfm/core/parser.dart';
+import 'package:petitparser/petitparser.dart';
+import 'package:test/test.dart';
 
 void main() {
   group('seqOrText（コア合成）', () {

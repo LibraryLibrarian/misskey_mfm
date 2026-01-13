@@ -5,20 +5,20 @@ import '../../ast.dart';
 ///
 /// [depth]現在の深さ / [limit]上限（nullなら無制限）
 class NestState {
+  NestState({this.depth = 0, this.limit});
   int depth;
   final int? limit;
-  NestState({this.depth = 0, this.limit});
 }
 
 class _NestParser extends Parser<MfmNode> {
+  _NestParser(this.inner, this.fallback, this.state);
   final Parser<MfmNode> inner;
   final Parser<MfmNode> fallback;
   final NestState? state;
-  _NestParser(this.inner, this.fallback, this.state);
 
   @override
   Result<MfmNode> parseOn(Context context) {
-    final NestState used = state ?? NestState();
+    final used = state ?? NestState();
     if (used.limit != null && used.depth >= used.limit!) {
       return fallback.parseOn(context);
     }
@@ -43,9 +43,9 @@ Parser<MfmNode> nest(
   NestState? state,
   Parser<MfmNode>? fallback,
 }) {
-  final Parser<MfmNode> oneChar = any().map<MfmNode>(
+  final oneChar = any().map<MfmNode>(
     (dynamic c) => TextNode(c as String),
   );
-  final Parser<MfmNode> fb = fallback ?? oneChar;
+  final fb = fallback ?? oneChar;
   return _NestParser(inline, fb, state);
 }

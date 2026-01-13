@@ -15,10 +15,10 @@ Parser<dynamic> seqOrText(Parser start, Parser inner, Parser end) {
       .plus();
 
   // 正常系: start, innerList, end の順でマッチ
-  final Parser sequence = (start & innerList & end);
+  final Parser sequence = start & innerList & end;
 
   // フォールバック: start 以降をそのまま文字列として返す
-  final Parser<String> fallback = (start & any().star()).flatten();
+  final fallback = (start & any().star()).flatten();
 
-  return (sequence | fallback);
+  return sequence | fallback;
 }

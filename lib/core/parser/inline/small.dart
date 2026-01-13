@@ -1,8 +1,9 @@
 import 'package:petitparser/petitparser.dart';
+
 import '../../ast.dart';
 import '../common/utils.dart';
-import '../core/seq_or_text.dart';
 import '../core/nest.dart';
+import '../core/seq_or_text.dart';
 
 /// small 構文パーサー
 ///

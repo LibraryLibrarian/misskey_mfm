@@ -1,7 +1,7 @@
-import 'package:test/test.dart';
-import 'package:petitparser/petitparser.dart';
 import 'package:misskey_mfm/core/ast.dart';
 import 'package:misskey_mfm/core/parser.dart';
+import 'package:petitparser/petitparser.dart';
+import 'package:test/test.dart';
 
 void main() {
   group('QuoteParser（引用: 1行）', () {
@@ -20,7 +20,7 @@ void main() {
 
   group('QuoteParser（引用: 複数行）', () {
     test('基本: 連続する引用行', () {
-      final input = '> これは\n> 複数行の\n> テスト';
+      const input = '> これは\n> 複数行の\n> テスト';
       final m = MfmParser().build();
       final result = m.parse(input);
       expect(result is Success, isTrue);

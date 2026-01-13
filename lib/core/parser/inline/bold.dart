@@ -1,8 +1,9 @@
 import 'package:petitparser/petitparser.dart';
+
 import '../../ast.dart';
 import '../common/utils.dart';
-import '../core/seq_or_text.dart';
 import '../core/nest.dart';
+import '../core/seq_or_text.dart';
 
 /// 太字構文パーサー
 ///
@@ -10,14 +11,14 @@ import '../core/nest.dart';
 class BoldParser {
   /// 太字ノードのパーサー（** ... **）
   Parser<MfmNode> build() {
-    final Parser<MfmNode> inner = any()
+    final inner = any()
         .starLazy(string('**'))
         .flatten()
         .map<MfmNode>((dynamic v) => TextNode(v as String));
 
     return (string('**') & inner & string('**')).map<MfmNode>((dynamic v) {
-      final List<dynamic> parts = v as List<dynamic>;
-      final MfmNode content = parts[1] as MfmNode;
+      final parts = v as List<dynamic>;
+      final content = parts[1] as MfmNode;
       return BoldNode(mergeAdjacentTextNodes([content]));
     });
   }
@@ -60,8 +61,8 @@ class BoldParser {
       if (v is String) {
         return TextNode(v);
       }
-      final List<dynamic> parts = v as List<dynamic>;
-      final List<MfmNode> children = (parts[1] as List).cast<MfmNode>();
+      final parts = v as List<dynamic>;
+      final children = (parts[1] as List).cast<MfmNode>();
       return BoldNode(mergeAdjacentTextNodes(children));
     });
     return parser;

@@ -27,9 +27,9 @@ class QuoteParser {
 
     final parser = (firstLine & nextLine.star()).map<MfmNode>((dynamic v) {
       final parts = v as List<dynamic>;
-      final head = (parts[0] as List<MfmNode>);
+      final head = parts[0] as List<MfmNode>;
       final rest = (parts[1] as List)
-          .expand<MfmNode>((dynamic e) => (e as List<MfmNode>))
+          .expand<MfmNode>((dynamic e) => e as List<MfmNode>)
           .toList();
       final all = <MfmNode>[...head, ...rest];
       return QuoteNode(mergeAdjacentTextNodes(all));

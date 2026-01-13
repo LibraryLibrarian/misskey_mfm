@@ -1,16 +1,16 @@
-import 'package:test/test.dart';
 import 'package:misskey_mfm/core/ast.dart';
 import 'package:misskey_mfm/core/parser.dart';
+import 'package:test/test.dart';
 
 void main() {
   group('mergeAdjacentTextNodes（共通ユーティリティ）', () {
     test('隣接するTextNodeをマージできる', () {
       final nodes = [
-        TextNode('Hello'),
-        TextNode(' '),
-        TextNode('World'),
-        BoldNode([TextNode('bold')]),
-        TextNode('!'),
+        const TextNode('Hello'),
+        const TextNode(' '),
+        const TextNode('World'),
+        const BoldNode([TextNode('bold')]),
+        const TextNode('!'),
       ];
 
       final result = mergeAdjacentTextNodes(nodes);
@@ -24,7 +24,7 @@ void main() {
     });
 
     test('TextNodeのみの場合は1つにマージされる', () {
-      final nodes = [TextNode('Hello'), TextNode(' '), TextNode('World')];
+      final nodes = [const TextNode('Hello'), const TextNode(' '), const TextNode('World')];
 
       final result = mergeAdjacentTextNodes(nodes);
 
@@ -35,8 +35,8 @@ void main() {
 
     test('TextNodeが混在しない場合は変更されない', () {
       final nodes = [
-        BoldNode([TextNode('bold')]),
-        ItalicNode([TextNode('italic')]),
+        const BoldNode([TextNode('bold')]),
+        const ItalicNode([TextNode('italic')]),
       ];
 
       final result = mergeAdjacentTextNodes(nodes);
@@ -55,7 +55,7 @@ void main() {
     });
 
     test('単一のTextNodeの場合は変更されない', () {
-      final nodes = [TextNode('single')];
+      final nodes = [const TextNode('single')];
 
       final result = mergeAdjacentTextNodes(nodes);
 

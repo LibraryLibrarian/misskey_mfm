@@ -1,13 +1,14 @@
 import 'package:petitparser/petitparser.dart';
+
 import '../ast.dart';
+import 'block/center.dart';
+import 'block/code_block.dart';
+import 'block/quote.dart';
 import 'common/utils.dart';
 import 'inline/bold.dart';
+import 'inline/inline_code.dart';
 import 'inline/italic.dart';
 import 'inline/small.dart';
-import 'block/quote.dart';
-import 'block/center.dart';
-import 'inline/inline_code.dart';
-import 'block/code_block.dart';
 
 /// MFM（Misskey Flavored Markdown）メインパーサー
 ///
@@ -15,7 +16,7 @@ import 'block/code_block.dart';
 class MfmParser {
   /// パーサーを構築して返す
   Parser<List<MfmNode>> build() {
-    final SettableParser<MfmNode> inline = undefined();
+    final inline = undefined();
 
     final bold = BoldParser().buildWithInner(inline);
     final boldTag = BoldParser().buildTagWithInner(inline);

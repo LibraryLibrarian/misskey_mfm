@@ -1,9 +1,10 @@
 import 'package:petitparser/petitparser.dart';
+
 import '../../ast.dart';
 import '../common/utils.dart';
-import '../core/seq_or_text.dart';
-import '../core/nest.dart';
 import '../core/guards.dart';
+import '../core/nest.dart';
+import '../core/seq_or_text.dart';
 
 /// 斜体構文パーサー
 ///
@@ -14,9 +15,9 @@ class ItalicParser {
     if (ch == null) return true;
     if (ch == ' ' || ch == '\n') return true;
     final code = ch.codeUnitAt(0);
-    final bool isDigit = code >= 0x30 && code <= 0x39;
-    final bool isUpper = code >= 0x41 && code <= 0x5A;
-    final bool isLower = code >= 0x61 && code <= 0x7A;
+    final isDigit = code >= 0x30 && code <= 0x39;
+    final isUpper = code >= 0x41 && code <= 0x5A;
+    final isLower = code >= 0x61 && code <= 0x7A;
     if (isDigit || isUpper || isLower) return false;
     return true;
   }
@@ -24,14 +25,14 @@ class ItalicParser {
   /// 斜体ノードのパーサー（* ... *）
   Parser<MfmNode> build() {
     // 既存仕様: * は単体利用時フォールバックも提供するため、build() は buildWithFallback() と組にして利用
-    final Parser<MfmNode> inner = any()
+    final inner = any()
         .starLazy(string('*'))
         .flatten()
         .map<MfmNode>((dynamic v) => TextNode(v as String));
 
     final core = (string('*') & inner & string('*')).map<MfmNode>((dynamic v) {
-      final List<dynamic> parts = v as List<dynamic>;
-      final MfmNode content = parts[1] as MfmNode;
+      final parts = v as List<dynamic>;
+      final content = parts[1] as MfmNode;
       return ItalicNode(mergeAdjacentTextNodes([content]));
     });
 
@@ -48,8 +49,8 @@ class ItalicParser {
       if (v is String) {
         return TextNode(v);
       }
-      final List<dynamic> seq = v as List<dynamic>;
-      final List<MfmNode> children = (seq[1] as List).cast<MfmNode>();
+      final seq = v as List<dynamic>;
+      final children = (seq[1] as List).cast<MfmNode>();
       return ItalicNode(mergeAdjacentTextNodes(children));
     });
     return withPrevCharGuard(parser, _allowPrev);
@@ -63,8 +64,8 @@ class ItalicParser {
       (dynamic v) => TextNode(v as String),
     );
     return (start & inner & end).map<MfmNode>((dynamic v) {
-      final List<dynamic> parts = v as List<dynamic>;
-      final MfmNode content = parts[1] as MfmNode;
+      final parts = v as List<dynamic>;
+      final content = parts[1] as MfmNode;
       return ItalicNode(mergeAdjacentTextNodes([content]));
     });
   }
@@ -86,14 +87,14 @@ class ItalicParser {
 
   /// 斜体ノードのパーサー（_ ... _）
   Parser<MfmNode> buildAlt2() {
-    final Parser<MfmNode> inner = any()
+    final inner = any()
         .starLazy(string('_'))
         .flatten()
         .map<MfmNode>((dynamic v) => TextNode(v as String));
 
     final core = (string('_') & inner & string('_')).map<MfmNode>((dynamic v) {
-      final List<dynamic> parts = v as List<dynamic>;
-      final MfmNode content = parts[1] as MfmNode;
+      final parts = v as List<dynamic>;
+      final content = parts[1] as MfmNode;
       return ItalicNode(mergeAdjacentTextNodes([content]));
     });
 
