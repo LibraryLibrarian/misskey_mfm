@@ -4,6 +4,11 @@
   "[dart]": {
     "editor.defaultFormatter": "Dart-Code.dart-code",
     "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "quickfix.insertSemicolon": "always",
+      "source.fixAll": "explicit",
+      "source.organizeImports": "explicit"
+    },
     "editor.formatOnType": true,
     "editor.rulers": [
       80
