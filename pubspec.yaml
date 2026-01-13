@@ -9,9 +9,11 @@ dependencies:
     sdk: flutter
   petitparser: ^6.1.0
 dev_dependencies:
+  custom_lint: ^0.8.1
   flutter_lints: ^5.0.0
   flutter_test:
     sdk: flutter
+  pedantic_mono: ^1.33.0
   pubspec_dependency_sorter: ^1.0.5
   test: ^1.26.2
 flutter: null
