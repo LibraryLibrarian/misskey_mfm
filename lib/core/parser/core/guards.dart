@@ -5,8 +5,8 @@ import 'package:petitparser/petitparser.dart';
 /// 対象位置の直前の1文字を判定し、許可された場合のみ [delegate]
 /// を実行して結果を返す
 class PrevCharGuardParser<R> extends Parser<R> {
-
   PrevCharGuardParser(this.delegate, this.allow);
+
   /// 委譲先のパーサー
   final Parser<R> delegate;
 

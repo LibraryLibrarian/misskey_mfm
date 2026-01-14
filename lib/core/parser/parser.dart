@@ -16,7 +16,7 @@ import 'inline/small.dart';
 class MfmParser {
   /// パーサーを構築して返す
   Parser<List<MfmNode>> build() {
-    final inline = undefined();
+    final inline = undefined<MfmNode>();
 
     final bold = BoldParser().buildWithInner(inline);
     final boldTag = BoldParser().buildTagWithInner(inline);

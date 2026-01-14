@@ -24,7 +24,11 @@ void main() {
     });
 
     test('TextNodeのみの場合は1つにマージされる', () {
-      final nodes = [const TextNode('Hello'), const TextNode(' '), const TextNode('World')];
+      final nodes = [
+        const TextNode('Hello'),
+        const TextNode(' '),
+        const TextNode('World'),
+      ];
 
       final result = mergeAdjacentTextNodes(nodes);
 
