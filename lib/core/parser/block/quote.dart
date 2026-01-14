@@ -2,40 +2,60 @@ import 'package:petitparser/petitparser.dart';
 
 import '../../ast.dart';
 import '../common/utils.dart';
+import '../core/nest.dart';
 
-/// 引用ブロックパーサー（単一/複数行の基本対応）
+/// 引用ブロックパーサー（単一/複数行対応）
 ///
-/// 行頭の "> " に続く行を1行以上引用として解析する。
-/// 各行の内容はプレーンテキストとして収集し、行の区切りは改行として `TextNode("\n")` を挟んで連結する。
+/// 行頭の "> " または ">" に続く行を1行以上引用として解析
+///
+/// 引用内容に対してインラインパーサーを適用
+/// bold、italic、emojiCode等のインライン構文をパース
 class QuoteParser {
-  /// 引用（> ...）: 複数行（簡易版: テキストのみ）
-  Parser<MfmNode> build() {
-    final startMarker = string('> ');
+  /// 引用（> ...）: 再帰パース対応版
+  ///
+  /// [inline] インラインパーサー（bold, italic等を含む）
+  Parser<MfmNode> buildWithInner(Parser<MfmNode> inline) {
+    // mfm-js仕様: `>` の後に続く0〜1文字のスペースを無視
+    final startMarker = string('> ') | string('>');
     final endLine = char('\n');
 
-    // 1行のテキスト（改行直前まで）
-    final lineText = (endLine.not() & any()).star().flatten().map<MfmNode>(
-      (dynamic v) => TextNode(v as String),
+    // 1行のテキスト（改行直前まで）を文字列として取得
+    final lineText = (endLine.not() & any()).star().flatten();
+
+    // 最初の行: "> " + テキスト
+    final firstLine = (startMarker & lineText).map<String>(
+      (dynamic v) => (v as List<dynamic>)[1] as String,
     );
 
-    final firstLine = (startMarker & lineText).map<List<MfmNode>>(
-      (dynamic v) => [(v as List<dynamic>)[1] as MfmNode],
+    // 続く行: "\n" + "> " + テキスト → "\n" + テキスト に変換
+    final nextLine = (endLine & startMarker & lineText).map<String>(
+      (dynamic v) => '\n${(v as List<dynamic>)[2] as String}',
     );
 
-    final nextLine = (endLine & startMarker & lineText).map<List<MfmNode>>(
-      (dynamic v) => [const TextNode('\n'), (v as List<dynamic>)[2] as MfmNode],
-    );
-
-    final parser = (firstLine & nextLine.star()).map<MfmNode>((dynamic v) {
+    // 全引用行を結合して1つの文字列として取得
+    final allLines = (firstLine & nextLine.star()).map<String>((dynamic v) {
       final parts = v as List<dynamic>;
-      final head = parts[0] as List<MfmNode>;
-      final rest = (parts[1] as List)
-          .expand<MfmNode>((dynamic e) => e as List<MfmNode>)
-          .toList();
-      final all = <MfmNode>[...head, ...rest];
-      return QuoteNode(mergeAdjacentTextNodes(all));
+      final head = parts[0] as String;
+      final rest = (parts[1] as List).cast<String>().join();
+      return head + rest;
     });
 
-    return parser;
+    // 引用内容をインラインパーサーでパース
+    return allLines.map<MfmNode>((String content) {
+      if (content.isEmpty) {
+        return const QuoteNode([]);
+      }
+
+      // 引用内容に対してインラインパーサーを適用
+      final innerParser = nest(inline).plus().end();
+      final result = innerParser.parse(content);
+
+      if (result is Success<List<MfmNode>>) {
+        return QuoteNode(mergeAdjacentTextNodes(result.value));
+      } else {
+        // パース失敗時はテキストとして扱う
+        return QuoteNode([TextNode(content)]);
+      }
+    });
   }
 }

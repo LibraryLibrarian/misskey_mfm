@@ -59,7 +59,7 @@ class MfmParser {
     // blocks: code block > center > quote
     final codeBlock = CodeBlockParser().build();
     final center = CenterParser().buildWithInner(inline);
-    final quote = QuoteParser().build();
+    final quote = QuoteParser().buildWithInner(inline);
     final blocks = codeBlock | center | quote;
 
     final start = (blocks | inline)

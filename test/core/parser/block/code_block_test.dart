@@ -23,8 +23,18 @@ void main() {
       expect(result is Success, isTrue);
       final nodes = (result as Success).value as List<MfmNode>;
       final cb = nodes[0] as CodeBlockNode;
-      expect(cb.language, isNull);
+      expect(cb.language, 'js');
       expect(cb.code, 'const a = 1;');
+    });
+
+    test('言語指定（dart）: ```dart\nvoid main() {}\n```', () {
+      final m = MfmParser().build();
+      final result = m.parse('```dart\nvoid main() {}\n```');
+      expect(result is Success, isTrue);
+      final nodes = (result as Success).value as List<MfmNode>;
+      final cb = nodes[0] as CodeBlockNode;
+      expect(cb.language, 'dart');
+      expect(cb.code, 'void main() {}');
     });
 
     test('内部の ``` を無視: ```\naaa```bbb\n```', () {

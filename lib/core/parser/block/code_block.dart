@@ -33,8 +33,12 @@ class CodeBlockParser {
 
     return (start & content & end).map<MfmNode>((dynamic v) {
       final parts = v as List<dynamic>;
-      final code = parts[1] as String; // 本文
-      return CodeBlockNode(code: code);
+      final lang = parts[0] as String;
+      final code = parts[1] as String;
+      return CodeBlockNode(
+        code: code,
+        language: lang.isEmpty ? null : lang,
+      );
     });
   }
 }
