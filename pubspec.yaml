@@ -5,6 +5,7 @@ environment:
   flutter: ">=1.17.0"
 description: A new Flutter package project.
 dependencies:
+  emoji_regex: ^0.0.5
   flutter:
     sdk: flutter
   petitparser: ^6.1.0

@@ -142,5 +142,141 @@ void main() {
       expect(nodes[2], isA<TextNode>());
       expect((nodes[2] as TextNode).text, '*');
     });
+
+    // 絵文字関連のテストケース
+    group('絵文字パース', () {
+      test('カスタム絵文字を解析できる', () {
+        final result = parser.parse(':emoji:');
+        expect(result is Success, isTrue);
+        final nodes = (result as Success).value as List<MfmNode>;
+        expect(nodes.length, 1);
+        expect(nodes[0], isA<EmojiCodeNode>());
+        expect((nodes[0] as EmojiCodeNode).name, 'emoji');
+      });
+
+      test('Unicode絵文字を解析できる', () {
+        final result = parser.parse('😀');
+        expect(result is Success, isTrue);
+        final nodes = (result as Success).value as List<MfmNode>;
+        expect(nodes.length, 1);
+        expect(nodes[0], isA<UnicodeEmojiNode>());
+        expect((nodes[0] as UnicodeEmojiNode).emoji, '😀');
+      });
+
+      test('テキストとカスタム絵文字の混在を解析できる', () {
+        final result = parser.parse('Hello :wave: World');
+        expect(result is Success, isTrue);
+        final nodes = (result as Success).value as List<MfmNode>;
+        expect(nodes.length, 3);
+        expect(nodes[0], isA<TextNode>());
+        expect((nodes[0] as TextNode).text, 'Hello ');
+        expect(nodes[1], isA<EmojiCodeNode>());
+        expect((nodes[1] as EmojiCodeNode).name, 'wave');
+        expect(nodes[2], isA<TextNode>());
+        expect((nodes[2] as TextNode).text, ' World');
+      });
+
+      test('テキストとUnicode絵文字の混在を解析できる', () {
+        final result = parser.parse('Hello 👋 World');
+        expect(result is Success, isTrue);
+        final nodes = (result as Success).value as List<MfmNode>;
+        expect(nodes.length, 3);
+        expect(nodes[0], isA<TextNode>());
+        expect((nodes[0] as TextNode).text, 'Hello ');
+        expect(nodes[1], isA<UnicodeEmojiNode>());
+        expect((nodes[1] as UnicodeEmojiNode).emoji, '👋');
+        expect(nodes[2], isA<TextNode>());
+        expect((nodes[2] as TextNode).text, ' World');
+      });
+
+      test('カスタム絵文字とUnicode絵文字の混在を解析できる', () {
+        final result = parser.parse(':wave: 👋 :smile:');
+        expect(result is Success, isTrue);
+        final nodes = (result as Success).value as List<MfmNode>;
+        expect(nodes.length, 5);
+        expect(nodes[0], isA<EmojiCodeNode>());
+        expect((nodes[0] as EmojiCodeNode).name, 'wave');
+        expect(nodes[1], isA<TextNode>());
+        expect(nodes[2], isA<UnicodeEmojiNode>());
+        expect(nodes[3], isA<TextNode>());
+        expect(nodes[4], isA<EmojiCodeNode>());
+        expect((nodes[4] as EmojiCodeNode).name, 'smile');
+      });
+
+      test('太字内の絵文字を解析できる', () {
+        final result = parser.parse('**:emoji: 😀**');
+        expect(result is Success, isTrue);
+        final nodes = (result as Success).value as List<MfmNode>;
+        expect(nodes.length, 1);
+        expect(nodes[0], isA<BoldNode>());
+        final bold = nodes[0] as BoldNode;
+        expect(bold.children.length, 3);
+        expect(bold.children[0], isA<EmojiCodeNode>());
+        expect(bold.children[1], isA<TextNode>());
+        expect(bold.children[2], isA<UnicodeEmojiNode>());
+      });
+
+      test('斜体内の絵文字を解析できる', () {
+        final result = parser.parse('*Hello :wave:*');
+        expect(result is Success, isTrue);
+        final nodes = (result as Success).value as List<MfmNode>;
+        expect(nodes.length, 1);
+        expect(nodes[0], isA<ItalicNode>());
+        final italic = nodes[0] as ItalicNode;
+        expect(italic.children.any((n) => n is EmojiCodeNode), isTrue);
+      });
+
+      test('複数のUnicode絵文字を連続で解析できる', () {
+        final result = parser.parse('😀😁😂');
+        expect(result is Success, isTrue);
+        final nodes = (result as Success).value as List<MfmNode>;
+        expect(nodes.length, 3);
+        expect(nodes.every((n) => n is UnicodeEmojiNode), isTrue);
+      });
+
+      test('複数のカスタム絵文字を連続で解析できる', () {
+        final result = parser.parse(':a::b::c:');
+        expect(result is Success, isTrue);
+        final nodes = (result as Success).value as List<MfmNode>;
+        expect(nodes.length, 3);
+        expect(nodes.every((n) => n is EmojiCodeNode), isTrue);
+      });
+
+      test('肌色修飾子付き絵文字を解析できる', () {
+        final result = parser.parse('👍🏻');
+        expect(result is Success, isTrue);
+        final nodes = (result as Success).value as List<MfmNode>;
+        expect(nodes.length, 1);
+        expect(nodes[0], isA<UnicodeEmojiNode>());
+        expect((nodes[0] as UnicodeEmojiNode).emoji, '👍🏻');
+      });
+
+      test('ZWJ結合絵文字を解析できる', () {
+        final result = parser.parse('👨‍👩‍👧‍👦');
+        expect(result is Success, isTrue);
+        final nodes = (result as Success).value as List<MfmNode>;
+        expect(nodes.length, 1);
+        expect(nodes[0], isA<UnicodeEmojiNode>());
+        expect((nodes[0] as UnicodeEmojiNode).emoji, '👨‍👩‍👧‍👦');
+      });
+
+      test('国旗絵文字を解析できる', () {
+        final result = parser.parse('🇯🇵');
+        expect(result is Success, isTrue);
+        final nodes = (result as Success).value as List<MfmNode>;
+        expect(nodes.length, 1);
+        expect(nodes[0], isA<UnicodeEmojiNode>());
+        expect((nodes[0] as UnicodeEmojiNode).emoji, '🇯🇵');
+      });
+
+      test('複雑な絵文字を含む文章を解析できる', () {
+        final result = parser.parse('こんにちは :wave: 👋 **太字 :bold:**');
+        expect(result is Success, isTrue);
+        final nodes = (result as Success).value as List<MfmNode>;
+        expect(nodes.any((n) => n is EmojiCodeNode), isTrue);
+        expect(nodes.any((n) => n is UnicodeEmojiNode), isTrue);
+        expect(nodes.any((n) => n is BoldNode), isTrue);
+      });
+    });
   });
 }

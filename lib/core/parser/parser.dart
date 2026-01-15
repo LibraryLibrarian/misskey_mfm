@@ -6,9 +6,11 @@ import 'block/code_block.dart';
 import 'block/quote.dart';
 import 'common/utils.dart';
 import 'inline/bold.dart';
+import 'inline/emoji_code.dart';
 import 'inline/inline_code.dart';
 import 'inline/italic.dart';
 import 'inline/small.dart';
+import 'inline/unicode_emoji.dart';
 
 /// MFM（Misskey Flavored Markdown）メインパーサー
 ///
@@ -26,8 +28,13 @@ class MfmParser {
     final smallTag = SmallParser().buildWithInner(inline);
     final inlineCode = InlineCodeParser().buildWithFallback();
 
+    // 絵文字パーサー
+    final emojiCode = EmojiCodeParser().build();
+    final unicodeEmoji = UnicodeEmojiParser().build();
+
     final stopper =
         char('`') |
+        char(':') | // emojiCode用
         string('</center>') |
         string('<center>') |
         string('</small>') |
@@ -39,12 +46,15 @@ class MfmParser {
         string('**') |
         string('*') |
         string('_');
-    final textParser = (stopper.not() & any()).plus().flatten().map<MfmNode>(
-      (dynamic v) => TextNode(v as String),
-    );
+    final textParser = (stopper.not() & unicodeEmoji.not() & any())
+        .plus()
+        .flatten()
+        .map<MfmNode>((dynamic v) => TextNode(v as String));
     final oneChar = any().map<MfmNode>((dynamic c) => TextNode(c as String));
     inline.set(
       (inlineCode |
+              unicodeEmoji |
+              emojiCode |
               smallTag |
               boldTag |
               italicTag |
