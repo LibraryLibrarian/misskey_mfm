@@ -152,3 +152,26 @@ class CodeBlockNode extends MfmNode {
   /// 言語（省略可）
   final String? language;
 }
+
+/// インラインノード：MFM関数 $[name.args content]を表す
+///
+/// MFM関数はテキストにアニメーションや視覚効果を付与する機能
+/// 例: $[shake 🍮], $[spin.speed=2s text], $[flip.h,v content]
+class FnNode extends MfmNode {
+  const FnNode({
+    required this.name,
+    required this.args,
+    required this.children,
+  });
+
+  /// 関数名（tada, shake, spin等）
+  final String name;
+
+  /// 引数マップ（key: String値またはtrue）
+  ///
+  /// 例: {speed: "2s", h: true, v: true}
+  final Map<String, dynamic> args;
+
+  /// 子ノードのリスト（関数に適用される内容）
+  final List<MfmNode> children;
+}

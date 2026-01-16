@@ -7,6 +7,7 @@ import 'block/quote.dart';
 import 'common/utils.dart';
 import 'inline/bold.dart';
 import 'inline/emoji_code.dart';
+import 'inline/fn.dart';
 import 'inline/hashtag.dart';
 import 'inline/inline_code.dart';
 import 'inline/italic.dart';
@@ -47,6 +48,9 @@ class MfmParser {
     final url = UrlParser().buildWithFallback();
     final urlAlt = UrlParser().buildAlt();
 
+    // MFM関数パーサー
+    final fn = FnParser().buildWithInner(inline);
+
     // リンクラベル用インラインパーサー（URL、リンク、メンションを除外）
     // mfm-js仕様: リンクラベル内ではURL、リンク、メンションは無効
     final labelInline = undefined<MfmNode>();
@@ -55,6 +59,7 @@ class MfmParser {
         char(':') | // emojiCode用
         char('#') | // hashtag用
         char(']') | // リンクラベル終端
+        string(r'$[') | // fn用
         string('</small>') |
         string('<small>') |
         string('</s>') |
@@ -74,11 +79,15 @@ class MfmParser {
     final labelOneChar = any().map<MfmNode>(
       (dynamic c) => TextNode(c as String),
     );
+    // ラベル内用fnパーサー（labelInlineを使用）
+    final labelFn = FnParser().buildWithInner(labelInline);
+
     labelInline.set(
       (inlineCode |
               unicodeEmoji |
               emojiCode |
               hashtag | // メンションは除外、ハッシュタグは許可
+              labelFn | // fn はリンクラベル内でも有効
               smallTag |
               strikeTag |
               boldTag |
@@ -101,7 +110,9 @@ class MfmParser {
         char('@') | // mention用
         char('#') | // hashtag用
         char('[') | // link用
+        char(']') | // fn終端用
         string('?[') | // silent link用
+        string(r'$[') | // fn用
         string('<https://') | // urlAlt用
         string('<http://') | // urlAlt用
         string('https://') | // url用
@@ -131,6 +142,7 @@ class MfmParser {
               emojiCode |
               mention |
               hashtag |
+              fn | // $[name content] 形式
               urlAlt | // <https://...> 形式（HTMLタグより前）
               smallTag |
               strikeTag |
