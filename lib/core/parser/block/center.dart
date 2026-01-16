@@ -3,22 +3,20 @@ import 'package:petitparser/petitparser.dart';
 import '../../ast.dart';
 import '../common/utils.dart';
 import '../core/nest.dart';
-import '../core/seq_or_text.dart';
 
 /// 中央寄せブロックパーサー
 ///
-/// "&lt;center&gt;…&lt;/center&gt;" で囲まれたブロックを解析する
+/// "&lt;center&gt;…&lt;/center&gt;" で囲まれたブロックを解析
 class CenterParser {
   /// center タグ（基本版）
   Parser<MfmNode> build() {
     final start = string('<center>');
     final end = string('</center>');
     final inner = (end.not() & any()).plus().flatten().map<MfmNode>(
-      (dynamic v) => TextNode(v as String),
+      TextNode.new,
     );
-    return (start & inner & end).map<MfmNode>((dynamic v) {
-      final parts = v as List<dynamic>;
-      return CenterNode(mergeAdjacentTextNodes([parts[1] as MfmNode]));
+    return seq3(start, inner, end).map((result) {
+      return CenterNode(mergeAdjacentTextNodes([result.$2]));
     });
   }
 
@@ -26,13 +24,9 @@ class CenterParser {
   Parser<MfmNode> buildWithInner(Parser<MfmNode> inline) {
     final start = string('<center>');
     final end = string('</center>');
-    final parser = seqOrText(start, nest(inline), end).map<MfmNode>((
-      dynamic v,
-    ) {
-      if (v is String) return TextNode(v);
-      final parts = v as List<dynamic>;
-      final children = (parts[1] as List).cast<MfmNode>();
-      return CenterNode(mergeAdjacentTextNodes(children));
+    final innerList = seq2(end.not(), nest(inline)).map((r) => r.$2).plus();
+    final parser = seq3(start, innerList, end).map<MfmNode>((result) {
+      return CenterNode(mergeAdjacentTextNodes(result.$2));
     });
     return parser;
   }
