@@ -58,7 +58,7 @@ class MentionParser {
 
     // フォールバック: `@` で始まるがメンションとして解析できない場合
     final fallback = char('@').map<MfmNode>(
-      (dynamic c) => TextNode(c as String),
+      TextNode.new,
     );
 
     return (completeMention | fallback).cast<MfmNode>();
