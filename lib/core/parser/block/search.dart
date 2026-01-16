@@ -19,13 +19,14 @@ class SearchParser {
     final space = pattern(' \u3000\t');
 
     // 検索ボタン: [検索], [Search], 検索, Search（大文字小文字不問）
+    final searchKeyword =
+        string('検索', ignoreCase: true) | string('search', ignoreCase: true);
     final buttonBracket = seq3(
       char('['),
-      stringIgnoreCase('検索') | stringIgnoreCase('search'),
+      searchKeyword,
       char(']'),
     ).flatten();
-    final buttonNoBracket =
-        (stringIgnoreCase('検索') | stringIgnoreCase('search')).flatten();
+    final buttonNoBracket = searchKeyword.flatten();
     final button = buttonBracket | buttonNoBracket;
 
     // 行末判定
