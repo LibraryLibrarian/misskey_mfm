@@ -3,7 +3,9 @@ import 'package:petitparser/petitparser.dart';
 import '../ast.dart';
 import 'block/center.dart';
 import 'block/code_block.dart';
+import 'block/math_block.dart';
 import 'block/quote.dart';
+import 'block/search.dart';
 import 'common/utils.dart';
 import 'inline/bold.dart';
 import 'inline/emoji_code.dart';
@@ -12,7 +14,9 @@ import 'inline/hashtag.dart';
 import 'inline/inline_code.dart';
 import 'inline/italic.dart';
 import 'inline/link.dart';
+import 'inline/math_inline.dart';
 import 'inline/mention.dart';
+import 'inline/plain.dart';
 import 'inline/small.dart';
 import 'inline/strike.dart';
 import 'inline/unicode_emoji.dart';
@@ -35,6 +39,12 @@ class MfmParser {
     final strike = StrikeParser().buildWithInner(inline);
     final strikeTag = StrikeParser().buildTagWithInner(inline);
     final inlineCode = InlineCodeParser().buildWithFallback();
+
+    // plainタグパーサー（パース無効化）
+    final plainTag = PlainParser().build();
+
+    // インライン数式パーサー
+    final mathInline = MathInlineParser().build();
 
     // 絵文字パーサー
     final emojiCode = EmojiCodeParser().build();
@@ -60,6 +70,8 @@ class MfmParser {
         char('#') | // hashtag用
         char(']') | // リンクラベル終端
         string(r'$[') | // fn用
+        string('</plain>') | // plain用
+        string('<plain>') | // plain用
         string('</small>') |
         string('<small>') |
         string('</s>') |
@@ -68,6 +80,7 @@ class MfmParser {
         string('<b>') |
         string('</i>') |
         string('<i>') |
+        string(r'\(') | // mathInline用
         string('~~') |
         string('**') |
         string('*') |
@@ -88,6 +101,7 @@ class MfmParser {
               emojiCode |
               hashtag | // メンションは除外、ハッシュタグは許可
               labelFn | // fn はリンクラベル内でも有効
+              plainTag | // <plain>...</plain> 形式
               smallTag |
               strikeTag |
               boldTag |
@@ -96,6 +110,7 @@ class MfmParser {
               bold |
               italicAlt2 |
               italicAsterisk |
+              mathInline | // \(...\) 形式
               labelTextParser |
               labelOneChar)
           .cast<MfmNode>(),
@@ -119,6 +134,8 @@ class MfmParser {
         string('http://') | // url用
         string('</center>') |
         string('<center>') |
+        string('</plain>') | // plain用
+        string('<plain>') | // plain用
         string('</small>') |
         string('<small>') |
         string('</s>') | // strike用
@@ -127,6 +144,8 @@ class MfmParser {
         string('<b>') |
         string('</i>') |
         string('<i>') |
+        string(r'\(') | // mathInline用
+        string(r'\[') | // mathBlock用
         string('~~') | // strike用
         string('**') |
         string('*') |
@@ -144,6 +163,7 @@ class MfmParser {
               hashtag |
               fn | // $[name content] 形式
               urlAlt | // <https://...> 形式（HTMLタグより前）
+              plainTag | // <plain>...</plain> 形式
               smallTag |
               strikeTag |
               boldTag |
@@ -152,6 +172,7 @@ class MfmParser {
               bold |
               italicAlt2 |
               italicAsterisk |
+              mathInline | // \(...\) 形式
               link | // [label](url) 形式
               url | // https://... 形式
               textParser |
@@ -159,11 +180,13 @@ class MfmParser {
           .cast<MfmNode>(),
     );
 
-    // blocks: code block > center > quote
+    // blocks: code block > math block > center > quote > search
     final codeBlock = CodeBlockParser().build();
+    final mathBlock = MathBlockParser().build();
     final center = CenterParser().buildWithInner(inline);
     final quote = QuoteParser().buildWithInner(inline);
-    final blocks = codeBlock | center | quote;
+    final search = SearchParser().build();
+    final blocks = codeBlock | mathBlock | center | quote | search;
 
     final start = (blocks | inline)
         .plus()

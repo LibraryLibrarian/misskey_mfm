@@ -175,3 +175,39 @@ class FnNode extends MfmNode {
   /// 子ノードのリスト（関数に適用される内容）
   final List<MfmNode> children;
 }
+
+/// ブロックノード：検索ブロック（query Search）を表す
+///
+/// 形式: `query Search`、`query 検索`、`query [Search]`、`query [検索]`
+/// 大文字小文字は区別されない
+class SearchNode extends MfmNode {
+  const SearchNode({required this.query, required this.content});
+
+  /// 検索クエリ（検索キーワード部分）
+  final String query;
+
+  /// 元の入力テキスト全体（クエリ + スペース + 検索ボタン）
+  final String content;
+}
+
+/// ブロックノード：数式ブロック（\[formula\]）を表す
+///
+/// LaTeX形式の数式をブロックとして表示
+/// `\[` は行頭、`\]` は行末である必要がある
+class MathBlockNode extends MfmNode {
+  const MathBlockNode(this.formula);
+
+  /// 数式（LaTeX形式）
+  final String formula;
+}
+
+/// インラインノード：インライン数式（\(formula\)）を表す
+///
+/// LaTeX形式の数式をインラインで表示
+/// 改行を含めることはできない
+class MathInlineNode extends MfmNode {
+  const MathInlineNode(this.formula);
+
+  /// 数式（LaTeX形式）
+  final String formula;
+}
