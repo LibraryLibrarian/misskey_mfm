@@ -8,7 +8,7 @@ dependencies:
   emoji_regex: ^0.0.5
   flutter:
     sdk: flutter
-  petitparser: ^6.1.0
+  petitparser: ^7.0.1
 dev_dependencies:
   custom_lint: ^0.8.1
   flutter_lints: ^5.0.0
