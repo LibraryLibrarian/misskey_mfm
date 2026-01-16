@@ -3,6 +3,12 @@ import 'package:petitparser/petitparser.dart';
 import '../../ast.dart';
 import '../core/guards.dart';
 
+/// メンションパーサーで使用するホスト部分のRecord型
+typedef MentionHostPart = (String, String);
+
+/// メンションパーサーの結果のRecord型
+typedef MentionRawResult = (String, String, MentionHostPart?);
+
 /// メンションパーサー
 ///
 /// `@user` または `@user@host` 形式のメンションを解析
@@ -12,6 +18,7 @@ import '../core/guards.dart';
 /// - ホスト名: `[A-Za-z0-9_.-]+` でマッチ後、末尾の `[.-]+` を除去
 /// - 先頭が `[.-]` の場合は無効
 /// - 末尾の無効文字は除去され、その部分はテキストとして扱われる
+
 class MentionParser {
   /// 英数字パターン（直前文字チェック用）
   static final _alphanumericPattern = RegExp(r'[a-zA-Z0-9]');
@@ -29,8 +36,9 @@ class MentionParser {
     final namePattern = pattern('a-zA-Z0-9_.-').plus().flatten();
 
     // @user@host または @user
-    final mentionRaw =
-        char('@') & namePattern & (char('@') & namePattern).optional();
+    // seq2/seq3を使用して型安全なRecord型を返す
+    final hostPart = seq2(char('@'), namePattern);
+    final mentionRaw = seq3(char('@'), namePattern, hostPart.optional());
 
     // カスタムパーサーで末尾処理を行う
     final mentionParser = _MentionParserImpl(mentionRaw);
@@ -64,8 +72,7 @@ class MentionParser {
   }
 
   /// 先頭が無効文字かどうか
-  static bool startsWithInvalid(String s) =>
-      _leadingInvalidPattern.hasMatch(s);
+  static bool startsWithInvalid(String s) => _leadingInvalidPattern.hasMatch(s);
 }
 
 /// メンションパーサーの実装
@@ -74,7 +81,7 @@ class MentionParser {
 class _MentionParserImpl extends Parser<MfmNode> {
   _MentionParserImpl(this._delegate);
 
-  final Parser<dynamic> _delegate;
+  final Parser<MentionRawResult> _delegate;
 
   @override
   Result<MfmNode> parseOn(Context context) {
@@ -83,10 +90,11 @@ class _MentionParserImpl extends Parser<MfmNode> {
       return result.failure(result.message);
     }
 
-    final parts = result.value as List<dynamic>;
-    var username = parts[1] as String;
-    final hostPart = parts[2] as List<dynamic>?;
-    var host = hostPart?[1] as String?;
+    // seq3のRecord型から型安全に値を取得
+    final record = result.value;
+    var username = record.$2;
+    final hostPartRecord = record.$3;
+    var host = hostPartRecord?.$2;
 
     // 末尾の [.-] を除去してトリム量を計算
     var trimmedFromUsername = 0;
@@ -103,7 +111,7 @@ class _MentionParserImpl extends Parser<MfmNode> {
     }
 
     // ホストがない場合のみユーザー名末尾をトリム
-    if (host == null && hostPart == null) {
+    if (host == null && hostPartRecord == null) {
       final originalUsername = username;
       final trimmedUsername = MentionParser.trimTrailingInvalid(username);
       if (trimmedUsername == null) {
@@ -123,7 +131,7 @@ class _MentionParserImpl extends Parser<MfmNode> {
     }
 
     // ホスト部分が無効文字のみだった場合
-    if (hostPart != null && host == null) {
+    if (hostPartRecord != null && host == null) {
       // @user@... の形式で、ホストが無効文字のみの場合は無効
       return context.failure('invalid mention: invalid host');
     }
@@ -144,5 +152,5 @@ class _MentionParserImpl extends Parser<MfmNode> {
   }
 
   @override
-  Parser<MfmNode> copy() => _MentionParserImpl(_delegate);
+  _MentionParserImpl copy() => _MentionParserImpl(_delegate.copy());
 }
