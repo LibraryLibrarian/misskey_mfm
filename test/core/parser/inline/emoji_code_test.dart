@@ -144,4 +144,130 @@ void main() {
       expect(nodes.any((n) => n is TextNode && (n.text.contains(':'))), isTrue);
     });
   });
+
+  // mfm-js準拠テスト（前後文字チェック）
+  group('EmojiCodeParser（mfm-js準拠 - 前後文字チェック）', () {
+    final parser = MfmParser().build();
+
+    test('英数字に囲まれた絵文字コードは無効（foo:bar:baz）', () {
+      // mfm-js: foo:bar:baz → TEXT('foo:bar:baz')
+      final result = parser.parse('foo:bar:baz');
+      expect(result is Success, isTrue);
+      final nodes = (result as Success).value as List<MfmNode>;
+      // 全体がテキストとして扱われる
+      expect(nodes.length, 1);
+      expect(nodes[0], isA<TextNode>());
+      expect((nodes[0] as TextNode).text, 'foo:bar:baz');
+    });
+
+    test('数字に囲まれた絵文字コードは無効（12:34:56）', () {
+      // mfm-js: 12:34:56 → TEXT('12:34:56')
+      final result = parser.parse('12:34:56');
+      expect(result is Success, isTrue);
+      final nodes = (result as Success).value as List<MfmNode>;
+      // 全体がテキストとして扱われる（時刻形式）
+      expect(nodes.length, 1);
+      expect(nodes[0], isA<TextNode>());
+      expect((nodes[0] as TextNode).text, '12:34:56');
+    });
+
+    test('非英数字（日本語）に囲まれた絵文字コードは有効（あ:bar:い）', () {
+      // mfm-js: あ:bar:い → TEXT('あ'), EMOJI_CODE('bar'), TEXT('い')
+      final result = parser.parse('あ:bar:い');
+      expect(result is Success, isTrue);
+      final nodes = (result as Success).value as List<MfmNode>;
+      expect(nodes.length, 3);
+      expect(nodes[0], isA<TextNode>());
+      expect((nodes[0] as TextNode).text, 'あ');
+      expect(nodes[1], isA<EmojiCodeNode>());
+      expect((nodes[1] as EmojiCodeNode).name, 'bar');
+      expect(nodes[2], isA<TextNode>());
+      expect((nodes[2] as TextNode).text, 'い');
+    });
+
+    test('行頭の絵文字コードは有効', () {
+      // mfm-js: :foo: → EMOJI_CODE('foo')
+      final result = parser.parse(':foo:');
+      expect(result is Success, isTrue);
+      final nodes = (result as Success).value as List<MfmNode>;
+      expect(nodes.length, 1);
+      expect(nodes[0], isA<EmojiCodeNode>());
+      expect((nodes[0] as EmojiCodeNode).name, 'foo');
+    });
+
+    test('行末の絵文字コードは有効', () {
+      // mfm-js: text :foo: → TEXT('text '), EMOJI_CODE('foo')
+      final result = parser.parse('text :foo:');
+      expect(result is Success, isTrue);
+      final nodes = (result as Success).value as List<MfmNode>;
+      expect(nodes.length, 2);
+      expect(nodes[0], isA<TextNode>());
+      expect((nodes[0] as TextNode).text, 'text ');
+      expect(nodes[1], isA<EmojiCodeNode>());
+      expect((nodes[1] as EmojiCodeNode).name, 'foo');
+    });
+
+    test('スペースで区切られた絵文字コードは有効', () {
+      // mfm-js: foo :bar: baz → TEXT('foo '), EMOJI_CODE('bar'), TEXT(' baz')
+      final result = parser.parse('foo :bar: baz');
+      expect(result is Success, isTrue);
+      final nodes = (result as Success).value as List<MfmNode>;
+      expect(nodes.length, 3);
+      expect(nodes[0], isA<TextNode>());
+      expect((nodes[0] as TextNode).text, 'foo ');
+      expect(nodes[1], isA<EmojiCodeNode>());
+      expect((nodes[1] as EmojiCodeNode).name, 'bar');
+      expect(nodes[2], isA<TextNode>());
+      expect((nodes[2] as TextNode).text, ' baz');
+    });
+
+    test('前が英数字、後が非英数字の場合は無効', () {
+      // foo:bar: → TEXT('foo:bar:')
+      final result = parser.parse('foo:bar:');
+      expect(result is Success, isTrue);
+      final nodes = (result as Success).value as List<MfmNode>;
+      // 前が英数字なのでマッチしない
+      expect(nodes.length, 1);
+      expect(nodes[0], isA<TextNode>());
+      expect((nodes[0] as TextNode).text, 'foo:bar:');
+    });
+
+    test('前が非英数字、後が英数字の場合は無効', () {
+      // :bar:baz → TEXT(':bar:baz')
+      final result = parser.parse(':bar:baz');
+      expect(result is Success, isTrue);
+      final nodes = (result as Success).value as List<MfmNode>;
+      // 後が英数字なのでマッチしない
+      expect(nodes.length, 1);
+      expect(nodes[0], isA<TextNode>());
+      expect((nodes[0] as TextNode).text, ':bar:baz');
+    });
+
+    test('記号で区切られた絵文字コードは有効', () {
+      // !:emoji:! → TEXT('!'), EMOJI_CODE('emoji'), TEXT('!')
+      final result = parser.parse('!:emoji:!');
+      expect(result is Success, isTrue);
+      final nodes = (result as Success).value as List<MfmNode>;
+      expect(nodes.length, 3);
+      expect(nodes[0], isA<TextNode>());
+      expect((nodes[0] as TextNode).text, '!');
+      expect(nodes[1], isA<EmojiCodeNode>());
+      expect((nodes[1] as EmojiCodeNode).name, 'emoji');
+      expect(nodes[2], isA<TextNode>());
+      expect((nodes[2] as TextNode).text, '!');
+    });
+
+    test('改行で区切られた絵文字コードは有効', () {
+      final result = parser.parse('text\n:emoji:\nmore');
+      expect(result is Success, isTrue);
+      final nodes = (result as Success).value as List<MfmNode>;
+      expect(nodes.length, 3);
+      expect(nodes[0], isA<TextNode>());
+      expect((nodes[0] as TextNode).text, 'text\n');
+      expect(nodes[1], isA<EmojiCodeNode>());
+      expect((nodes[1] as EmojiCodeNode).name, 'emoji');
+      expect(nodes[2], isA<TextNode>());
+      expect((nodes[2] as TextNode).text, '\nmore');
+    });
+  });
 }
