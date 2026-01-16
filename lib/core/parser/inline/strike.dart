@@ -19,11 +19,10 @@ class StrikeParser {
         .pick(3)
         .plus()
         .flatten()
-        .map<MfmNode>((dynamic v) => TextNode(v as String));
+        .map<MfmNode>(TextNode.new);
 
-    return (mark & inner & mark).map<MfmNode>((dynamic v) {
-      final parts = v as List<dynamic>;
-      final content = parts[1] as MfmNode;
+    return seq3(mark, inner, mark).map((result) {
+      final content = result.$2;
       return StrikeNode(mergeAdjacentTextNodes([content]));
     });
   }
@@ -35,17 +34,15 @@ class StrikeParser {
     final mark = string('~~');
     // `~~` と改行以外を許可
     final stopCondition = mark | char('\n');
-    final parser =
-        seqOrText(
-          mark,
-          (stopCondition.not() & nest(inline)).pick(1),
-          mark,
-        ).map<MfmNode>((dynamic v) {
-          if (v is String) return TextNode(v);
-          final parts = v as List<dynamic>;
-          final children = (parts[1] as List).cast<MfmNode>();
-          return StrikeNode(mergeAdjacentTextNodes(children));
-        });
+    final inner = (stopCondition.not() & nest(inline)).pick(1).cast<MfmNode>();
+    final parser = seqOrText<MfmNode>(mark, inner, mark).map<MfmNode>((result) {
+      return switch (result) {
+        SeqOrTextFallback(:final text) => TextNode(text),
+        SeqOrTextSuccess(:final children) => StrikeNode(
+          mergeAdjacentTextNodes(children),
+        ),
+      };
+    });
     return parser;
   }
 
@@ -56,11 +53,10 @@ class StrikeParser {
     final start = string('<s>');
     final end = string('</s>');
     final inner = (end.not() & any()).plus().flatten().map<MfmNode>(
-      (dynamic v) => TextNode(v as String),
+      TextNode.new,
     );
-    return (start & inner & end).map<MfmNode>((dynamic v) {
-      final parts = v as List<dynamic>;
-      return StrikeNode(mergeAdjacentTextNodes([parts[1] as MfmNode]));
+    return seq3(start, inner, end).map((result) {
+      return StrikeNode(mergeAdjacentTextNodes([result.$2]));
     });
   }
 
@@ -70,13 +66,15 @@ class StrikeParser {
   Parser<MfmNode> buildTagWithInner(Parser<MfmNode> inline) {
     final start = string('<s>');
     final end = string('</s>');
-    final parser = seqOrText(start, nest(inline), end).map<MfmNode>((
-      dynamic v,
+    final parser = seqOrText<MfmNode>(start, nest(inline), end).map<MfmNode>((
+      result,
     ) {
-      if (v is String) return TextNode(v);
-      final parts = v as List<dynamic>;
-      final children = (parts[1] as List).cast<MfmNode>();
-      return StrikeNode(mergeAdjacentTextNodes(children));
+      return switch (result) {
+        SeqOrTextFallback(:final text) => TextNode(text),
+        SeqOrTextSuccess(:final children) => StrikeNode(
+          mergeAdjacentTextNodes(children),
+        ),
+      };
     });
     return parser;
   }
@@ -88,7 +86,7 @@ class StrikeParser {
     final completedStrike = build();
 
     final fallback = (string('~~') & any().star()).flatten().map<MfmNode>(
-      (dynamic s) => TextNode(s as String),
+      TextNode.new,
     );
 
     return (completedStrike | fallback).cast<MfmNode>();

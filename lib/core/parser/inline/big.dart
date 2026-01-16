@@ -21,14 +21,10 @@ class BigParser {
   /// 内容はTextNodeとしてのみ解析
   Parser<MfmNode> build() {
     final mark = string('***');
-    final inner = any()
-        .starLazy(mark)
-        .flatten()
-        .map<MfmNode>((dynamic v) => TextNode(v as String));
+    final inner = any().starLazy(mark).flatten().map<MfmNode>(TextNode.new);
 
-    return (mark & inner & mark).map<MfmNode>((dynamic v) {
-      final parts = v as List<dynamic>;
-      final content = parts[1] as MfmNode;
+    return seq3(mark, inner, mark).map((result) {
+      final content = result.$2;
       return FnNode(
         name: 'tada',
         args: <String, dynamic>{},
@@ -42,17 +38,17 @@ class BigParser {
   /// 内容にはインライン構文を利用可能
   Parser<MfmNode> buildWithInner(Parser<MfmNode> inline) {
     final mark = string('***');
-    final parser = seqOrText(mark, nest(inline), mark).map<MfmNode>((
-      dynamic v,
+    final parser = seqOrText<MfmNode>(mark, nest(inline), mark).map<MfmNode>((
+      result,
     ) {
-      if (v is String) return TextNode(v);
-      final parts = v as List<dynamic>;
-      final children = (parts[1] as List).cast<MfmNode>();
-      return FnNode(
-        name: 'tada',
-        args: <String, dynamic>{},
-        children: mergeAdjacentTextNodes(children),
-      );
+      return switch (result) {
+        SeqOrTextFallback(:final text) => TextNode(text),
+        SeqOrTextSuccess(:final children) => FnNode(
+          name: 'tada',
+          args: <String, dynamic>{},
+          children: mergeAdjacentTextNodes(children),
+        ),
+      };
     });
     return parser;
   }
@@ -64,7 +60,7 @@ class BigParser {
     final completeBig = build();
 
     final fallback = (string('***') & any().star()).flatten().map<MfmNode>(
-      (dynamic s) => TextNode(s as String),
+      TextNode.new,
     );
 
     return (completeBig | fallback).cast<MfmNode>();

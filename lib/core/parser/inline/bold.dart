@@ -14,11 +14,10 @@ class BoldParser {
     final inner = any()
         .starLazy(string('**'))
         .flatten()
-        .map<MfmNode>((dynamic v) => TextNode(v as String));
+        .map<MfmNode>(TextNode.new);
 
-    return (string('**') & inner & string('**')).map<MfmNode>((dynamic v) {
-      final parts = v as List<dynamic>;
-      final content = parts[1] as MfmNode;
+    return seq3(string('**'), inner, string('**')).map((result) {
+      final content = result.$2;
       return BoldNode(mergeAdjacentTextNodes([content]));
     });
   }
@@ -27,13 +26,15 @@ class BoldParser {
   Parser<MfmNode> buildWithInner(Parser<MfmNode> inline) {
     final start = string('**');
     final end = string('**');
-    final parser = seqOrText(start, nest(inline), end).map<MfmNode>((
-      dynamic v,
+    final parser = seqOrText<MfmNode>(start, nest(inline), end).map<MfmNode>((
+      result,
     ) {
-      if (v is String) return TextNode(v);
-      final parts = v as List<dynamic>;
-      final children = (parts[1] as List).cast<MfmNode>();
-      return BoldNode(mergeAdjacentTextNodes(children));
+      return switch (result) {
+        SeqOrTextFallback(:final text) => TextNode(text),
+        SeqOrTextSuccess(:final children) => BoldNode(
+          mergeAdjacentTextNodes(children),
+        ),
+      };
     });
     return parser;
   }
@@ -43,11 +44,10 @@ class BoldParser {
     final start = string('<b>');
     final end = string('</b>');
     final inner = (end.not() & any()).plus().flatten().map<MfmNode>(
-      (dynamic v) => TextNode(v as String),
+      TextNode.new,
     );
-    return (start & inner & end).map<MfmNode>((dynamic v) {
-      final parts = v as List<dynamic>;
-      return BoldNode(mergeAdjacentTextNodes([parts[1] as MfmNode]));
+    return seq3(start, inner, end).map((result) {
+      return BoldNode(mergeAdjacentTextNodes([result.$2]));
     });
   }
 
@@ -55,15 +55,15 @@ class BoldParser {
   Parser<MfmNode> buildTagWithInner(Parser<MfmNode> inline) {
     final start = string('<b>');
     final end = string('</b>');
-    final parser = seqOrText(start, nest(inline), end).map<MfmNode>((
-      dynamic v,
+    final parser = seqOrText<MfmNode>(start, nest(inline), end).map<MfmNode>((
+      result,
     ) {
-      if (v is String) {
-        return TextNode(v);
-      }
-      final parts = v as List<dynamic>;
-      final children = (parts[1] as List).cast<MfmNode>();
-      return BoldNode(mergeAdjacentTextNodes(children));
+      return switch (result) {
+        SeqOrTextFallback(:final text) => TextNode(text),
+        SeqOrTextSuccess(:final children) => BoldNode(
+          mergeAdjacentTextNodes(children),
+        ),
+      };
     });
     return parser;
   }
@@ -75,7 +75,7 @@ class BoldParser {
     final completeBold = build();
 
     final fallback = (string('**') & any().star()).flatten().map<MfmNode>(
-      (dynamic s) => TextNode(s as String),
+      TextNode.new,
     );
 
     return (completeBold | fallback).cast<MfmNode>();
@@ -96,9 +96,8 @@ class BoldParser {
     final allowedChar = pattern('a-zA-Z0-9') | pattern('\u0020\u3000\t');
     final inner = allowedChar.plus().flatten();
 
-    return (mark & inner & mark).map<MfmNode>((dynamic v) {
-      final parts = v as List<dynamic>;
-      final text = parts[1] as String;
+    return seq3(mark, inner, mark).map((result) {
+      final text = result.$2;
       return BoldNode(mergeAdjacentTextNodes([TextNode(text)]));
     });
   }

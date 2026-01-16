@@ -14,11 +14,10 @@ class SmallParser {
     final start = string('<small>');
     final end = string('</small>');
     final inner = (end.not() & any()).plus().flatten().map<MfmNode>(
-      (dynamic v) => TextNode(v as String),
+      TextNode.new,
     );
-    return (start & inner & end).map<MfmNode>((dynamic v) {
-      final parts = v as List<dynamic>;
-      return SmallNode(mergeAdjacentTextNodes([parts[1] as MfmNode]));
+    return seq3(start, inner, end).map((result) {
+      return SmallNode(mergeAdjacentTextNodes([result.$2]));
     });
   }
 
@@ -26,13 +25,15 @@ class SmallParser {
   Parser<MfmNode> buildWithInner(Parser<MfmNode> inline) {
     final start = string('<small>');
     final end = string('</small>');
-    final parser = seqOrText(start, nest(inline), end).map<MfmNode>((
-      dynamic v,
+    final parser = seqOrText<MfmNode>(start, nest(inline), end).map<MfmNode>((
+      result,
     ) {
-      if (v is String) return TextNode(v);
-      final parts = v as List<dynamic>;
-      final children = (parts[1] as List).cast<MfmNode>();
-      return SmallNode(mergeAdjacentTextNodes(children));
+      return switch (result) {
+        SeqOrTextFallback(:final text) => TextNode(text),
+        SeqOrTextSuccess(:final children) => SmallNode(
+          mergeAdjacentTextNodes(children),
+        ),
+      };
     });
     return parser;
   }

@@ -28,11 +28,10 @@ class ItalicParser {
     final inner = any()
         .starLazy(string('*'))
         .flatten()
-        .map<MfmNode>((dynamic v) => TextNode(v as String));
+        .map<MfmNode>(TextNode.new);
 
-    final core = (string('*') & inner & string('*')).map<MfmNode>((dynamic v) {
-      final parts = v as List<dynamic>;
-      final content = parts[1] as MfmNode;
+    final core = seq3(string('*'), inner, string('*')).map((result) {
+      final content = result.$2;
       return ItalicNode(mergeAdjacentTextNodes([content]));
     });
 
@@ -43,15 +42,15 @@ class ItalicParser {
   Parser<MfmNode> buildWithInner(Parser<MfmNode> inline) {
     final start = string('*');
     final end = string('*');
-    final parser = seqOrText(start, nest(inline), end).map<MfmNode>((
-      dynamic v,
+    final parser = seqOrText<MfmNode>(start, nest(inline), end).map<MfmNode>((
+      result,
     ) {
-      if (v is String) {
-        return TextNode(v);
-      }
-      final seq = v as List<dynamic>;
-      final children = (seq[1] as List).cast<MfmNode>();
-      return ItalicNode(mergeAdjacentTextNodes(children));
+      return switch (result) {
+        SeqOrTextFallback(:final text) => TextNode(text),
+        SeqOrTextSuccess(:final children) => ItalicNode(
+          mergeAdjacentTextNodes(children),
+        ),
+      };
     });
     return withPrevCharGuard(parser, _allowPrev);
   }
@@ -61,11 +60,10 @@ class ItalicParser {
     final start = string('<i>');
     final end = string('</i>');
     final inner = (end.not() & any()).plus().flatten().map<MfmNode>(
-      (dynamic v) => TextNode(v as String),
+      TextNode.new,
     );
-    return (start & inner & end).map<MfmNode>((dynamic v) {
-      final parts = v as List<dynamic>;
-      final content = parts[1] as MfmNode;
+    return seq3(start, inner, end).map((result) {
+      final content = result.$2;
       return ItalicNode(mergeAdjacentTextNodes([content]));
     });
   }
@@ -74,13 +72,15 @@ class ItalicParser {
   Parser<MfmNode> buildTagWithInner(Parser<MfmNode> inline) {
     final start = string('<i>');
     final end = string('</i>');
-    final parser = seqOrText(start, nest(inline), end).map<MfmNode>((
-      dynamic v,
+    final parser = seqOrText<MfmNode>(start, nest(inline), end).map<MfmNode>((
+      result,
     ) {
-      if (v is String) return TextNode(v);
-      final parts = v as List<dynamic>;
-      final children = (parts[1] as List).cast<MfmNode>();
-      return ItalicNode(mergeAdjacentTextNodes(children));
+      return switch (result) {
+        SeqOrTextFallback(:final text) => TextNode(text),
+        SeqOrTextSuccess(:final children) => ItalicNode(
+          mergeAdjacentTextNodes(children),
+        ),
+      };
     });
     return parser;
   }
@@ -90,18 +90,17 @@ class ItalicParser {
     final inner = any()
         .starLazy(string('_'))
         .flatten()
-        .map<MfmNode>((dynamic v) => TextNode(v as String));
+        .map<MfmNode>(TextNode.new);
 
-    final core = (string('_') & inner & string('_')).map<MfmNode>((dynamic v) {
-      final parts = v as List<dynamic>;
-      final content = parts[1] as MfmNode;
+    final core = seq3(string('_'), inner, string('_')).map((result) {
+      final content = result.$2;
       return ItalicNode(mergeAdjacentTextNodes([content]));
     });
 
     final complete = withPrevCharGuard(core, _allowPrev);
 
     final fallback = (string('_') & any().star()).flatten().map<MfmNode>(
-      (dynamic s) => TextNode(s as String),
+      TextNode.new,
     );
 
     return (complete | fallback).cast<MfmNode>();
@@ -111,7 +110,7 @@ class ItalicParser {
   Parser<MfmNode> buildWithFallback() {
     final completeItalic = build();
     final fallback = (string('*') & any().star()).flatten().map<MfmNode>(
-      (dynamic s) => TextNode(s as String),
+      TextNode.new,
     );
     return (completeItalic | fallback).cast<MfmNode>();
   }
