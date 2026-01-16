@@ -26,7 +26,7 @@ class InlineCodeParser {
   Parser<MfmNode> buildWithFallback() {
     final complete = build();
     final fallback = (char('`') & any().star()).flatten().map<MfmNode>(
-      (dynamic s) => TextNode(s as String),
+      TextNode.new,
     );
     return (complete | fallback).cast<MfmNode>();
   }
