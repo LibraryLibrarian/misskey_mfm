@@ -21,9 +21,7 @@ class CodeBlockParser {
     final langPart = (newline.not() & any()).star().flatten();
 
     // 開始: ``` + lang + \n → 言語文字列にマップするが後段で破棄
-    final start = (fence & langPart & newline).map<String>(
-      (dynamic v) => (v as List<dynamic>)[1] as String,
-    );
+    final start = seq3(fence, langPart, newline).map((result) => result.$2);
 
     // 内容: 次の "\n```" まで
     final content = any().starLazy(string('\n```')).flatten();
@@ -31,10 +29,9 @@ class CodeBlockParser {
     // 終了: \n``` （末尾の```のみを消費）
     final end = string('\n') & fence;
 
-    return (start & content & end).map<MfmNode>((dynamic v) {
-      final parts = v as List<dynamic>;
-      final lang = parts[0] as String;
-      final code = parts[1] as String;
+    return seq3(start, content, end).map((result) {
+      final lang = result.$1;
+      final code = result.$2;
       return CodeBlockNode(
         code: code,
         language: lang.isEmpty ? null : lang,
