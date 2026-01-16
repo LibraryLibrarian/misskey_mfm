@@ -12,6 +12,7 @@ import 'inline/inline_code.dart';
 import 'inline/italic.dart';
 import 'inline/mention.dart';
 import 'inline/small.dart';
+import 'inline/strike.dart';
 import 'inline/unicode_emoji.dart';
 
 /// MFM（Misskey Flavored Markdown）メインパーサー
@@ -28,6 +29,8 @@ class MfmParser {
     final italicTag = ItalicParser().buildTagWithInner(inline);
     final italicAlt2 = ItalicParser().buildAlt2();
     final smallTag = SmallParser().buildWithInner(inline);
+    final strike = StrikeParser().buildWithInner(inline);
+    final strikeTag = StrikeParser().buildTagWithInner(inline);
     final inlineCode = InlineCodeParser().buildWithFallback();
 
     // 絵文字パーサー
@@ -47,10 +50,13 @@ class MfmParser {
         string('<center>') |
         string('</small>') |
         string('<small>') |
+        string('</s>') | // strike用
+        string('<s>') | // strike用
         string('</b>') |
         string('<b>') |
         string('</i>') |
         string('<i>') |
+        string('~~') | // strike用
         string('**') |
         string('*') |
         string('_');
@@ -66,8 +72,10 @@ class MfmParser {
               mention |
               hashtag |
               smallTag |
+              strikeTag |
               boldTag |
               italicTag |
+              strike |
               bold |
               italicAlt2 |
               italicAsterisk |

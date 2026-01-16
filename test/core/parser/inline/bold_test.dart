@@ -119,8 +119,13 @@ void main() {
       final nodes = (result as Success).value as List<MfmNode>;
       expect(nodes.length, 1);
       final bold = nodes[0] as BoldNode;
-      expect(bold.children.length, 1);
-      expect((bold.children.first as TextNode).text, '123\n~~abc~~\n123');
+      expect(bold.children.length, 3);
+      expect((bold.children[0] as TextNode).text, '123\n');
+      expect(bold.children[1], isA<StrikeNode>());
+      final strike = bold.children[1] as StrikeNode;
+      expect(strike.children.length, 1);
+      expect((strike.children.first as TextNode).text, 'abc');
+      expect((bold.children[2] as TextNode).text, '\n123');
     });
 
     test('<b>abc*123*abc</b> の中のitalic構文はテキストとして扱われる', () {
