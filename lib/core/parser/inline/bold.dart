@@ -80,4 +80,26 @@ class BoldParser {
 
     return (completeBold | fallback).cast<MfmNode>();
   }
+
+  /// 太字アンダースコア構文パーサー（__ ... __）
+  ///
+  /// mfm-js仕様:
+  /// - `__` で囲まれた内容を太字として解析
+  /// - 内容は `[a-z0-9 \t]` のみ許可（英数字、半角スペース、全角スペース、タブ）
+  /// - 再帰パースなし（内部のインライン構文は解釈されない）
+  ///
+  /// 注意: ** や <b> とは異なり、再帰的なパースは行わない
+  Parser<MfmNode> buildUnder() {
+    final mark = string('__');
+    // 英数字、半角スペース、全角スペース(\u3000)、タブのみ許可
+    // mfm-js: P.alt([alphaAndNum, space]) where space = /[\u0020\u3000\t]/
+    final allowedChar = pattern('a-zA-Z0-9') | pattern('\u0020\u3000\t');
+    final inner = allowedChar.plus().flatten();
+
+    return (mark & inner & mark).map<MfmNode>((dynamic v) {
+      final parts = v as List<dynamic>;
+      final text = parts[1] as String;
+      return BoldNode(mergeAdjacentTextNodes([TextNode(text)]));
+    });
+  }
 }

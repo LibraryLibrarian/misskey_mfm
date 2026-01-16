@@ -7,6 +7,7 @@ import 'block/math_block.dart';
 import 'block/quote.dart';
 import 'block/search.dart';
 import 'common/utils.dart';
+import 'inline/big.dart';
 import 'inline/bold.dart';
 import 'inline/emoji_code.dart';
 import 'inline/fn.dart';
@@ -30,8 +31,13 @@ class MfmParser {
   Parser<List<MfmNode>> build() {
     final inline = undefined<MfmNode>();
 
+    // big構文（廃止予定だが後方互換性のため実装）
+    // *** は ** より先にチェックする必要がある
+    final big = BigParser().buildWithInner(inline);
     final bold = BoldParser().buildWithInner(inline);
     final boldTag = BoldParser().buildTagWithInner(inline);
+    // __ は _ より先にチェックする必要がある
+    final boldUnder = BoldParser().buildUnder();
     final italicAsterisk = ItalicParser().buildWithInner(inline);
     final italicTag = ItalicParser().buildTagWithInner(inline);
     final italicAlt2 = ItalicParser().buildAlt2();
@@ -82,7 +88,9 @@ class MfmParser {
         string('<i>') |
         string(r'\(') | // mathInline用
         string('~~') |
+        string('***') | // big用（**より先にチェック）
         string('**') |
+        string('__') | // boldUnder用（_より先にチェック）
         string('*') |
         string('_');
     final labelTextParser = (labelStopper.not() & unicodeEmoji.not() & any())
@@ -94,6 +102,9 @@ class MfmParser {
     );
     // ラベル内用fnパーサー（labelInlineを使用）
     final labelFn = FnParser().buildWithInner(labelInline);
+
+    // ラベル内用bigパーサー（labelInlineを使用）
+    final labelBig = BigParser().buildWithInner(labelInline);
 
     labelInline.set(
       (inlineCode |
@@ -107,7 +118,9 @@ class MfmParser {
               boldTag |
               italicTag |
               strike |
+              labelBig | // *** は ** より先にチェック
               bold |
+              boldUnder | // __ は _ より先にチェック
               italicAlt2 |
               italicAsterisk |
               mathInline | // \(...\) 形式
@@ -147,7 +160,9 @@ class MfmParser {
         string(r'\(') | // mathInline用
         string(r'\[') | // mathBlock用
         string('~~') | // strike用
+        string('***') | // big用（**より先にチェック）
         string('**') |
+        string('__') | // boldUnder用（_より先にチェック）
         string('*') |
         string('_');
     final textParser = (stopper.not() & unicodeEmoji.not() & any())
@@ -169,7 +184,9 @@ class MfmParser {
               boldTag |
               italicTag |
               strike |
+              big | // *** は ** より先にチェック
               bold |
+              boldUnder | // __ は _ より先にチェック
               italicAlt2 |
               italicAsterisk |
               mathInline | // \(...\) 形式

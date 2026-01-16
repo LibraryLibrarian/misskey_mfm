@@ -3,6 +3,7 @@ export 'parser/common/text.dart';
 export 'parser/common/utils.dart';
 export 'parser/core/nest.dart';
 export 'parser/core/seq_or_text.dart';
+export 'parser/inline/big.dart';
 export 'parser/inline/bold.dart';
 export 'parser/inline/emoji_code.dart';
 export 'parser/inline/hashtag.dart';
