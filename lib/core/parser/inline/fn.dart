@@ -14,15 +14,13 @@ import '../core/nest.dart';
 /// - `$[flip.h,v content]` → FnNode(name: "flip", args: {h: true, v: true})
 class FnParser {
   /// 関数名パーサー: [a-z0-9_]+（大文字小文字区別なし）
-  late final Parser<String> _fnName = pattern('a-zA-Z0-9_').plus().flatten();
+  late final Parser<String> _fnName = pattern('a-zA-Z0-9_').plusString();
 
   /// 引数キーパーサー
-  late final Parser<String> _argKey = pattern('a-zA-Z0-9_').plus().flatten();
+  late final Parser<String> _argKey = pattern('a-zA-Z0-9_').plusString();
 
   /// 引数値パーサー
-  late final Parser<String> _argValue = pattern(
-    'a-zA-Z0-9_.-',
-  ).plus().flatten();
+  late final Parser<String> _argValue = pattern('a-zA-Z0-9_.-').plusString();
 
   /// 単一引数パーサー: key または key=value形式
   ///

@@ -21,7 +21,7 @@ Parser<MfmNode> textNode(String excludeStart) {
 ///
 /// 戻り値: 任意の文字列を解析するパーサー
 Parser<MfmNode> anyText() {
-  return any().plus().flatten().map<MfmNode>(
-    (dynamic value) => TextNode(value as String),
+  return any().plusString().map<MfmNode>(
+    TextNode.new,
   );
 }

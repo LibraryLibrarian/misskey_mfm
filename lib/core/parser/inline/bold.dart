@@ -93,8 +93,8 @@ class BoldParser {
     final mark = string('__');
     // 英数字、半角スペース、全角スペース(\u3000)、タブのみ許可
     // mfm-js: P.alt([alphaAndNum, space]) where space = /[\u0020\u3000\t]/
-    final allowedChar = pattern('a-zA-Z0-9') | pattern('\u0020\u3000\t');
-    final inner = allowedChar.plus().flatten();
+    // パターンを統合することでSingleCharacterParserとして最適化可能
+    final inner = pattern('a-zA-Z0-9\u0020\u3000\t').plusString();
 
     return seq3(mark, inner, mark).map((result) {
       final text = result.$2;

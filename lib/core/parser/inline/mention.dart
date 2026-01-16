@@ -33,7 +33,7 @@ class MentionParser {
   Parser<MfmNode> build() {
     // ユーザー名/ホスト名パターン: [a-zA-Z0-9_.-]+
     // petitparserでは、ハイフンを文字として使う場合は最後に配置
-    final namePattern = pattern('a-zA-Z0-9_.-').plus().flatten();
+    final namePattern = pattern('a-zA-Z0-9_.-').plusString();
 
     // @user@host または @user
     // seq2/seq3を使用して型安全なRecord型を返す
