@@ -10,10 +10,12 @@ import 'inline/emoji_code.dart';
 import 'inline/hashtag.dart';
 import 'inline/inline_code.dart';
 import 'inline/italic.dart';
+import 'inline/link.dart';
 import 'inline/mention.dart';
 import 'inline/small.dart';
 import 'inline/strike.dart';
 import 'inline/unicode_emoji.dart';
+import 'inline/url.dart';
 
 /// MFM（Misskey Flavored Markdown）メインパーサー
 ///
@@ -41,11 +43,69 @@ class MfmParser {
     final mention = MentionParser().buildWithFallback();
     final hashtag = HashtagParser().buildWithFallback();
 
+    // URL・リンクパーサー
+    final url = UrlParser().buildWithFallback();
+    final urlAlt = UrlParser().buildAlt();
+
+    // リンクラベル用インラインパーサー（URL、リンク、メンションを除外）
+    // mfm-js仕様: リンクラベル内ではURL、リンク、メンションは無効
+    final labelInline = undefined<MfmNode>();
+    final labelStopper =
+        char('`') |
+        char(':') | // emojiCode用
+        char('#') | // hashtag用
+        char(']') | // リンクラベル終端
+        string('</small>') |
+        string('<small>') |
+        string('</s>') |
+        string('<s>') |
+        string('</b>') |
+        string('<b>') |
+        string('</i>') |
+        string('<i>') |
+        string('~~') |
+        string('**') |
+        string('*') |
+        string('_');
+    final labelTextParser = (labelStopper.not() & unicodeEmoji.not() & any())
+        .plus()
+        .flatten()
+        .map<MfmNode>((dynamic v) => TextNode(v as String));
+    final labelOneChar = any().map<MfmNode>(
+      (dynamic c) => TextNode(c as String),
+    );
+    labelInline.set(
+      (inlineCode |
+              unicodeEmoji |
+              emojiCode |
+              hashtag | // メンションは除外、ハッシュタグは許可
+              smallTag |
+              strikeTag |
+              boldTag |
+              italicTag |
+              strike |
+              bold |
+              italicAlt2 |
+              italicAsterisk |
+              labelTextParser |
+              labelOneChar)
+          .cast<MfmNode>(),
+    );
+
+    // リンクパーサー（ラベル用インラインパーサーを使用）
+    final link = LinkParser().buildWithFallback(labelInline);
+
     final stopper =
         char('`') |
         char(':') | // emojiCode用
         char('@') | // mention用
         char('#') | // hashtag用
+        char('[') | // link用
+        string('?[') | // silent link用
+        string('<https://') | // urlAlt用
+        string('<http://') | // urlAlt用
+        string('https://') | // url用
+        string('http://') | // url用
         string('</center>') |
         string('<center>') |
         string('</small>') |
@@ -71,6 +131,7 @@ class MfmParser {
               emojiCode |
               mention |
               hashtag |
+              urlAlt | // <https://...> 形式（HTMLタグより前）
               smallTag |
               strikeTag |
               boldTag |
@@ -79,6 +140,8 @@ class MfmParser {
               bold |
               italicAlt2 |
               italicAsterisk |
+              link | // [label](url) 形式
+              url | // https://... 形式
               textParser |
               oneChar)
           .cast<MfmNode>(),
