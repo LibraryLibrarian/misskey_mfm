@@ -20,23 +20,22 @@ class QuoteParser {
     final endLine = char('\n');
 
     // 1行のテキスト（改行直前まで）を文字列として取得
-    final lineText = (endLine.not() & any()).star().flatten();
+    final lineText = seq2(endLine.not(), any()).star().flatten();
 
     // 最初の行: "> " + テキスト
-    final firstLine = (startMarker & lineText).map<String>(
-      (dynamic v) => (v as List<dynamic>)[1] as String,
+    final firstLine = seq2(startMarker, lineText).map<String>(
+      (result) => result.$2,
     );
 
     // 続く行: "\n" + "> " + テキスト → "\n" + テキスト に変換
-    final nextLine = (endLine & startMarker & lineText).map<String>(
-      (dynamic v) => '\n${(v as List<dynamic>)[2] as String}',
+    final nextLine = seq3(endLine, startMarker, lineText).map<String>(
+      (result) => '\n${result.$3}',
     );
 
     // 全引用行を結合して1つの文字列として取得
-    final allLines = (firstLine & nextLine.star()).map<String>((dynamic v) {
-      final parts = v as List<dynamic>;
-      final head = parts[0] as String;
-      final rest = (parts[1] as List).cast<String>().join();
+    final allLines = seq2(firstLine, nextLine.star()).map<String>((result) {
+      final head = result.$1;
+      final rest = result.$2.join();
       return head + rest;
     });
 
