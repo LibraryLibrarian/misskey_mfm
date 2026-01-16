@@ -7,8 +7,10 @@ import 'block/quote.dart';
 import 'common/utils.dart';
 import 'inline/bold.dart';
 import 'inline/emoji_code.dart';
+import 'inline/hashtag.dart';
 import 'inline/inline_code.dart';
 import 'inline/italic.dart';
+import 'inline/mention.dart';
 import 'inline/small.dart';
 import 'inline/unicode_emoji.dart';
 
@@ -32,9 +34,15 @@ class MfmParser {
     final emojiCode = EmojiCodeParser().build();
     final unicodeEmoji = UnicodeEmojiParser().build();
 
+    // メンション・ハッシュタグパーサー
+    final mention = MentionParser().buildWithFallback();
+    final hashtag = HashtagParser().buildWithFallback();
+
     final stopper =
         char('`') |
         char(':') | // emojiCode用
+        char('@') | // mention用
+        char('#') | // hashtag用
         string('</center>') |
         string('<center>') |
         string('</small>') |
@@ -55,6 +63,8 @@ class MfmParser {
       (inlineCode |
               unicodeEmoji |
               emojiCode |
+              mention |
+              hashtag |
               smallTag |
               boldTag |
               italicTag |
