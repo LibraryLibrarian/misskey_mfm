@@ -1,6 +1,7 @@
 import 'package:petitparser/petitparser.dart';
 
 import '../../ast.dart';
+import '../core/guards.dart';
 
 /// コードブロックパーサー
 ///
@@ -13,25 +14,34 @@ import '../../ast.dart';
 /// - 内容中の三連バッククォートは無視（終了フェンス直前の改行+三連バッククォートのみが終わり）
 class CodeBlockParser {
   /// コードブロックの基本パーサー
+  ///
+  /// - 開始の ``` は行頭でなければならない（lineBegin）
+  /// - 終了の ``` は行末でなければならない（lineEnd）
   Parser<MfmNode> build() {
     final fence = string('```');
     final newline = char('\n');
 
-    // 言語指定 (改行まで) - 破棄対象
+    // 言語指定 (改行まで)
     final langPart = (newline.not() & any()).star().flatten();
-
-    // 開始: ``` + lang + \n → 言語文字列にマップするが後段で破棄
-    final start = seq3(fence, langPart, newline).map((result) => result.$2);
 
     // 内容: 次の "\n```" まで
     final content = any().starLazy(string('\n```')).flatten();
 
-    // 終了: \n``` （末尾の```のみを消費）
-    final end = string('\n') & fence;
+    // 開始部分を型安全にパース
+    final startPart = seq4(lineBegin(), fence, langPart, newline);
 
-    return seq3(start, content, end).map((result) {
-      final lang = result.$1;
-      final code = result.$2;
+    // 終了部分を型安全にパース
+    final endPart = seq3(string('\n'), fence, lineEnd());
+
+    return seq5(
+      newline.optional(),
+      startPart,
+      content,
+      endPart,
+      newline.optional(),
+    ).map((result) {
+      final lang = result.$2.$3;
+      final code = result.$3;
       return CodeBlockNode(
         code: code,
         language: lang.isEmpty ? null : lang,
