@@ -69,5 +69,28 @@ void main() {
       final search = nodes[0] as SearchNode;
       expect(search.query, 'MFM');
     });
+
+    // mfm-js互換テスト
+    test('ブロックの前後にあるテキストが正しく解釈される', () {
+      final m = MfmParser().build();
+      final result = m.parse('abc\nhoge piyo bebeyo 検索\n123');
+      expect(result is Success, isTrue);
+      final nodes = (result as Success).value as List<MfmNode>;
+      expect(nodes.length, 3);
+
+      // 前のテキスト
+      expect(nodes[0], isA<TextNode>());
+      expect((nodes[0] as TextNode).text, 'abc');
+
+      // 検索ブロック
+      expect(nodes[1], isA<SearchNode>());
+      final search = nodes[1] as SearchNode;
+      expect(search.query, 'hoge piyo bebeyo');
+      expect(search.content, 'hoge piyo bebeyo 検索');
+
+      // 後のテキスト
+      expect(nodes[2], isA<TextNode>());
+      expect((nodes[2] as TextNode).text, '123');
+    });
   });
 }
