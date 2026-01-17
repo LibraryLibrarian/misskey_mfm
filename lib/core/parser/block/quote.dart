@@ -8,13 +8,16 @@ import '../core/nest.dart';
 ///
 /// 行頭の "> " または ">" に続く行を1行以上引用として解析
 ///
-/// 引用内容に対してインラインパーサーを適用
-/// bold、italic、emojiCode等のインライン構文をパース
+/// 引用内容に対してフルパーサー（blocks + inline）を適用
+/// quote内のquoteを含むすべての構文をパース
 class QuoteParser {
   /// 引用（> ...）: 再帰パース対応版
   ///
-  /// [inline] インラインパーサー（bold, italic等を含む）
-  Parser<MfmNode> buildWithInner(Parser<MfmNode> inline) {
+  /// [fullParser] フルパーサー（blocks + inline、undefinedを使用）
+  /// [state] ネスト状態（共有される）
+  ///
+  /// mfm-js互換: quoteの内部はfullParserでパースされ、ネストされたquoteも解析される
+  Parser<MfmNode> buildWithInner(Parser<MfmNode> fullParser, {NestState? state}) {
     // mfm-js仕様: `>` の後に続く0〜1文字のスペースを無視
     final startMarker = string('> ') | string('>');
     final endLine = char('\n');
@@ -39,14 +42,14 @@ class QuoteParser {
       return head + rest;
     });
 
-    // 引用内容をインラインパーサーでパース
+    // mfm-js互換: 引用内容をfullParserでパース（quoteを含むすべての構文）
     return allLines.map<MfmNode>((String content) {
       if (content.isEmpty) {
         return const QuoteNode([]);
       }
 
-      // 引用内容に対してインラインパーサーを適用
-      final innerParser = nest(inline).plus().end();
+      // 引用内容に対してfullParserを適用（nest経由で深度管理）
+      final innerParser = nest(fullParser, state: state).plus().end();
       final result = innerParser.parse(content);
 
       if (result is Success<List<MfmNode>>) {

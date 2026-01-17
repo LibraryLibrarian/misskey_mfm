@@ -23,19 +23,21 @@ class BoldParser {
   }
 
   /// 太字ノードのパーサー（** ... **）: 再帰合成版
-  Parser<MfmNode> buildWithInner(Parser<MfmNode> inline) {
+  /// [state] ネスト状態（共有される）
+  Parser<MfmNode> buildWithInner(Parser<MfmNode> inline, {NestState? state}) {
     final start = string('**');
     final end = string('**');
-    final parser = seqOrText<MfmNode>(start, nest(inline), end).map<MfmNode>((
-      result,
-    ) {
-      return switch (result) {
-        SeqOrTextFallback(:final text) => TextNode(text),
-        SeqOrTextSuccess(:final children) => BoldNode(
-          mergeAdjacentTextNodes(children),
-        ),
-      };
-    });
+    final parser = seqOrText<MfmNode>(start, nest(inline, state: state), end)
+        .map<MfmNode>(
+          (result) {
+            return switch (result) {
+              SeqOrTextFallback(:final text) => TextNode(text),
+              SeqOrTextSuccess(:final children) => BoldNode(
+                mergeAdjacentTextNodes(children),
+              ),
+            };
+          },
+        );
     return parser;
   }
 
@@ -52,19 +54,24 @@ class BoldParser {
   }
 
   /// 太字タグ（<b> ... </b>）: 再帰合成版
-  Parser<MfmNode> buildTagWithInner(Parser<MfmNode> inline) {
+  /// [state] ネスト状態（共有される）
+  Parser<MfmNode> buildTagWithInner(
+    Parser<MfmNode> inline, {
+    NestState? state,
+  }) {
     final start = string('<b>');
     final end = string('</b>');
-    final parser = seqOrText<MfmNode>(start, nest(inline), end).map<MfmNode>((
-      result,
-    ) {
-      return switch (result) {
-        SeqOrTextFallback(:final text) => TextNode(text),
-        SeqOrTextSuccess(:final children) => BoldNode(
-          mergeAdjacentTextNodes(children),
-        ),
-      };
-    });
+    final parser = seqOrText<MfmNode>(start, nest(inline, state: state), end)
+        .map<MfmNode>(
+          (result) {
+            return switch (result) {
+              SeqOrTextFallback(:final text) => TextNode(text),
+              SeqOrTextSuccess(:final children) => BoldNode(
+                mergeAdjacentTextNodes(children),
+              ),
+            };
+          },
+        );
     return parser;
   }
 

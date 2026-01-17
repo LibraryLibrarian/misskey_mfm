@@ -22,19 +22,21 @@ class SmallParser {
   }
 
   /// small タグ（再帰合成版）
-  Parser<MfmNode> buildWithInner(Parser<MfmNode> inline) {
+  /// [state] ネスト状態（共有される）
+  Parser<MfmNode> buildWithInner(Parser<MfmNode> inline, {NestState? state}) {
     final start = string('<small>');
     final end = string('</small>');
-    final parser = seqOrText<MfmNode>(start, nest(inline), end).map<MfmNode>((
-      result,
-    ) {
-      return switch (result) {
-        SeqOrTextFallback(:final text) => TextNode(text),
-        SeqOrTextSuccess(:final children) => SmallNode(
-          mergeAdjacentTextNodes(children),
-        ),
-      };
-    });
+    final parser = seqOrText<MfmNode>(start, nest(inline, state: state), end)
+        .map<MfmNode>(
+          (result) {
+            return switch (result) {
+              SeqOrTextFallback(:final text) => TextNode(text),
+              SeqOrTextSuccess(:final children) => SmallNode(
+                mergeAdjacentTextNodes(children),
+              ),
+            };
+          },
+        );
     return parser;
   }
 }

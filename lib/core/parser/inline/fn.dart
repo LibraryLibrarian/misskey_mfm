@@ -62,14 +62,15 @@ class FnParser {
   ///
   /// `$[name.args content]` 形式を解析し、FnNodeを生成
   /// パースに失敗した場合は `$[` をテキストとしてフォールバック
-  Parser<MfmNode> buildWithInner(Parser<MfmNode> inline) {
+  /// [state] ネスト状態（共有される）
+  Parser<MfmNode> buildWithInner(Parser<MfmNode> inline, {NestState? state}) {
     final start = string(r'$[');
     final fnEnd = char(']');
 
     // 内容パーサー: ] が来るまで再帰的にインラインをパース
     final content = seq2(
       fnEnd.not(),
-      nest(inline),
+      nest(inline, state: state),
     ).map((result) => result.$2).plus();
 
     // 正常系: $[ + name + args? + space + content + ]

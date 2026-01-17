@@ -20,10 +20,14 @@ class _NestParser extends Parser<MfmNode> {
   @override
   Result<MfmNode> parseOn(Context context) {
     final used = state ?? NestState();
-    if (used.limit != null && used.depth >= used.limit!) {
-      return fallback.parseOn(context);
-    }
+    // mfm-js互換: depth++は制限チェックの前に実行
     used.depth++;
+    // mfm-js互換: depth < limit の場合のみinnerを実行、それ以外はfallback
+    if (used.limit != null && used.depth >= used.limit!) {
+      final result = fallback.parseOn(context);
+      used.depth--;
+      return result;
+    }
     final result = inner.parseOn(context);
     used.depth--;
     if (result is Success) return result;

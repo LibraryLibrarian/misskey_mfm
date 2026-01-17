@@ -21,10 +21,12 @@ class CenterParser {
   }
 
   /// center タグ（再帰合成版）
-  Parser<MfmNode> buildWithInner(Parser<MfmNode> inline) {
+  /// [state] ネスト状態（共有される）
+  Parser<MfmNode> buildWithInner(Parser<MfmNode> inline, {NestState? state}) {
     final start = string('<center>');
     final end = string('</center>');
-    final innerList = seq2(end.not(), nest(inline)).map((r) => r.$2).plus();
+    final innerList =
+        seq2(end.not(), nest(inline, state: state)).map((r) => r.$2).plus();
     final parser = seq3(start, innerList, end).map<MfmNode>((result) {
       return CenterNode(mergeAdjacentTextNodes(result.$2));
     });

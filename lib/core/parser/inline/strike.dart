@@ -30,11 +30,14 @@ class StrikeParser {
   /// 打ち消し線ノードのパーサー（~~ ... ~~）: 再帰合成版
   ///
   /// 内容には `~~` と改行を含められない
-  Parser<MfmNode> buildWithInner(Parser<MfmNode> inline) {
+  /// [state] ネスト状態（共有される）
+  Parser<MfmNode> buildWithInner(Parser<MfmNode> inline, {NestState? state}) {
     final mark = string('~~');
     // `~~` と改行以外を許可
     final stopCondition = mark | char('\n');
-    final inner = (stopCondition.not() & nest(inline)).pick(1).cast<MfmNode>();
+    final inner = (stopCondition.not() & nest(inline, state: state))
+        .pick(1)
+        .cast<MfmNode>();
     final parser = seqOrText<MfmNode>(mark, inner, mark).map<MfmNode>((result) {
       return switch (result) {
         SeqOrTextFallback(:final text) => TextNode(text),
@@ -63,19 +66,24 @@ class StrikeParser {
   /// 打ち消し線タグ（<s> ... </s>）: 再帰合成版
   ///
   /// 内容にはすべての文字、改行が使用可
-  Parser<MfmNode> buildTagWithInner(Parser<MfmNode> inline) {
+  /// [state] ネスト状態（共有される）
+  Parser<MfmNode> buildTagWithInner(
+    Parser<MfmNode> inline, {
+    NestState? state,
+  }) {
     final start = string('<s>');
     final end = string('</s>');
-    final parser = seqOrText<MfmNode>(start, nest(inline), end).map<MfmNode>((
-      result,
-    ) {
-      return switch (result) {
-        SeqOrTextFallback(:final text) => TextNode(text),
-        SeqOrTextSuccess(:final children) => StrikeNode(
-          mergeAdjacentTextNodes(children),
-        ),
-      };
-    });
+    final parser = seqOrText<MfmNode>(start, nest(inline, state: state), end)
+        .map<MfmNode>(
+          (result) {
+            return switch (result) {
+              SeqOrTextFallback(:final text) => TextNode(text),
+              SeqOrTextSuccess(:final children) => StrikeNode(
+                mergeAdjacentTextNodes(children),
+              ),
+            };
+          },
+        );
     return parser;
   }
 

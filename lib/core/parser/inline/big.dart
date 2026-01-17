@@ -36,20 +36,22 @@ class BigParser {
   /// big構文パーサー（*** ... ***）: 再帰合成版
   ///
   /// 内容にはインライン構文を利用可能
-  Parser<MfmNode> buildWithInner(Parser<MfmNode> inline) {
+  /// [state] ネスト状態（共有される）
+  Parser<MfmNode> buildWithInner(Parser<MfmNode> inline, {NestState? state}) {
     final mark = string('***');
-    final parser = seqOrText<MfmNode>(mark, nest(inline), mark).map<MfmNode>((
-      result,
-    ) {
-      return switch (result) {
-        SeqOrTextFallback(:final text) => TextNode(text),
-        SeqOrTextSuccess(:final children) => FnNode(
-          name: 'tada',
-          args: <String, dynamic>{},
-          children: mergeAdjacentTextNodes(children),
-        ),
-      };
-    });
+    final parser = seqOrText<MfmNode>(mark, nest(inline, state: state), mark)
+        .map<MfmNode>((
+          result,
+        ) {
+          return switch (result) {
+            SeqOrTextFallback(:final text) => TextNode(text),
+            SeqOrTextSuccess(:final children) => FnNode(
+              name: 'tada',
+              args: <String, dynamic>{},
+              children: mergeAdjacentTextNodes(children),
+            ),
+          };
+        });
     return parser;
   }
 

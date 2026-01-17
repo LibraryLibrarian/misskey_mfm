@@ -7,6 +7,7 @@ import 'block/math_block.dart';
 import 'block/quote.dart';
 import 'block/search.dart';
 import 'common/utils.dart';
+import 'core/nest.dart';
 import 'inline/big.dart';
 import 'inline/bold.dart';
 import 'inline/emoji_code.dart';
@@ -27,23 +28,40 @@ import 'inline/url.dart';
 ///
 /// 各構文パーサーを統合し、適切な優先順位で解析を行う
 class MfmParser {
+  /// デフォルトのネスト制限値
+  static const defaultNestLimit = 20;
+
   /// パーサーを構築して返す
-  Parser<List<MfmNode>> build() {
+  ///
+  /// [nestLimit] ネストの深さ制限（デフォルト: 20）
+  /// mfm-js互換: ネスト深度がlimitに達すると、それ以上のネスト構文はテキストとして扱われる
+  Parser<List<MfmNode>> build({int? nestLimit}) {
+    // ネスト状態を共有（nullの場合はデフォルト値を使用）
+    final nestState = NestState(limit: nestLimit ?? defaultNestLimit);
     final inline = undefined<MfmNode>();
 
     // big構文（廃止予定だが後方互換性のため実装）
     // *** は ** より先にチェックする必要がある
-    final big = BigParser().buildWithInner(inline);
-    final bold = BoldParser().buildWithInner(inline);
-    final boldTag = BoldParser().buildTagWithInner(inline);
+    final big = BigParser().buildWithInner(inline, state: nestState);
+    final bold = BoldParser().buildWithInner(inline, state: nestState);
+    final boldTag = BoldParser().buildTagWithInner(inline, state: nestState);
     // __ は _ より先にチェックする必要がある
     final boldUnder = BoldParser().buildUnder();
-    final italicAsterisk = ItalicParser().buildWithInner(inline);
-    final italicTag = ItalicParser().buildTagWithInner(inline);
+    final italicAsterisk = ItalicParser().buildWithInner(
+      inline,
+      state: nestState,
+    );
+    final italicTag = ItalicParser().buildTagWithInner(
+      inline,
+      state: nestState,
+    );
     final italicAlt2 = ItalicParser().buildAlt2();
-    final smallTag = SmallParser().buildWithInner(inline);
-    final strike = StrikeParser().buildWithInner(inline);
-    final strikeTag = StrikeParser().buildTagWithInner(inline);
+    final smallTag = SmallParser().buildWithInner(inline, state: nestState);
+    final strike = StrikeParser().buildWithInner(inline, state: nestState);
+    final strikeTag = StrikeParser().buildTagWithInner(
+      inline,
+      state: nestState,
+    );
     final inlineCode = InlineCodeParser().buildWithFallback();
 
     // plainタグパーサー（パース無効化）
@@ -61,11 +79,11 @@ class MfmParser {
     final hashtag = HashtagParser().buildWithFallback();
 
     // URL・リンクパーサー
-    final url = UrlParser().buildWithFallback();
+    final url = UrlParser().buildWithFallback(state: nestState);
     final urlAlt = UrlParser().buildAlt();
 
     // MFM関数パーサー
-    final fn = FnParser().buildWithInner(inline);
+    final fn = FnParser().buildWithInner(inline, state: nestState);
 
     // リンクラベル用インラインパーサー（URL、リンク、メンションを除外）
     // mfm-js仕様: リンクラベル内ではURL、リンク、メンションは無効
@@ -99,10 +117,10 @@ class MfmParser {
         .map(TextNode.new);
     final labelOneChar = any().map(TextNode.new);
     // ラベル内用fnパーサー（labelInlineを使用）
-    final labelFn = FnParser().buildWithInner(labelInline);
+    final labelFn = FnParser().buildWithInner(labelInline, state: nestState);
 
     // ラベル内用bigパーサー（labelInlineを使用）
-    final labelBig = BigParser().buildWithInner(labelInline);
+    final labelBig = BigParser().buildWithInner(labelInline, state: nestState);
 
     labelInline.set(
       (inlineCode |
@@ -198,16 +216,21 @@ class MfmParser {
     // blocks: code block > math block > center > quote > search
     final codeBlock = CodeBlockParser().build();
     final mathBlock = MathBlockParser().build();
-    final center = CenterParser().buildWithInner(inline);
-    final quote = QuoteParser().buildWithInner(inline);
+    final center = CenterParser().buildWithInner(inline, state: nestState);
     final search = SearchParser().build();
+
+    // fullParserはblocks + inlineの組み合わせ（quote内で再帰的に使用）
+    final full = undefined<MfmNode>();
+
+    // mfm-js互換: quoteはfullParser（blocks + inline）を内部でパース
+    final quote = QuoteParser().buildWithInner(full, state: nestState);
+
     final blocks = codeBlock | mathBlock | center | quote | search;
 
-    final start = (blocks | inline)
-        .cast<MfmNode>()
-        .plus()
-        .map(mergeAdjacentTextNodes)
-        .end();
+    // fullをblocks | inlineに設定（循環参照を解決）
+    full.set((blocks | inline).cast<MfmNode>());
+
+    final start = full.plus().map(mergeAdjacentTextNodes).end();
 
     return start;
   }

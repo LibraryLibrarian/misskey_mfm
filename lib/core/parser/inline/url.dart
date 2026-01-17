@@ -1,6 +1,7 @@
 import 'package:petitparser/petitparser.dart';
 
 import '../../ast.dart';
+import '../core/nest.dart';
 
 /// URLパーサー
 ///
@@ -23,8 +24,8 @@ class UrlParser {
   /// 生URLパーサーを構築
   ///
   /// `https://example.com` 形式のURLを解析
-  Parser<MfmNode> build() {
-    return _UrlParserImpl();
+  Parser<MfmNode> build({NestState? state}) {
+    return _UrlParserImpl(state: state);
   }
 
   /// ブラケット付きURLパーサーを構築
@@ -37,8 +38,8 @@ class UrlParser {
   /// フォールバック付き生URLパーサー
   ///
   /// URLとして解析できない場合は、スキーマ部分をテキストとして扱う
-  Parser<MfmNode> buildWithFallback() {
-    final completeUrl = build();
+  Parser<MfmNode> buildWithFallback({NestState? state}) {
+    final completeUrl = build(state: state);
 
     // フォールバック: `http` で始まるがURLとして解析できない場合
     final fallback = (string('https://') | string('http://')).flatten().map(
@@ -61,8 +62,13 @@ class UrlParser {
 ///
 /// 括弧のネスト構造をサポートし、末尾の無効文字を除去する
 class _UrlParserImpl extends Parser<MfmNode> {
-  /// デフォルトのネスト深度制限
-  static const _nestLimit = 20;
+  _UrlParserImpl({this.state});
+
+  /// 共有ネスト状態（nullの場合は独自のデフォルト制限を使用）
+  final NestState? state;
+
+  /// デフォルトのネスト深度制限（state未指定時）
+  static const _defaultNestLimit = 20;
 
   @override
   Result<MfmNode> parseOn(Context context) {
@@ -81,9 +87,10 @@ class _UrlParserImpl extends Parser<MfmNode> {
       return context.failure('expected http:// or https://');
     }
 
-    // URL内容を解析
+    // URL内容を解析（グローバルdepthから開始）
     final contentBuffer = StringBuffer();
-    position = _parseUrlContent(buffer, position, contentBuffer, 0);
+    final initialDepth = state?.depth ?? 0;
+    position = _parseUrlContent(buffer, position, contentBuffer, initialDepth);
 
     var content = contentBuffer.toString();
 
@@ -110,6 +117,8 @@ class _UrlParserImpl extends Parser<MfmNode> {
   }
 
   /// URL内容を再帰的に解析
+  ///
+  /// [depth] は現在のグローバルネスト深度を含む
   int _parseUrlContent(
     String buffer,
     int startPosition,
@@ -118,6 +127,9 @@ class _UrlParserImpl extends Parser<MfmNode> {
   ) {
     var currentPos = startPosition;
 
+    // ネスト制限を取得（グローバル or デフォルト）
+    final limit = state?.limit ?? _defaultNestLimit;
+
     while (currentPos < buffer.length) {
       final c = buffer[currentPos];
 
@@ -125,8 +137,8 @@ class _UrlParserImpl extends Parser<MfmNode> {
       if (c == '(' || c == '[') {
         final closing = c == '(' ? ')' : ']';
 
-        // ネスト深度制限チェック
-        if (depth >= _nestLimit) {
+        // ネスト深度制限チェック（mfm-js互換: depth + 1 > limit）
+        if (depth + 1 > limit) {
           break;
         }
 
@@ -174,7 +186,7 @@ class _UrlParserImpl extends Parser<MfmNode> {
   }
 
   @override
-  Parser<MfmNode> copy() => _UrlParserImpl();
+  Parser<MfmNode> copy() => _UrlParserImpl(state: state);
 }
 
 /// ブラケット付きURLパーサーの実装
