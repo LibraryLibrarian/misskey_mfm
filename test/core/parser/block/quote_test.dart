@@ -117,4 +117,119 @@ void main() {
       expect((quote.children.first as TextNode).text, 'abc');
     });
   });
+
+  group('QuoteParser（ブロックネスト）', () {
+    test('引用ブロックはブロックをネストできる', () {
+      // mfm-js互換テスト
+      const input = '> <center>\n> a\n> </center>';
+      final m = MfmParser().build();
+      final result = m.parse(input);
+      expect(result is Success, isTrue);
+      final nodes = (result as Success).value as List<MfmNode>;
+      expect(nodes.length, 1);
+      expect(nodes[0], isA<QuoteNode>());
+      final quote = nodes[0] as QuoteNode;
+      expect(quote.children.length, 1);
+      expect(quote.children[0], isA<CenterNode>());
+      final center = quote.children[0] as CenterNode;
+      expect(center.children.length, 1);
+      expect(center.children[0], isA<TextNode>());
+      // mfm-js期待値: 改行なし
+      expect((center.children[0] as TextNode).text, 'a');
+    });
+
+    test('引用ブロックはインライン構文を含んだブロックをネストできる', () {
+      // mfm-js互換テスト
+      const input = '> <center>\n> I\'m @ai, An bot of misskey!\n> </center>';
+      final m = MfmParser().build();
+      final result = m.parse(input);
+      expect(result is Success, isTrue);
+      final nodes = (result as Success).value as List<MfmNode>;
+      expect(nodes.length, 1);
+      expect(nodes[0], isA<QuoteNode>());
+      final quote = nodes[0] as QuoteNode;
+      expect(quote.children.length, 1);
+      expect(quote.children[0], isA<CenterNode>());
+      final center = quote.children[0] as CenterNode;
+      expect(center.children.length, 3);
+      expect(center.children[0], isA<TextNode>());
+      // mfm-js期待値: 先頭に改行なし
+      expect((center.children[0] as TextNode).text, "I'm ");
+      expect(center.children[1], isA<MentionNode>());
+      final mention = center.children[1] as MentionNode;
+      expect(mention.username, 'ai');
+      expect(mention.host, isNull);
+      expect(mention.acct, '@ai');
+      expect(center.children[2], isA<TextNode>());
+      // mfm-js期待値: 末尾に改行なし
+      expect((center.children[2] as TextNode).text, ', An bot of misskey!');
+    });
+  });
+
+  group('QuoteParser（空行処理）', () {
+    test('複数行の引用ブロックでは空行を含めることができる', () {
+      // mfm-js互換テスト
+      const input = '> abc\n>\n> 123';
+      final m = MfmParser().build();
+      final result = m.parse(input);
+      expect(result is Success, isTrue);
+      final nodes = (result as Success).value as List<MfmNode>;
+      expect(nodes.length, 1);
+      expect(nodes[0], isA<QuoteNode>());
+      final quote = nodes[0] as QuoteNode;
+      expect(quote.children.length, 1);
+      expect(quote.children[0], isA<TextNode>());
+      expect((quote.children[0] as TextNode).text, 'abc\n\n123');
+    });
+
+    test('1行の引用ブロックを空行にはできない', () {
+      // mfm-js互換テスト: QuoteNodeではなくTextNodeになる
+      const input = '> ';
+      final m = MfmParser().build();
+      final result = m.parse(input);
+      expect(result is Success, isTrue);
+      final nodes = (result as Success).value as List<MfmNode>;
+      expect(nodes.length, 1);
+      expect(nodes[0], isA<TextNode>());
+      expect((nodes[0] as TextNode).text, '> ');
+    });
+
+    test('引用ブロックの後ろの空行は無視される', () {
+      // mfm-js互換テスト
+      const input = '> foo\n> bar\n\nhoge';
+      final m = MfmParser().build();
+      final result = m.parse(input);
+      expect(result is Success, isTrue);
+      final nodes = (result as Success).value as List<MfmNode>;
+      expect(nodes.length, 2);
+      expect(nodes[0], isA<QuoteNode>());
+      final quote = nodes[0] as QuoteNode;
+      expect(quote.children.length, 1);
+      expect((quote.children[0] as TextNode).text, 'foo\nbar');
+      expect(nodes[1], isA<TextNode>());
+      // mfm-js期待値: 空行が除去されて'hoge'のみ
+      expect((nodes[1] as TextNode).text, 'hoge');
+    });
+
+    test('2つの引用行の間に空行がある場合は2つの引用ブロックが生成される', () {
+      // mfm-js互換テスト
+      const input = '> foo\n\n> bar\n\nhoge';
+      final m = MfmParser().build();
+      final result = m.parse(input);
+      expect(result is Success, isTrue);
+      final nodes = (result as Success).value as List<MfmNode>;
+      // mfm-js期待値: 3つのノード（QuoteNode, QuoteNode, TextNode）
+      expect(nodes.length, 3);
+      expect(nodes[0], isA<QuoteNode>());
+      final quote1 = nodes[0] as QuoteNode;
+      expect(quote1.children.length, 1);
+      expect((quote1.children[0] as TextNode).text, 'foo');
+      expect(nodes[1], isA<QuoteNode>());
+      final quote2 = nodes[1] as QuoteNode;
+      expect(quote2.children.length, 1);
+      expect((quote2.children[0] as TextNode).text, 'bar');
+      expect(nodes[2], isA<TextNode>());
+      expect((nodes[2] as TextNode).text, 'hoge');
+    });
+  });
 }

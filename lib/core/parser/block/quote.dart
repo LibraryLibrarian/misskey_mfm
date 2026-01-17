@@ -16,9 +16,14 @@ class QuoteParser {
   /// [fullParser] フルパーサー（blocks + inline、undefinedを使用）
   /// [state] ネスト状態（共有される）
   ///
-  /// mfm-js互換: quoteの内部はfullParserでパースされ、ネストされたquoteも解析される
-  Parser<MfmNode> buildWithInner(Parser<MfmNode> fullParser, {NestState? state}) {
-    // mfm-js仕様: `>` の後に続く0〜1文字のスペースを無視
+  /// quoteの内部はfullParserでパースされ、ネストされたquoteも解析される
+  /// "> " のみ（内容が空）の場合はパースに失敗し、TextNodeとして扱われる
+  /// quoteの前後の改行（最大2つずつ）を消費する
+  Parser<MfmNode> buildWithInner(
+    Parser<MfmNode> fullParser, {
+    NestState? state,
+  }) {
+    // `>` の後に続く0〜1文字のスペースを無視
     final startMarker = string('> ') | string('>');
     final endLine = char('\n');
 
@@ -42,8 +47,24 @@ class QuoteParser {
       return head + rest;
     });
 
-    // mfm-js互換: 引用内容をfullParserでパース（quoteを含むすべての構文）
-    return allLines.map<MfmNode>((String content) {
+    // 前後の改行を処理
+    // 前の改行を最大2つ消費（optional）
+    final newlineOpt = char('\n').optional();
+
+    // パーサー全体
+    final parser = seq5(
+      newlineOpt, // 前の改行1
+      newlineOpt, // 前の改行2
+      allLines,
+      newlineOpt, // 後の改行1
+      newlineOpt, // 後の改行2
+    ).map((result) => result.$3); // allLinesのみを取得
+
+    // 引用内容をfullParserでパース（quoteを含むすべての構文）
+    // 内容が空白のみの場合はパースに失敗させる
+    return parser.where((content) => content.trim().isNotEmpty).map<MfmNode>((
+      String content,
+    ) {
       if (content.isEmpty) {
         return const QuoteNode([]);
       }
