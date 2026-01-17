@@ -1,5 +1,6 @@
 import 'package:misskey_mfm/core/ast.dart';
 import 'package:misskey_mfm/core/parser/inline/url.dart';
+import 'package:misskey_mfm/core/parser/parser.dart';
 import 'package:petitparser/petitparser.dart';
 import 'package:test/test.dart';
 
@@ -238,6 +239,123 @@ void main() {
         expect(result is Success, isTrue);
         expect(result.value, isA<TextNode>());
         expect((result.value as TextNode).text, equals('http://'));
+      });
+    });
+  });
+
+  group('mfm-js互換テスト', () {
+    final parser = MfmParser().build();
+
+    group('edge cases', () {
+      test('disallow period only', () {
+        // mfm-js: https://. はURLとして認識されず、テキストとして扱われる
+        final result = parser.parse('https://.');
+        expect(result is Success, isTrue);
+        final nodes = result.value;
+        expect(nodes.length, equals(1));
+        expect(nodes[0], isA<TextNode>());
+        expect((nodes[0] as TextNode).text, equals('https://.'));
+      });
+    });
+
+    group('parent brackets handling', () {
+      test('ignore parent brackets', () {
+        // mfm-js: 親括弧内のURLは括弧を含まない
+        final result = parser.parse('(https://example.com/foo)');
+        expect(result is Success, isTrue);
+        final nodes = result.value;
+        expect(nodes.length, equals(3));
+        expect(nodes[0], isA<TextNode>());
+        expect((nodes[0] as TextNode).text, equals('('));
+        expect(nodes[1], isA<UrlNode>());
+        expect((nodes[1] as UrlNode).url, equals('https://example.com/foo'));
+        expect(nodes[2], isA<TextNode>());
+        expect((nodes[2] as TextNode).text, equals(')'));
+      });
+
+      test('ignore parent brackets (2)', () {
+        // mfm-js: テキスト後の親括弧内URLも同様
+        final result = parser.parse('(foo https://example.com/foo)');
+        expect(result is Success, isTrue);
+        final nodes = result.value;
+        expect(nodes.length, equals(3));
+        expect(nodes[0], isA<TextNode>());
+        expect((nodes[0] as TextNode).text, equals('(foo '));
+        expect(nodes[1], isA<UrlNode>());
+        expect((nodes[1] as UrlNode).url, equals('https://example.com/foo'));
+        expect(nodes[2], isA<TextNode>());
+        expect((nodes[2] as TextNode).text, equals(')'));
+      });
+
+      test('ignore parent brackets with internal brackets', () {
+        // mfm-js: 内部括弧を含むURLは内部括弧を保持し、親括弧は除外
+        final result = parser.parse('(https://example.com/foo(bar))');
+        expect(result is Success, isTrue);
+        final nodes = result.value;
+        expect(nodes.length, equals(3));
+        expect(nodes[0], isA<TextNode>());
+        expect((nodes[0] as TextNode).text, equals('('));
+        expect(nodes[1], isA<UrlNode>());
+        expect(
+          (nodes[1] as UrlNode).url,
+          equals('https://example.com/foo(bar)'),
+        );
+        expect(nodes[2], isA<TextNode>());
+        expect((nodes[2] as TextNode).text, equals(')'));
+      });
+
+      test('ignore parent []', () {
+        // mfm-js: 角括弧内のURLも同様に処理
+        final result = parser.parse('foo [https://example.com/foo] bar');
+        expect(result is Success, isTrue);
+        final nodes = result.value;
+        expect(nodes.length, equals(3));
+        expect(nodes[0], isA<TextNode>());
+        expect((nodes[0] as TextNode).text, equals('foo ['));
+        expect(nodes[1], isA<UrlNode>());
+        expect((nodes[1] as UrlNode).url, equals('https://example.com/foo'));
+        expect(nodes[2], isA<TextNode>());
+        expect((nodes[2] as TextNode).text, equals('] bar'));
+      });
+    });
+
+    group('non-ascii and xss prevention', () {
+      test(
+        'ignore non-ascii characters contained url without angle brackets',
+        () {
+          // mfm-js: 非ASCII文字を含むURLはブラケットなしではテキストとして扱う
+          final result = parser.parse('https://大石泉すき.example.com');
+          expect(result is Success, isTrue);
+          final nodes = result.value;
+          expect(nodes.length, equals(1));
+          expect(nodes[0], isA<TextNode>());
+          expect(
+            (nodes[0] as TextNode).text,
+            equals('https://大石泉すき.example.com'),
+          );
+        },
+      );
+
+      test('match non-ascii characters contained url with angle brackets', () {
+        // mfm-js: ブラケット付きなら非ASCII文字を含むURLも認識
+        final result = parser.parse('<https://大石泉すき.example.com>');
+        expect(result is Success, isTrue);
+        final nodes = result.value;
+        expect(nodes.length, equals(1));
+        expect(nodes[0], isA<UrlNode>());
+        final urlNode = nodes[0] as UrlNode;
+        expect(urlNode.url, equals('https://大石泉すき.example.com'));
+        expect(urlNode.brackets, isTrue);
+      });
+
+      test('prevent xss', () {
+        // mfm-js: javascript: スキームはURLとして認識しない（XSS防止）
+        final result = parser.parse('javascript:foo');
+        expect(result is Success, isTrue);
+        final nodes = result.value;
+        expect(nodes.length, equals(1));
+        expect(nodes[0], isA<TextNode>());
+        expect((nodes[0] as TextNode).text, equals('javascript:foo'));
       });
     });
   });
