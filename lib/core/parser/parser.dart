@@ -116,29 +116,58 @@ class MfmParser {
         .flatten()
         .map(TextNode.new);
     final labelOneChar = any().map(TextNode.new);
-    // ラベル内用fnパーサー（labelInlineを使用）
-    final labelFn = FnParser().buildWithInner(labelInline, state: nestState);
 
-    // ラベル内用bigパーサー（labelInlineを使用）
+    // ラベル内用パーサー（labelInlineを使用）
+    // mfm-js仕様: リンクラベル内ではURL、リンク、メンションは無効
+    // そのため、ネスト構文内でもlabelInlineを使用する必要がある
+    final labelFn = FnParser().buildWithInner(labelInline, state: nestState);
     final labelBig = BigParser().buildWithInner(labelInline, state: nestState);
+    final labelBold = BoldParser().buildWithInner(
+      labelInline,
+      state: nestState,
+    );
+    final labelBoldTag = BoldParser().buildTagWithInner(
+      labelInline,
+      state: nestState,
+    );
+    final labelItalicAsterisk = ItalicParser().buildWithInner(
+      labelInline,
+      state: nestState,
+    );
+    final labelItalicTag = ItalicParser().buildTagWithInner(
+      labelInline,
+      state: nestState,
+    );
+    final labelSmallTag = SmallParser().buildWithInner(
+      labelInline,
+      state: nestState,
+    );
+    final labelStrike = StrikeParser().buildWithInner(
+      labelInline,
+      state: nestState,
+    );
+    final labelStrikeTag = StrikeParser().buildTagWithInner(
+      labelInline,
+      state: nestState,
+    );
 
     labelInline.set(
       (inlineCode |
               unicodeEmoji |
               emojiCode |
-              hashtag | // メンションは除外、ハッシュタグは許可
+              // mfm-js仕様: リンクラベル内ではメンション、ハッシュタグ、URL、リンクは無効
               labelFn | // fn はリンクラベル内でも有効
               plainTag | // <plain>...</plain> 形式
-              smallTag |
-              strikeTag |
-              boldTag |
-              italicTag |
-              strike |
+              labelSmallTag |
+              labelStrikeTag |
+              labelBoldTag |
+              labelItalicTag |
+              labelStrike |
               labelBig | // *** は ** より先にチェック
-              bold |
+              labelBold |
               boldUnder | // __ は _ より先にチェック
               italicAlt2 |
-              italicAsterisk |
+              labelItalicAsterisk |
               mathInline | // \(...\) 形式
               labelTextParser |
               labelOneChar)

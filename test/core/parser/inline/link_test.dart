@@ -143,6 +143,270 @@ void main() {
   group('MfmParser統合テスト', () {
     final parser = MfmParser().build();
 
+    // mfm-js互換テスト: prevent xss
+    group('prevent xss', () {
+      test('javascript: URLはリンクとして解析されない', () {
+        final result = parser.parse('[click here](javascript:foo)');
+        expect(result is Success, isTrue);
+        final nodes = result.value;
+        expect(nodes.length, equals(1));
+        expect(nodes[0], isA<TextNode>());
+        expect(
+          (nodes[0] as TextNode).text,
+          equals('[click here](javascript:foo)'),
+        );
+      });
+    });
+
+    // mfm-js互換テスト: cannot nest a url in a link label
+    group('cannot nest a url in a link label', () {
+      test('basic', () {
+        final result = parser.parse(
+          'official instance: [https://misskey.io/@ai](https://misskey.io/@ai).',
+        );
+        expect(result is Success, isTrue);
+        final nodes = result.value;
+        expect(nodes.length, equals(3));
+        expect(nodes[0], isA<TextNode>());
+        expect((nodes[0] as TextNode).text, equals('official instance: '));
+        expect(nodes[1], isA<LinkNode>());
+        final linkNode = nodes[1] as LinkNode;
+        expect(linkNode.silent, isFalse);
+        expect(linkNode.url, equals('https://misskey.io/@ai'));
+        expect(linkNode.children.length, equals(1));
+        expect(linkNode.children[0], isA<TextNode>());
+        expect(
+          (linkNode.children[0] as TextNode).text,
+          equals('https://misskey.io/@ai'),
+        );
+        expect(nodes[2], isA<TextNode>());
+        expect((nodes[2] as TextNode).text, equals('.'));
+      });
+
+      test('nested', () {
+        final result = parser.parse(
+          'official instance: [https://misskey.io/@ai**https://misskey.io/@ai**](https://misskey.io/@ai).',
+        );
+        expect(result is Success, isTrue);
+        final nodes = result.value;
+        expect(nodes.length, equals(3));
+        expect(nodes[0], isA<TextNode>());
+        expect((nodes[0] as TextNode).text, equals('official instance: '));
+        expect(nodes[1], isA<LinkNode>());
+        final linkNode = nodes[1] as LinkNode;
+        expect(linkNode.silent, isFalse);
+        expect(linkNode.url, equals('https://misskey.io/@ai'));
+        expect(linkNode.children.length, equals(2));
+        expect(linkNode.children[0], isA<TextNode>());
+        expect(
+          (linkNode.children[0] as TextNode).text,
+          equals('https://misskey.io/@ai'),
+        );
+        expect(linkNode.children[1], isA<BoldNode>());
+        final boldNode = linkNode.children[1] as BoldNode;
+        expect(boldNode.children.length, equals(1));
+        expect(boldNode.children[0], isA<TextNode>());
+        expect(
+          (boldNode.children[0] as TextNode).text,
+          equals('https://misskey.io/@ai'),
+        );
+        expect(nodes[2], isA<TextNode>());
+        expect((nodes[2] as TextNode).text, equals('.'));
+      });
+    });
+
+    // mfm-js互換テスト: cannot nest a link in a link label
+    group('cannot nest a link in a link label', () {
+      test('basic', () {
+        final result = parser.parse(
+          'official instance: [[https://misskey.io/@ai](https://misskey.io/@ai)](https://misskey.io/@ai).',
+        );
+        expect(result is Success, isTrue);
+        final nodes = result.value;
+        expect(nodes.length, equals(5));
+        expect(nodes[0], isA<TextNode>());
+        expect((nodes[0] as TextNode).text, equals('official instance: '));
+        expect(nodes[1], isA<LinkNode>());
+        final linkNode = nodes[1] as LinkNode;
+        expect(linkNode.silent, isFalse);
+        expect(linkNode.url, equals('https://misskey.io/@ai'));
+        expect(linkNode.children.length, equals(1));
+        expect(linkNode.children[0], isA<TextNode>());
+        expect(
+          (linkNode.children[0] as TextNode).text,
+          equals('[https://misskey.io/@ai'),
+        );
+        expect(nodes[2], isA<TextNode>());
+        expect((nodes[2] as TextNode).text, equals(']('));
+        expect(nodes[3], isA<UrlNode>());
+        expect((nodes[3] as UrlNode).url, equals('https://misskey.io/@ai'));
+        expect(nodes[4], isA<TextNode>());
+        expect((nodes[4] as TextNode).text, equals(').'));
+      });
+
+      test('nested', () {
+        final result = parser.parse(
+          'official instance: [**[https://misskey.io/@ai](https://misskey.io/@ai)**](https://misskey.io/@ai).',
+        );
+        expect(result is Success, isTrue);
+        final nodes = result.value;
+        expect(nodes.length, equals(3));
+        expect(nodes[0], isA<TextNode>());
+        expect((nodes[0] as TextNode).text, equals('official instance: '));
+        expect(nodes[1], isA<LinkNode>());
+        final linkNode = nodes[1] as LinkNode;
+        expect(linkNode.silent, isFalse);
+        expect(linkNode.url, equals('https://misskey.io/@ai'));
+        expect(linkNode.children.length, equals(1));
+        expect(linkNode.children[0], isA<BoldNode>());
+        final boldNode = linkNode.children[0] as BoldNode;
+        expect(boldNode.children.length, equals(1));
+        expect(boldNode.children[0], isA<TextNode>());
+        expect(
+          (boldNode.children[0] as TextNode).text,
+          equals('[https://misskey.io/@ai](https://misskey.io/@ai)'),
+        );
+        expect(nodes[2], isA<TextNode>());
+        expect((nodes[2] as TextNode).text, equals('.'));
+      });
+    });
+
+    // mfm-js互換テスト: cannot nest a mention in a link label
+    group('cannot nest a mention in a link label', () {
+      test('basic', () {
+        final result = parser.parse('[@example](https://example.com)');
+        expect(result is Success, isTrue);
+        final nodes = result.value;
+        expect(nodes.length, equals(1));
+        expect(nodes[0], isA<LinkNode>());
+        final linkNode = nodes[0] as LinkNode;
+        expect(linkNode.silent, isFalse);
+        expect(linkNode.url, equals('https://example.com'));
+        expect(linkNode.children.length, equals(1));
+        expect(linkNode.children[0], isA<TextNode>());
+        expect((linkNode.children[0] as TextNode).text, equals('@example'));
+      });
+
+      test('nested', () {
+        final result = parser.parse(
+          '[@example**@example**](https://example.com)',
+        );
+        expect(result is Success, isTrue);
+        final nodes = result.value;
+        expect(nodes.length, equals(1));
+        expect(nodes[0], isA<LinkNode>());
+        final linkNode = nodes[0] as LinkNode;
+        expect(linkNode.silent, isFalse);
+        expect(linkNode.url, equals('https://example.com'));
+        expect(linkNode.children.length, equals(2));
+        expect(linkNode.children[0], isA<TextNode>());
+        expect((linkNode.children[0] as TextNode).text, equals('@example'));
+        expect(linkNode.children[1], isA<BoldNode>());
+        final boldNode = linkNode.children[1] as BoldNode;
+        expect(boldNode.children.length, equals(1));
+        expect(boldNode.children[0], isA<TextNode>());
+        expect((boldNode.children[0] as TextNode).text, equals('@example'));
+      });
+    });
+
+    // mfm-js互換テスト: cannot nest a hashtag in a link label
+    group('cannot nest a hashtag in a link label', () {
+      test('basic', () {
+        final result = parser.parse('[#hashtag](https://example.com)');
+        expect(result is Success, isTrue);
+        final nodes = result.value;
+        expect(nodes.length, equals(1));
+        expect(nodes[0], isA<LinkNode>());
+        final linkNode = nodes[0] as LinkNode;
+        expect(linkNode.silent, isFalse);
+        expect(linkNode.url, equals('https://example.com'));
+        expect(linkNode.children.length, equals(1));
+        expect(linkNode.children[0], isA<TextNode>());
+        expect((linkNode.children[0] as TextNode).text, equals('#hashtag'));
+      });
+
+      test('nested', () {
+        final result = parser.parse(
+          '[#hashtag**#hashtag**](https://example.com)',
+        );
+        expect(result is Success, isTrue);
+        final nodes = result.value;
+        expect(nodes.length, equals(1));
+        expect(nodes[0], isA<LinkNode>());
+        final linkNode = nodes[0] as LinkNode;
+        expect(linkNode.silent, isFalse);
+        expect(linkNode.url, equals('https://example.com'));
+        expect(linkNode.children.length, equals(2));
+        expect(linkNode.children[0], isA<TextNode>());
+        expect((linkNode.children[0] as TextNode).text, equals('#hashtag'));
+        expect(linkNode.children[1], isA<BoldNode>());
+        final boldNode = linkNode.children[1] as BoldNode;
+        expect(boldNode.children.length, equals(1));
+        expect(boldNode.children[0], isA<TextNode>());
+        expect((boldNode.children[0] as TextNode).text, equals('#hashtag'));
+      });
+    });
+
+    // mfm-js互換テスト: with brackets
+    group('with brackets', () {
+      test('with brackets', () {
+        final result = parser.parse('[foo](https://example.com/foo(bar))');
+        expect(result is Success, isTrue);
+        final nodes = result.value;
+        expect(nodes.length, equals(1));
+        expect(nodes[0], isA<LinkNode>());
+        final linkNode = nodes[0] as LinkNode;
+        expect(linkNode.silent, isFalse);
+        expect(linkNode.url, equals('https://example.com/foo(bar)'));
+        expect(linkNode.children.length, equals(1));
+        expect(linkNode.children[0], isA<TextNode>());
+        expect((linkNode.children[0] as TextNode).text, equals('foo'));
+      });
+
+      test('with parent brackets', () {
+        final result = parser.parse('([foo](https://example.com/foo(bar)))');
+        expect(result is Success, isTrue);
+        final nodes = result.value;
+        expect(nodes.length, equals(3));
+        expect(nodes[0], isA<TextNode>());
+        expect((nodes[0] as TextNode).text, equals('('));
+        expect(nodes[1], isA<LinkNode>());
+        final linkNode = nodes[1] as LinkNode;
+        expect(linkNode.silent, isFalse);
+        expect(linkNode.url, equals('https://example.com/foo(bar)'));
+        expect(linkNode.children.length, equals(1));
+        expect(linkNode.children[0], isA<TextNode>());
+        expect((linkNode.children[0] as TextNode).text, equals('foo'));
+        expect(nodes[2], isA<TextNode>());
+        expect((nodes[2] as TextNode).text, equals(')'));
+      });
+
+      test('with brackets before', () {
+        final result = parser.parse('[test] foo [bar](https://example.com)');
+        expect(result is Success, isTrue);
+        final nodes = result.value;
+        expect(nodes.length, equals(2));
+        expect(nodes[0], isA<TextNode>());
+        expect((nodes[0] as TextNode).text, equals('[test] foo '));
+        expect(nodes[1], isA<LinkNode>());
+        final linkNode = nodes[1] as LinkNode;
+        expect(linkNode.silent, isFalse);
+        expect(linkNode.url, equals('https://example.com'));
+        expect(linkNode.children.length, equals(1));
+        expect(linkNode.children[0], isA<TextNode>());
+        expect((linkNode.children[0] as TextNode).text, equals('bar'));
+      });
+
+      test('bad url in url part', () {
+        final result = parser.parse('[test](http://..)');
+        expect(result is Success, isTrue);
+        final nodes = result.value;
+        expect(nodes.length, equals(1));
+        expect(nodes[0], isA<TextNode>());
+        expect((nodes[0] as TextNode).text, equals('[test](http://..)'));
+      });
+    });
+
     group('URL自動リンク', () {
       test('テキスト内のURL', () {
         final result = parser.parse('Check out https://example.com for more');
