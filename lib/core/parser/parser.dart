@@ -96,10 +96,8 @@ class MfmParser {
     final labelTextParser = (labelStopper.not() & unicodeEmoji.not() & any())
         .plus()
         .flatten()
-        .map<MfmNode>((dynamic v) => TextNode(v as String));
-    final labelOneChar = any().map<MfmNode>(
-      (dynamic c) => TextNode(c as String),
-    );
+        .map(TextNode.new);
+    final labelOneChar = any().map(TextNode.new);
     // ラベル内用fnパーサー（labelInlineを使用）
     final labelFn = FnParser().buildWithInner(labelInline);
 
@@ -168,8 +166,8 @@ class MfmParser {
     final textParser = (stopper.not() & unicodeEmoji.not() & any())
         .plus()
         .flatten()
-        .map<MfmNode>((dynamic v) => TextNode(v as String));
-    final oneChar = any().map<MfmNode>((dynamic c) => TextNode(c as String));
+        .map(TextNode.new);
+    final oneChar = any().map(TextNode.new);
     inline.set(
       (inlineCode |
               unicodeEmoji |
@@ -206,13 +204,52 @@ class MfmParser {
     final blocks = codeBlock | mathBlock | center | quote | search;
 
     final start = (blocks | inline)
+        .cast<MfmNode>()
         .plus()
-        .map(
-          (List<dynamic> values) =>
-              mergeAdjacentTextNodes(values.cast<MfmNode>()),
-        )
+        .map(mergeAdjacentTextNodes)
         .end();
 
     return start;
+  }
+
+  /// シンプルパーサーを構築して返す
+  ///
+  /// mfm-js の `parseSimple()` に相当する軽量パーサー
+  /// text + unicodeEmoji + emojiCode + plain のみを解析
+  ///
+  /// ユーザー名表示など、パフォーマンスが重要な場面で使用を想定
+  /// bold, italic, mention, hashtag 等のフォーマット構文は無視
+  ///
+  /// 例:
+  /// - `foo **bar** baz` → `[TextNode('foo **bar** baz')]`
+  /// - `abc#abc` → `[TextNode('abc#abc')]`
+  /// - `Hello :wave:` → `[TextNode('Hello '), EmojiCodeNode('wave')]`
+  /// - `今起きた😇` → `[TextNode('今起きた'), UnicodeEmojiNode('😇')]`
+  Parser<List<MfmNode>> buildSimple() {
+    // 絵文字パーサー
+    final unicodeEmoji = UnicodeEmojiParser().build();
+    final emojiCode = EmojiCodeParser().build();
+
+    // plainタグパーサー（emojiCodeを内部でパースしないため必要）
+    final plainTag = PlainParser().build();
+
+    // stopper: 各構文の開始文字
+    // mfm-js仕様: unicodeEmoji > emojiCode > plainTag > text
+    final stopper = char(':') | string('<plain>');
+
+    // テキストパーサー（stopper以外の文字を収集）
+    final textParser = (stopper.not() & unicodeEmoji.not() & any())
+        .plus()
+        .flatten()
+        .map(TextNode.new);
+
+    // 1文字フォールバック
+    final oneChar = any().map(TextNode.new);
+
+    // mfm-js仕様の優先順位: unicodeEmoji > emojiCode > plainTag > text
+    final simple = (unicodeEmoji | emojiCode | plainTag | textParser | oneChar)
+        .cast<MfmNode>();
+
+    return simple.plus().map(mergeAdjacentTextNodes).end();
   }
 }
