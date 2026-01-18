@@ -44,5 +44,28 @@ void main() {
       // abc\n, mathBlock, \nxyz の3つ
       expect(nodes.any((n) => n is MathBlockNode), isTrue);
     });
+
+    // mfm-js互換テスト: line position
+    test(r'行末以外に閉じタグがある場合はマッチしない: \[aaa\]after', () {
+      final m = MfmParser().build();
+      final result = m.parse(r'\[aaa\]after');
+      expect(result is Success, isTrue);
+      final nodes = (result as Success).value as List<MfmNode>;
+      // MathBlockとしてパースされず、プレーンテキストとして扱われる
+      expect(nodes.length, 1);
+      expect(nodes[0], isA<TextNode>());
+      expect((nodes[0] as TextNode).text, r'\[aaa\]after');
+    });
+
+    test(r'行頭以外に開始タグがある場合はマッチしない: before\[aaa\]', () {
+      final m = MfmParser().build();
+      final result = m.parse(r'before\[aaa\]');
+      expect(result is Success, isTrue);
+      final nodes = (result as Success).value as List<MfmNode>;
+      // MathBlockとしてパースされず、プレーンテキストとして扱われる
+      expect(nodes.length, 1);
+      expect(nodes[0], isA<TextNode>());
+      expect((nodes[0] as TextNode).text, r'before\[aaa\]');
+    });
   });
 }

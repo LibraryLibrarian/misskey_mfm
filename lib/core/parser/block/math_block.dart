@@ -1,6 +1,7 @@
 import 'package:petitparser/petitparser.dart';
 
 import '../../ast.dart';
+import '../core/guards.dart';
 
 /// 数式ブロックパーサー
 ///
@@ -19,9 +20,6 @@ class MathBlockParser {
     final open = string(r'\[');
     final close = string(r'\]');
 
-    // 行末判定（改行または入力終端）
-    final lineEnd = newline | endOfInput();
-
     // 数式内容: 改行(optional) + close が出現するまでの文字列
     // mfm-js:
     // P.seq(
@@ -30,19 +28,20 @@ class MathBlockParser {
     final formulaChar = ((newline.optional() & close).not() & any()).pick(1);
     final formula = formulaChar.plus().flatten();
 
-    // 構造: [前の改行?, \[, 改行?, 数式, 改行?, \], 行末?, 後の改行?]
-    // seq2でネストして論理的にグループ化
-    // 開始部: 前の改行? + \[ + 改行?
-    final startPart = seq3(newline.optional(), open, newline.optional());
-    // 終了部: 改行? + \] + 行末? + 後の改行?
-    final endPart = seq4(
-      newline.optional(),
-      close,
-      lineEnd.optional(),
-      newline.optional(),
-    );
+    // mfm-js仕様:
+    // - `\[` は行頭でなければならない（入力先頭または直前が改行）
+    // - `\]` は行末でなければならない（入力末尾または直後が改行）
+    //
+    // 構造: [lineBegin, \[, 改行?, 数式, 改行?, \], lineEnd, 後の改行?]
+    final startPart = seq3(lineBegin(), open, newline.optional());
+    final endPart = seq3(newline.optional(), close, lineEnd());
 
-    return seq3(startPart, formula, endPart).map3((_, formulaStr, _) {
+    return seq4(startPart, formula, endPart, newline.optional()).map4((
+      _,
+      formulaStr,
+      _,
+      _,
+    ) {
       return MathBlockNode(formulaStr);
     });
   }
