@@ -18,6 +18,19 @@ void main() {
       expect((italic.children.first as TextNode).text, 'italic');
     });
 
+    // mfm.js: test/parser.ts:566-575 - italic alt 1 basic 2
+    test('before/after: before *abc* after（MfmParser使用）', () {
+      final m = MfmParser().build();
+      final result = m.parse('before *abc* after');
+      expect(result is Success, isTrue);
+      final nodes = (result as Success).value as List<MfmNode>;
+      expect(nodes.length, 3);
+      expect((nodes[0] as TextNode).text, 'before ');
+      expect(nodes[1], isA<ItalicNode>());
+      expect(((nodes[1] as ItalicNode).children.first as TextNode).text, 'abc');
+      expect((nodes[2] as TextNode).text, ' after');
+    });
+
     test('斜体内に斜体をネストできる（最も近い閉じタグを優先）', () {
       final result = parser.parse('*a *b* c*');
       expect(result is Success, isTrue);
