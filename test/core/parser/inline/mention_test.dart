@@ -1,5 +1,5 @@
 import 'package:misskey_mfm/core/ast.dart';
-import 'package:misskey_mfm/core/parser/inline/mention.dart';
+import 'package:misskey_mfm/core/parser.dart';
 import 'package:petitparser/petitparser.dart';
 import 'package:test/test.dart';
 
@@ -175,6 +175,118 @@ void main() {
       final node = (result as Success).value as MfmNode;
       expect(node, isA<TextNode>());
       expect((node as TextNode).text, '@');
+    });
+  });
+
+  // mfm-js準拠: 統合テスト（MfmParser使用）
+  // test/parser.ts:700-783
+  group('MentionParser（mfm-js準拠 統合テスト）', () {
+    final parser = MfmParser().build();
+
+    test('basic remote 2', () {
+      // mfm.js/test/parser.ts:701-704
+      const input = 'before @abc@misskey.io after';
+      final result = parser.parse(input);
+      expect(result is Success, isTrue);
+      final nodes = (result as Success).value as List<MfmNode>;
+      expect(nodes.length, 3);
+      expect(nodes[0], isA<TextNode>());
+      expect((nodes[0] as TextNode).text, 'before ');
+      expect(nodes[1], isA<MentionNode>());
+      final mention = nodes[1] as MentionNode;
+      expect(mention.username, 'abc');
+      expect(mention.host, 'misskey.io');
+      expect(mention.acct, '@abc@misskey.io');
+      expect(nodes[2], isA<TextNode>());
+      expect((nodes[2] as TextNode).text, ' after');
+    });
+
+    test('basic remote 3', () {
+      // mfm.js/test/parser.ts:707-710
+      const input = 'before\n@abc@misskey.io\nafter';
+      final result = parser.parse(input);
+      expect(result is Success, isTrue);
+      final nodes = (result as Success).value as List<MfmNode>;
+      expect(nodes.length, 3);
+      expect(nodes[0], isA<TextNode>());
+      expect((nodes[0] as TextNode).text, 'before\n');
+      expect(nodes[1], isA<MentionNode>());
+      final mention = nodes[1] as MentionNode;
+      expect(mention.username, 'abc');
+      expect(mention.host, 'misskey.io');
+      expect(mention.acct, '@abc@misskey.io');
+      expect(nodes[2], isA<TextNode>());
+      expect((nodes[2] as TextNode).text, '\nafter');
+    });
+
+    test('detect as a mention if the before char is [^a-z0-9]i', () {
+      // mfm.js/test/parser.ts:719-722
+      // 直前の文字が英数字以外の場合はメンションとして認識される
+      const input = 'あいう@abc';
+      final result = parser.parse(input);
+      expect(result is Success, isTrue);
+      final nodes = (result as Success).value as List<MfmNode>;
+      expect(nodes.length, 2);
+      expect(nodes[0], isA<TextNode>());
+      expect((nodes[0] as TextNode).text, 'あいう');
+      expect(nodes[1], isA<MentionNode>());
+      final mention = nodes[1] as MentionNode;
+      expect(mention.username, 'abc');
+      expect(mention.host, isNull);
+      expect(mention.acct, '@abc');
+    });
+
+    test('invalid char only username', () {
+      // mfm.js/test/parser.ts:725-728
+      // ユーザー名が無効文字のみの場合はテキストになる
+      const input = '@-';
+      final result = parser.parse(input);
+      expect(result is Success, isTrue);
+      final nodes = (result as Success).value as List<MfmNode>;
+      expect(nodes.length, 1);
+      expect(nodes[0], isA<TextNode>());
+      expect((nodes[0] as TextNode).text, '@-');
+    });
+
+    test('invalid char only hostname', () {
+      // mfm.js/test/parser.ts:731-734
+      // ホスト名が無効な場合はテキストになる
+      const input = '@abc@.';
+      final result = parser.parse(input);
+      expect(result is Success, isTrue);
+      final nodes = (result as Success).value as List<MfmNode>;
+      expect(nodes.length, 1);
+      expect(nodes[0], isA<TextNode>());
+      expect((nodes[0] as TextNode).text, '@abc@.');
+    });
+
+    test('disallow "." in head of hostname', () {
+      // mfm.js/test/parser.ts:773-776
+      // ホスト名の先頭に"."がある場合はテキストになる
+      const input = '@abc@.aaa';
+      final result = parser.parse(input);
+      expect(result is Success, isTrue);
+      final nodes = (result as Success).value as List<MfmNode>;
+      expect(nodes.length, 1);
+      expect(nodes[0], isA<TextNode>());
+      expect((nodes[0] as TextNode).text, '@abc@.aaa');
+    });
+
+    test('disallow "." in tail of hostname', () {
+      // mfm.js/test/parser.ts:779-782
+      // ホスト名の末尾に"."がある場合は"."の前までをホスト名として扱う
+      const input = '@abc@aaa.';
+      final result = parser.parse(input);
+      expect(result is Success, isTrue);
+      final nodes = (result as Success).value as List<MfmNode>;
+      expect(nodes.length, 2);
+      expect(nodes[0], isA<MentionNode>());
+      final mention = nodes[0] as MentionNode;
+      expect(mention.username, 'abc');
+      expect(mention.host, 'aaa');
+      expect(mention.acct, '@abc@aaa');
+      expect(nodes[1], isA<TextNode>());
+      expect((nodes[1] as TextNode).text, '.');
     });
   });
 }
