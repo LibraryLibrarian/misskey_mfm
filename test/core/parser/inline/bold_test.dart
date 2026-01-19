@@ -97,6 +97,24 @@ void main() {
       final result = parser.parse('abc**def');
       expect(result is Failure, isTrue);
     });
+
+    test('内容にはインライン構文を利用できる', () {
+      // mfm.js互換: **123~~abc~~123** のテスト
+      final mfmParser = MfmParser().build();
+      final result = mfmParser.parse('**123~~abc~~123**');
+      expect(result is Success, isTrue);
+      final nodes = (result as Success).value as List<MfmNode>;
+      expect(nodes.length, 1);
+      expect(nodes[0], isA<BoldNode>());
+      final bold = nodes[0] as BoldNode;
+      expect(bold.children.length, 3);
+      expect((bold.children[0] as TextNode).text, '123');
+      expect(bold.children[1], isA<StrikeNode>());
+      final strike = bold.children[1] as StrikeNode;
+      expect(strike.children.length, 1);
+      expect((strike.children.first as TextNode).text, 'abc');
+      expect((bold.children[2] as TextNode).text, '123');
+    });
   });
 
   group('BoldTagParser（太字タグ <b>…</b>）', () {
