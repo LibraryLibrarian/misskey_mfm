@@ -130,5 +130,18 @@ void main() {
       expect(nodes.any((n) => n is UnicodeEmojiNode), isTrue);
       expect(nodes.any((n) => n is EmojiCodeNode), isTrue);
     });
+
+    test('keycap number sign', () {
+      final result = parser.parse('abc#️⃣123');
+      expect(result is Success, isTrue);
+      final nodes = (result as Success).value as List<MfmNode>;
+      expect(nodes.length, 3);
+      expect(nodes[0], isA<TextNode>());
+      expect((nodes[0] as TextNode).text, 'abc');
+      expect(nodes[1], isA<UnicodeEmojiNode>());
+      expect((nodes[1] as UnicodeEmojiNode).emoji, '#️⃣');
+      expect(nodes[2], isA<TextNode>());
+      expect((nodes[2] as TextNode).text, '123');
+    });
   });
 }
