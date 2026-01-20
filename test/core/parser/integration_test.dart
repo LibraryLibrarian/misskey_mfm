@@ -7,6 +7,16 @@ void main() {
   group('MfmParser（統合テスト）', () {
     final parser = MfmParser().build();
 
+    // mfm.js/test/parser.ts:70-74
+    test('mfm-js互換テスト: FullParser text - basic', () {
+      final result = parser.parse('abc');
+      expect(result is Success, isTrue);
+      final nodes = (result as Success).value as List<MfmNode>;
+      expect(nodes.length, 1);
+      expect(nodes[0], isA<TextNode>());
+      expect((nodes[0] as TextNode).text, 'abc');
+    });
+
     test('基本的な太字構文を解析できる', () {
       final result = parser.parse('**bold**');
       expect(result is Success, isTrue);

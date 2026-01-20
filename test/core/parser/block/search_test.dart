@@ -5,7 +5,8 @@ import 'package:test/test.dart';
 
 void main() {
   group('SearchParser（検索ブロック）', () {
-    test('基本: MFM 書き方 123 Search', () {
+    // mfm.js/test/parser.ts:187-193
+    test('mfm-js互換テスト: Search', () {
       final m = MfmParser().build();
       final result = m.parse('MFM 書き方 123 Search');
       expect(result is Success, isTrue);
@@ -17,7 +18,21 @@ void main() {
       expect(search.content, 'MFM 書き方 123 Search');
     });
 
-    test('日本語: MFM 書き方 検索', () {
+    // mfm.js/test/parser.ts:194-200
+    test('mfm-js互換テスト: [Search]', () {
+      final m = MfmParser().build();
+      final result = m.parse('MFM 書き方 123 [Search]');
+      expect(result is Success, isTrue);
+      final nodes = (result as Success).value as List<MfmNode>;
+      expect(nodes.length, 1);
+      expect(nodes[0], isA<SearchNode>());
+      final search = nodes[0] as SearchNode;
+      expect(search.query, 'MFM 書き方 123');
+      expect(search.content, 'MFM 書き方 123 [Search]');
+    });
+
+    // mfm.js/test/parser.ts:215-221
+    test('mfm-js互換テスト: 検索', () {
       final m = MfmParser().build();
       final result = m.parse('MFM 書き方 検索');
       expect(result is Success, isTrue);
@@ -28,7 +43,8 @@ void main() {
       expect(search.content, 'MFM 書き方 検索');
     });
 
-    test('小文字: MFM 書き方 123 search', () {
+    // mfm.js/test/parser.ts:201-207
+    test('mfm-js互換テスト: search', () {
       final m = MfmParser().build();
       final result = m.parse('MFM 書き方 123 search');
       expect(result is Success, isTrue);
@@ -38,7 +54,8 @@ void main() {
       expect(search.query, 'MFM 書き方 123');
     });
 
-    test('ブラケット付き: MFM 書き方 123 [search]', () {
+    // mfm.js/test/parser.ts:208-214
+    test('mfm-js互換テスト: [search]', () {
       final m = MfmParser().build();
       final result = m.parse('MFM 書き方 123 [search]');
       expect(result is Success, isTrue);
@@ -49,7 +66,8 @@ void main() {
       expect(search.content, 'MFM 書き方 123 [search]');
     });
 
-    test('ブラケット付き日本語: MFM 書き方 [検索]', () {
+    // mfm.js/test/parser.ts:222-228
+    test('mfm-js互換テスト: [検索]', () {
       final m = MfmParser().build();
       final result = m.parse('MFM 書き方 [検索]');
       expect(result is Success, isTrue);
@@ -70,8 +88,8 @@ void main() {
       expect(search.query, 'MFM');
     });
 
-    // mfm-js互換テスト
-    test('ブロックの前後にあるテキストが正しく解釈される', () {
+    // mfm.js/test/parser.ts:230-238
+    test('mfm-js互換テスト: ブロックの前後にあるテキストが正しく解釈される', () {
       final m = MfmParser().build();
       final result = m.parse('abc\nhoge piyo bebeyo 検索\n123');
       expect(result is Success, isTrue);

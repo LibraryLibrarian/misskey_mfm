@@ -5,7 +5,8 @@ import 'package:test/test.dart';
 
 void main() {
   group('CenterParser（中央寄せ: タグ）', () {
-    test('基本: <center>abc</center>', () {
+    // mfm.js/test/parser.ts:320-328
+    test('mfm-js互換テスト: single text', () {
       final m = MfmParser().build();
       final result = m.parse('<center>abc</center>');
       expect(result is Success, isTrue);
@@ -17,7 +18,8 @@ void main() {
       expect((center.children.first as TextNode).text, 'abc');
     });
 
-    test('multiple text', () {
+    // mfm.js/test/parser.ts:329-339
+    test('mfm-js互換テスト: multiple text', () {
       final m = MfmParser().build();
       const input = 'before\n<center>\nabc\n123\n\npiyo\n</center>\nafter';
       final result = m.parse(input);

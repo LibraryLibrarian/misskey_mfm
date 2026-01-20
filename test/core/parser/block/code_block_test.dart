@@ -5,7 +5,8 @@ import 'package:test/test.dart';
 
 void main() {
   group('CodeBlockParser（コードブロック）', () {
-    test('基本: ```\nabc\n```', () {
+    // mfm.js/test/parser.ts:242-246
+    test('mfm-js互換テスト: コードブロックを使用できる', () {
       final m = MfmParser().build();
       final result = m.parse('```\nabc\n```');
       expect(result is Success, isTrue);
@@ -17,7 +18,8 @@ void main() {
       expect(cb.code, 'abc');
     });
 
-    test('言語指定: ```js\nconst a = 1;\n```', () {
+    // mfm.js/test/parser.ts:254-258
+    test('mfm-js互換テスト: コードブロックは言語を指定できる', () {
       final m = MfmParser().build();
       final result = m.parse('```js\nconst a = 1;\n```');
       expect(result is Success, isTrue);
@@ -37,7 +39,8 @@ void main() {
       expect(cb.code, 'void main() {}');
     });
 
-    test('内部の ``` を無視: ```\naaa```bbb\n```', () {
+    // mfm.js/test/parser.ts:270-274
+    test('mfm-js互換テスト: ignore internal marker', () {
       final m = MfmParser().build();
       final result = m.parse('```\naaa```bbb\n```');
       expect(result is Success, isTrue);
@@ -46,7 +49,8 @@ void main() {
       expect(cb.code, 'aaa```bbb');
     });
 
-    test('コードブロックには複数行のコードを入力できる', () {
+    // mfm.js/test/parser.ts:248-252
+    test('mfm-js互換テスト: コードブロックには複数行のコードを入力できる', () {
       final m = MfmParser().build();
       final result = m.parse('```\na\nb\nc\n```');
       expect(result is Success, isTrue);
@@ -58,7 +62,8 @@ void main() {
       expect(cb.code, 'a\nb\nc');
     });
 
-    test('ブロックの前後にあるテキストが正しく解釈される', () {
+    // mfm.js/test/parser.ts:260-268
+    test('mfm-js互換テスト: ブロックの前後にあるテキストが正しく解釈される', () {
       final m = MfmParser().build();
       final result = m.parse('abc\n```\nconst abc = 1;\n```\n123');
       expect(result is Success, isTrue);
@@ -74,7 +79,8 @@ void main() {
       expect((nodes[2] as TextNode).text, '123');
     });
 
-    test('trim after line break', () {
+    // mfm.js/test/parser.ts:276-283
+    test('mfm-js互換テスト: trim after line break', () {
       final m = MfmParser().build();
       final result = m.parse('```\nfoo\n```\nbar');
       expect(result is Success, isTrue);

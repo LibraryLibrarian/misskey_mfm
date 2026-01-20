@@ -7,7 +7,8 @@ void main() {
   group('UnicodeEmojiParser（Unicode絵文字）', () {
     final parser = UnicodeEmojiParser().build();
 
-    test('基本的な絵文字を解析できる', () {
+    // mfm.js/test/parser.ts:70-74
+    test('mfm-js互換テスト: basic', () {
       final result = parser.parse('😀');
       expect(result is Success, isTrue);
       final node = (result as Success).value as MfmNode;
@@ -77,6 +78,18 @@ void main() {
   group('MfmParser統合テスト（Unicode絵文字）', () {
     final parser = MfmParser().build();
 
+    // mfm.js/test/parser.ts:351-355
+    test('mfm-js互換テスト: basic', () {
+      final result = parser.parse('今起きた😇');
+      expect(result is Success, isTrue);
+      final nodes = (result as Success).value as List<MfmNode>;
+      expect(nodes.length, 2);
+      expect(nodes[0], isA<TextNode>());
+      expect((nodes[0] as TextNode).text, '今起きた');
+      expect(nodes[1], isA<UnicodeEmojiNode>());
+      expect((nodes[1] as UnicodeEmojiNode).emoji, '😇');
+    });
+
     test('テキスト内のUnicode絵文字を解析できる', () {
       final result = parser.parse('Hello 👋 World');
       expect(result is Success, isTrue);
@@ -131,7 +144,8 @@ void main() {
       expect(nodes.any((n) => n is EmojiCodeNode), isTrue);
     });
 
-    test('keycap number sign', () {
+    // mfm.js/test/parser.ts:22-26
+    test('mfm-js互換テスト: keycap number sign', () {
       final result = parser.parse('abc#️⃣123');
       expect(result is Success, isTrue);
       final nodes = (result as Success).value as List<MfmNode>;

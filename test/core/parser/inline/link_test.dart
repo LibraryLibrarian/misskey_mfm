@@ -19,7 +19,8 @@ void main() {
 
   group('LinkParser', () {
     group('通常リンク（フルパーサー経由）', () {
-      test('基本的なリンク', () {
+      // mfm.js/test/parser.ts:1067-1076
+      test('mfm-js互換テスト: basic', () {
         final result = fullParser.parse('[Example](https://example.com)');
         expect(result is Success, isTrue);
         final node = getFirstLink(result);
@@ -74,6 +75,28 @@ void main() {
         expect(node!.url, equals('https://example.com/@user'));
       });
 
+      // mfm.js/test/parser.ts:1089-1098
+      test('mfm-js互換テスト: with angle brackets url', () {
+        final result = fullParser.parse(
+          '[official instance](<https://misskey.io/@ai>).',
+        );
+        expect(result is Success, isTrue);
+        final nodes = (result as Success).value as List<MfmNode>;
+        expect(nodes.length, 2);
+        expect(nodes[0], isA<LinkNode>());
+        final linkNode = nodes[0] as LinkNode;
+        expect(linkNode.silent, isFalse);
+        expect(linkNode.url, equals('https://misskey.io/@ai'));
+        expect(linkNode.children.length, equals(1));
+        expect(linkNode.children[0], isA<TextNode>());
+        expect(
+          (linkNode.children[0] as TextNode).text,
+          equals('official instance'),
+        );
+        expect(nodes[1], isA<TextNode>());
+        expect((nodes[1] as TextNode).text, equals('.'));
+      });
+
       group('無効なケース', () {
         test('空のラベルはテキスト', () {
           final result = fullParser.parse('[](https://example.com)');
@@ -107,7 +130,8 @@ void main() {
     });
 
     group('サイレントリンク', () {
-      test('基本的なサイレントリンク', () {
+      // mfm.js/test/parser.ts:1078-1087
+      test('mfm-js互換テスト: silent flag', () {
         final result = fullParser.parse('?[Example](https://example.com)');
         expect(result is Success, isTrue);
         final node = getFirstLink(result);
@@ -162,9 +186,9 @@ void main() {
   });
 
   group('MfmParser統合テスト', () {
-    // mfm-js互換テスト: prevent xss
+    // mfm.js/test/parser.ts:1100-1106
     group('prevent xss', () {
-      test('javascript: URLはリンクとして解析されない', () {
+      test('mfm-js互換テスト: javascript: URLはリンクとして解析されない', () {
         final result = fullParser.parse('[click here](javascript:foo)');
         expect(result is Success, isTrue);
         final nodes = result.value;
@@ -177,9 +201,9 @@ void main() {
       });
     });
 
-    // mfm-js互換テスト: cannot nest a url in a link label
+    // mfm.js/test/parser.ts:1108-1145
     group('cannot nest a url in a link label', () {
-      test('basic', () {
+      test('mfm-js互換テスト: basic', () {
         final result = fullParser.parse(
           'official instance: [https://misskey.io/@ai](https://misskey.io/@ai).',
         );
@@ -202,7 +226,7 @@ void main() {
         expect((nodes[2] as TextNode).text, equals('.'));
       });
 
-      test('nested', () {
+      test('mfm-js互換テスト: nested', () {
         final result = fullParser.parse(
           'official instance: [https://misskey.io/@ai**https://misskey.io/@ai**](https://misskey.io/@ai).',
         );
@@ -234,9 +258,9 @@ void main() {
       });
     });
 
-    // mfm-js互換テスト: cannot nest a link in a link label
+    // mfm.js/test/parser.ts:1147-1186
     group('cannot nest a link in a link label', () {
-      test('basic', () {
+      test('mfm-js互換テスト: basic', () {
         final result = fullParser.parse(
           'official instance: [[https://misskey.io/@ai](https://misskey.io/@ai)](https://misskey.io/@ai).',
         );
@@ -263,7 +287,7 @@ void main() {
         expect((nodes[4] as TextNode).text, equals(').'));
       });
 
-      test('nested', () {
+      test('mfm-js互換テスト: nested', () {
         final result = fullParser.parse(
           'official instance: [**[https://misskey.io/@ai](https://misskey.io/@ai)**](https://misskey.io/@ai).',
         );
@@ -290,9 +314,9 @@ void main() {
       });
     });
 
-    // mfm-js互換テスト: cannot nest a mention in a link label
+    // mfm.js/test/parser.ts:1147-1166
     group('cannot nest a mention in a link label', () {
-      test('basic', () {
+      test('mfm-js互換テスト: basic', () {
         final result = fullParser.parse('[@example](https://example.com)');
         expect(result is Success, isTrue);
         final nodes = result.value;
@@ -306,7 +330,7 @@ void main() {
         expect((linkNode.children[0] as TextNode).text, equals('@example'));
       });
 
-      test('nested', () {
+      test('mfm-js互換テスト: nested', () {
         final result = fullParser.parse(
           '[@example**@example**](https://example.com)',
         );
@@ -328,9 +352,9 @@ void main() {
       });
     });
 
-    // mfm-js互換テスト: cannot nest a hashtag in a link label
+    // mfm.js/test/parser.ts:1167-1186
     group('cannot nest a hashtag in a link label', () {
-      test('basic', () {
+      test('mfm-js互換テスト: basic', () {
         final result = fullParser.parse('[#hashtag](https://example.com)');
         expect(result is Success, isTrue);
         final nodes = result.value;
@@ -344,7 +368,7 @@ void main() {
         expect((linkNode.children[0] as TextNode).text, equals('#hashtag'));
       });
 
-      test('nested', () {
+      test('mfm-js互換テスト: nested', () {
         final result = fullParser.parse(
           '[#hashtag**#hashtag**](https://example.com)',
         );
@@ -366,9 +390,9 @@ void main() {
       });
     });
 
-    // mfm-js互換テスト: with brackets
+    // mfm.js/test/parser.ts:1188-1227
     group('with brackets', () {
-      test('with brackets', () {
+      test('mfm-js互換テスト: with brackets', () {
         final result = fullParser.parse('[foo](https://example.com/foo(bar))');
         expect(result is Success, isTrue);
         final nodes = result.value;
@@ -382,7 +406,7 @@ void main() {
         expect((linkNode.children[0] as TextNode).text, equals('foo'));
       });
 
-      test('with parent brackets', () {
+      test('mfm-js互換テスト: with parent brackets', () {
         final result = fullParser.parse(
           '([foo](https://example.com/foo(bar)))',
         );
@@ -402,7 +426,7 @@ void main() {
         expect((nodes[2] as TextNode).text, equals(')'));
       });
 
-      test('with brackets before', () {
+      test('mfm-js互換テスト: with brackets before', () {
         final result = fullParser.parse(
           '[test] foo [bar](https://example.com)',
         );
@@ -420,7 +444,7 @@ void main() {
         expect((linkNode.children[0] as TextNode).text, equals('bar'));
       });
 
-      test('bad url in url part', () {
+      test('mfm-js互換テスト: bad url in url part', () {
         final result = fullParser.parse('[test](http://..)');
         expect(result is Success, isTrue);
         final nodes = result.value;

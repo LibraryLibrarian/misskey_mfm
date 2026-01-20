@@ -7,7 +7,8 @@ void main() {
   group('BoldParser（太字構文）', () {
     final parser = BoldParser().buildWithFallback();
 
-    test('基本的な太字構文を解析できる', () {
+    // mfm.js/test/parser.ts:441-449
+    test('mfm-js互換テスト: basic', () {
       final result = parser.parse('**bold**');
       expect(result is Success, isTrue);
       final node = (result as Success).value as MfmNode;
@@ -57,7 +58,8 @@ void main() {
       expect((bold.children.first as TextNode).text, 'bold1');
     });
 
-    test('改行を含む太字を解析できる', () {
+    // mfm.js/test/parser.ts:463-475
+    test('mfm-js互換テスト: 内容は改行できる', () {
       final result = parser.parse('**line1\nline2**');
       expect(result is Success, isTrue);
       final node = (result as Success).value as MfmNode;
@@ -98,8 +100,8 @@ void main() {
       expect(result is Failure, isTrue);
     });
 
-    test('内容にはインライン構文を利用できる', () {
-      // mfm.js互換: **123~~abc~~123** のテスト
+    // mfm.js/test/parser.ts:450-461
+    test('mfm-js互換テスト: 内容にはインライン構文を利用できる', () {
       final mfmParser = MfmParser().build();
       final result = mfmParser.parse('**123~~abc~~123**');
       expect(result is Success, isTrue);
@@ -118,7 +120,8 @@ void main() {
   });
 
   group('BoldTagParser（太字タグ <b>…</b>）', () {
-    test('<b>abc</b> を太字ノードとして解析できる', () {
+    // mfm.js/test/parser.ts:403-411
+    test('mfm-js互換テスト: basic', () {
       final m = MfmParser().build();
       final result = m.parse('<b>abc</b>');
       expect(result is Success, isTrue);
@@ -130,7 +133,26 @@ void main() {
       expect((bold.children.first as TextNode).text, 'abc');
     });
 
-    test('<b>123\\n~~abc~~\\n123</b> を改行・strike含みで太字ノードとして解析できる', () {
+    // mfm.js/test/parser.ts:412-424
+    test('mfm-js互換テスト: inline syntax allowed inside', () {
+      final m = MfmParser().build();
+      final result = m.parse('<b>123~~abc~~123</b>');
+      expect(result is Success, isTrue);
+      final nodes = (result as Success).value as List<MfmNode>;
+      expect(nodes.length, 1);
+      expect(nodes[0], isA<BoldNode>());
+      final bold = nodes[0] as BoldNode;
+      expect(bold.children.length, 3);
+      expect((bold.children[0] as TextNode).text, '123');
+      expect(bold.children[1], isA<StrikeNode>());
+      final strike = bold.children[1] as StrikeNode;
+      expect(strike.children.length, 1);
+      expect((strike.children.first as TextNode).text, 'abc');
+      expect((bold.children[2] as TextNode).text, '123');
+    });
+
+    // mfm.js/test/parser.ts:425-437
+    test('mfm-js互換テスト: line breaks', () {
       final m = MfmParser().build();
       final result = m.parse('<b>123\n~~abc~~\n123</b>');
       expect(result is Success, isTrue);

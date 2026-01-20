@@ -7,7 +7,8 @@ void main() {
   group('FnParser 基本構文テスト', () {
     final parser = MfmParser().build();
 
-    test('引数なしの基本的なfn構文を解析できる', () {
+    // mfm.js/test/parser.ts:1231-1239
+    test('mfm-js互換テスト: basic', () {
       final result = parser.parse(r'$[shake text]');
       expect(result is Success, isTrue);
       final nodes = (result as Success).value as List<MfmNode>;
@@ -56,7 +57,8 @@ void main() {
   group('FnParser 引数バリエーションテスト', () {
     final parser = MfmParser().build();
 
-    test('単一のboolean引数（keyのみ）を解析できる', () {
+    // mfm.js/test/parser.ts:1241-1249
+    test('mfm-js互換テスト: with a string argument', () {
       final result = parser.parse(r'$[flip.h content]');
       expect(result is Success, isTrue);
       final nodes = (result as Success).value as List<MfmNode>;
@@ -98,7 +100,8 @@ void main() {
       expect(fn.args['speed'], '1.5s');
     });
 
-    test('複数のkey=value引数を解析できる', () {
+    // mfm.js/test/parser.ts:1251-1259
+    test('mfm-js互換テスト: with a string argument 2', () {
       final result = parser.parse(r'$[position.x=1.5,y=-2 text]');
       expect(result is Success, isTrue);
       final nodes = (result as Success).value as List<MfmNode>;
@@ -179,7 +182,8 @@ void main() {
       expect(fn.children[2], isA<TextNode>());
     });
 
-    test('fnをネストできる', () {
+    // mfm.js/test/parser.ts:1269-1279
+    test('mfm-js互換テスト: nest', () {
       final result = parser.parse(r'$[spin $[shake text]]');
       expect(result is Success, isTrue);
       final nodes = (result as Success).value as List<MfmNode>;
@@ -238,8 +242,8 @@ void main() {
       expect((textNode as TextNode).text, r'$[');
     });
 
-    // mfm-js互換テスト: test/parser.ts:1261-1266
-    test('無効なfn名（日本語など非ASCII文字）はテキストとして扱う', () {
+    // mfm.js/test/parser.ts:1261-1267
+    test('mfm-js互換テスト: invalid fn name', () {
       final result = parser.parse(r'$[関数 text]');
       expect(result is Success, isTrue);
       final nodes = (result as Success).value as List<MfmNode>;

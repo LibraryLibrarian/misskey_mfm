@@ -7,7 +7,8 @@ void main() {
   group('StrikeParser（~~形式）', () {
     final parser = StrikeParser().buildWithFallback();
 
-    test('基本的な打ち消し線構文を解析できる', () {
+    // mfm.js/test/parser.ts:645-651
+    test('mfm-js互換テスト: basic', () {
       final result = parser.parse('~~strike~~');
       expect(result is Success, isTrue);
       final node = (result as Success).value as MfmNode;
@@ -74,7 +75,8 @@ void main() {
   });
 
   group('StrikeTagParser（<s>形式）', () {
-    test('<s>abc</s> を打ち消し線ノードとして解析できる', () {
+    // mfm.js/test/parser.ts:635-641
+    test('mfm-js互換テスト: basic', () {
       final m = MfmParser().build();
       final result = m.parse('<s>abc</s>');
       expect(result is Success, isTrue);

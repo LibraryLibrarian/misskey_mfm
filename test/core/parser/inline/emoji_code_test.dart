@@ -7,7 +7,8 @@ void main() {
   group('EmojiCodeParser（カスタム絵文字）', () {
     final parser = EmojiCodeParser().build();
 
-    test('基本的なカスタム絵文字を解析できる', () {
+    // mfm.js/test/parser.ts:343-347
+    test('mfm-js互換テスト: basic', () {
       final result = parser.parse(':emoji:');
       expect(result is Success, isTrue);
       final node = (result as Success).value as MfmNode;
@@ -16,7 +17,8 @@ void main() {
       expect(emoji.name, 'emoji');
     });
 
-    test('アンダースコアを含む絵文字名を解析できる', () {
+    // mfm.js/test/parser.ts:349-353
+    test('mfm-js互換テスト: アンダースコアを含む絵文字名を解析できる', () {
       final result = parser.parse(':thinking_ai:');
       expect(result is Success, isTrue);
       final node = (result as Success).value as MfmNode;
@@ -32,7 +34,8 @@ void main() {
       expect((node as EmojiCodeNode).name, '+1');
     });
 
-    test('マイナス記号を含む絵文字名を解析できる', () {
+    // mfm.js/test/parser.ts:355-359
+    test('mfm-js互換テスト: マイナス記号を含む絵文字名を解析できる', () {
       final result = parser.parse(':thumbs-up:');
       expect(result is Success, isTrue);
       final node = (result as Success).value as MfmNode;

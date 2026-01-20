@@ -10,8 +10,8 @@ import 'package:test/test.dart';
 void main() {
   group('nesting limit', () {
     group('quote', () {
-      // mfm.js/test/parser.ts:1304-1327
-      test('basic', () {
+      // mfm.js/test/parser.ts:1306-1315
+      test('mfm-js互換テスト: basic', () {
         // >>> abc → 2段階目まではネスト、3段階目(> abc)はテキスト
         final parser = MfmParser().build(nestLimit: 2);
         final result = parser.parse('>>> abc');
@@ -28,7 +28,8 @@ void main() {
         expect((quote2.children[0] as TextNode).text, '> abc');
       });
 
-      test('basic 2', () {
+      // mfm.js/test/parser.ts:1318-1327
+      test('mfm-js互換テスト: basic 2', () {
         // >> **abc** → 2段階目までネスト、**abc**はテキスト
         final parser = MfmParser().build(nestLimit: 2);
         final result = parser.parse('>> **abc**');
@@ -48,7 +49,7 @@ void main() {
 
     group('big', () {
       // mfm.js/test/parser.ts:1331-1340
-      test('big', () {
+      test('mfm-js互換テスト: big', () {
         // <b><b>***abc***</b></b> → 2段階目まではネスト、***abc***はテキスト
         final parser = MfmParser().build(nestLimit: 2);
         final result = parser.parse('<b><b>***abc***</b></b>');
@@ -67,8 +68,8 @@ void main() {
     });
 
     group('bold', () {
-      // mfm.js/test/parser.ts:1343-1366
-      test('basic', () {
+      // mfm.js/test/parser.ts:1344-1353
+      test('mfm-js互換テスト: basic', () {
         // <i><i>**abc**</i></i> → 2段階目まではネスト、**abc**はテキスト
         final parser = MfmParser().build(nestLimit: 2);
         final result = parser.parse('<i><i>**abc**</i></i>');
@@ -85,7 +86,8 @@ void main() {
         expect((italic2.children[0] as TextNode).text, '**abc**');
       });
 
-      test('tag', () {
+      // mfm.js/test/parser.ts:1356-1365
+      test('mfm-js互換テスト: tag', () {
         // <i><i><b>abc</b></i></i> → 2段階目まではネスト、<b>abc</b>はテキスト
         final parser = MfmParser().build(nestLimit: 2);
         final result = parser.parse('<i><i><b>abc</b></i></i>');
@@ -105,7 +107,7 @@ void main() {
 
     group('small', () {
       // mfm.js/test/parser.ts:1369-1378
-      test('small', () {
+      test('mfm-js互換テスト: small', () {
         // <i><i><small>abc</small></i></i> → 2段階目まではネスト、<small>abc</small>はテキスト
         final parser = MfmParser().build(nestLimit: 2);
         final result = parser.parse('<i><i><small>abc</small></i></i>');
@@ -124,8 +126,8 @@ void main() {
     });
 
     group('italic', () {
-      // mfm.js/test/parser.ts:1380-1389
-      test('italic', () {
+      // mfm.js/test/parser.ts:1381-1390
+      test('mfm-js互換テスト: italic', () {
         // <b><b><i>abc</i></b></b> → 2段階目まではネスト、<i>abc</i>はテキスト
         final parser = MfmParser().build(nestLimit: 2);
         final result = parser.parse('<b><b><i>abc</i></b></b>');
@@ -144,8 +146,8 @@ void main() {
     });
 
     group('strike', () {
-      // mfm.js/test/parser.ts:1393-1416
-      test('basic', () {
+      // mfm.js/test/parser.ts:1394-1403
+      test('mfm-js互換テスト: basic', () {
         // <b><b>~~abc~~</b></b> → 2段階目まではネスト、~~abc~~はテキスト
         final parser = MfmParser().build(nestLimit: 2);
         final result = parser.parse('<b><b>~~abc~~</b></b>');
@@ -162,7 +164,8 @@ void main() {
         expect((bold2.children[0] as TextNode).text, '~~abc~~');
       });
 
-      test('tag', () {
+      // mfm.js/test/parser.ts:1406-1415
+      test('mfm-js互換テスト: tag', () {
         // <b><b><s>abc</s></b></b> → 2段階目まではネスト、<s>abc</s>はテキスト
         final parser = MfmParser().build(nestLimit: 2);
         final result = parser.parse('<b><b><s>abc</s></b></b>');
@@ -182,7 +185,7 @@ void main() {
 
     group('hashtag', () {
       // mfm.js/test/parser.ts:1419-1477
-      test('basic', () {
+      test('mfm-js互換テスト: basic', () {
         // <b>#abc(xyz)</b> → ネスト制限内ではハッシュタグとして認識
         final parser = MfmParser().build(nestLimit: 2);
         var result = parser.parse('<b>#abc(xyz)</b>');
@@ -209,7 +212,7 @@ void main() {
         expect((bold2.children[1] as TextNode).text, '(x(y)z)');
       });
 
-      test('outside "()"', () {
+      test('mfm-js互換テスト: outside "()"', () {
         // (#abc) → 外側の括弧はハッシュタグに含まれない
         final parser = MfmParser().build();
         final result = parser.parse('(#abc)');
@@ -224,7 +227,7 @@ void main() {
         expect((nodes[2] as TextNode).text, ')');
       });
 
-      test('outside "[]"', () {
+      test('mfm-js互換テスト: outside "[]"', () {
         // [#abc] → 外側の角括弧はハッシュタグに含まれない
         final parser = MfmParser().build();
         final result = parser.parse('[#abc]');
@@ -239,7 +242,7 @@ void main() {
         expect((nodes[2] as TextNode).text, ']');
       });
 
-      test('outside "「」"', () {
+      test('mfm-js互換テスト: outside "「」"', () {
         // 「#abc」 → 外側の鉤括弧はハッシュタグに含まれない
         final parser = MfmParser().build();
         final result = parser.parse('「#abc」');
@@ -254,7 +257,7 @@ void main() {
         expect((nodes[2] as TextNode).text, '」');
       });
 
-      test('outside "（）"', () {
+      test('mfm-js互換テスト: outside "（）"', () {
         // （#abc） → 外側の全角括弧はハッシュタグに含まれない
         final parser = MfmParser().build();
         final result = parser.parse('（#abc）');
@@ -272,7 +275,7 @@ void main() {
 
     group('url', () {
       // mfm.js/test/parser.ts:1480-1496
-      test('url', () {
+      test('mfm-js互換テスト: url', () {
         final parser = MfmParser().build(nestLimit: 2);
 
         // <b>https://example.com/abc(xyz)</b> → URLとして認識
@@ -305,8 +308,8 @@ void main() {
     });
 
     group('fn', () {
-      // mfm.js/test/parser.ts:1498-1507
-      test('fn', () {
+      // mfm.js/test/parser.ts:1499-1508
+      test('mfm-js互換テスト: fn', () {
         // <b><b>$[a b]</b></b> → 2段階目まではネスト、$[a b]はテキスト
         final parser = MfmParser().build(nestLimit: 2);
         final result = parser.parse(r'<b><b>$[a b]</b></b>');

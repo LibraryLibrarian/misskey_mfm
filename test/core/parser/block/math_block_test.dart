@@ -5,7 +5,8 @@ import 'package:test/test.dart';
 
 void main() {
   group('MathBlockParser（数式ブロック）', () {
-    test(r'基本: \[math1\]', () {
+    // mfm.js/test/parser.ts:287-293
+    test(r'mfm-js互換テスト: 1行の数式ブロックを使用できる', () {
       final m = MfmParser().build();
       final result = m.parse(r'\[math1\]');
       expect(result is Success, isTrue);
@@ -36,7 +37,8 @@ void main() {
       expect(math.formula, r'x = {-b \pm \sqrt{b^2-4ac} \over 2a}');
     });
 
-    test('前後にテキスト: abc\n\\[math\\]\nxyz', () {
+    // mfm.js/test/parser.ts:294-302
+    test('mfm-js互換テスト: ブロックの前後にあるテキストが正しく解釈される', () {
       final m = MfmParser().build();
       final result = m.parse('abc\n\\[math\\]\nxyz');
       expect(result is Success, isTrue);
@@ -45,8 +47,8 @@ void main() {
       expect(nodes.any((n) => n is MathBlockNode), isTrue);
     });
 
-    // mfm-js互換テスト: line position
-    test(r'行末以外に閉じタグがある場合はマッチしない: \[aaa\]after', () {
+    // mfm.js/test/parser.ts:303-309
+    test(r'mfm-js互換テスト: 行末以外に閉じタグがある場合はマッチしない', () {
       final m = MfmParser().build();
       final result = m.parse(r'\[aaa\]after');
       expect(result is Success, isTrue);
@@ -57,7 +59,8 @@ void main() {
       expect((nodes[0] as TextNode).text, r'\[aaa\]after');
     });
 
-    test(r'行頭以外に開始タグがある場合はマッチしない: before\[aaa\]', () {
+    // mfm.js/test/parser.ts:310-316
+    test(r'mfm-js互換テスト: 行頭以外に開始タグがある場合はマッチしない', () {
       final m = MfmParser().build();
       final result = m.parse(r'before\[aaa\]');
       expect(result is Success, isTrue);

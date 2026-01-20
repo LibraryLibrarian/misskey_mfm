@@ -5,7 +5,8 @@ import 'package:test/test.dart';
 
 void main() {
   group('QuoteParser（引用: 1行）', () {
-    test('基本: "> abc"', () {
+    // mfm.js/test/parser.ts:78-86
+    test('mfm-js互換テスト: 1行の引用ブロックを使用できる', () {
       final m = MfmParser().build();
       final result = m.parse('> abc');
       expect(result is Success, isTrue);
@@ -19,7 +20,8 @@ void main() {
   });
 
   group('QuoteParser（引用: 複数行）', () {
-    test('基本: 連続する引用行', () {
+    // mfm.js/test/parser.ts:87-98
+    test('mfm-js互換テスト: 複数行の引用ブロックを使用できる', () {
       const input = '> これは\n> 複数行の\n> テスト';
       final m = MfmParser().build();
       final result = m.parse(input);
@@ -119,8 +121,8 @@ void main() {
   });
 
   group('QuoteParser（ブロックネスト）', () {
-    test('引用ブロックはブロックをネストできる', () {
-      // mfm-js互換テスト
+    // mfm.js/test/parser.ts:99-113
+    test('mfm-js互換テスト: 引用ブロックはブロックをネストできる', () {
       const input = '> <center>\n> a\n> </center>';
       final m = MfmParser().build();
       final result = m.parse(input);
@@ -138,8 +140,8 @@ void main() {
       expect((center.children[0] as TextNode).text, 'a');
     });
 
-    test('引用ブロックはインライン構文を含んだブロックをネストできる', () {
-      // mfm-js互換テスト
+    // mfm.js/test/parser.ts:114-129
+    test('mfm-js互換テスト: 引用ブロックはインライン構文を含んだブロックをネストできる', () {
       const input = '> <center>\n> I\'m @ai, An bot of misskey!\n> </center>';
       final m = MfmParser().build();
       final result = m.parse(input);
@@ -167,8 +169,8 @@ void main() {
   });
 
   group('QuoteParser（空行処理）', () {
-    test('複数行の引用ブロックでは空行を含めることができる', () {
-      // mfm-js互換テスト
+    // mfm.js/test/parser.ts:131-143
+    test('mfm-js互換テスト: 複数行の引用ブロックでは空行を含めることができる', () {
       const input = '> abc\n>\n> 123';
       final m = MfmParser().build();
       final result = m.parse(input);
@@ -182,8 +184,9 @@ void main() {
       expect((quote.children[0] as TextNode).text, 'abc\n\n123');
     });
 
-    test('1行の引用ブロックを空行にはできない', () {
-      // mfm-js互換テスト: QuoteNodeではなくTextNodeになる
+    // mfm.js/test/parser.ts:144-150
+    test('mfm-js互換テスト: 1行の引用ブロックを空行にはできない', () {
+      // QuoteNodeではなくTextNodeになる
       const input = '> ';
       final m = MfmParser().build();
       final result = m.parse(input);
@@ -194,8 +197,8 @@ void main() {
       expect((nodes[0] as TextNode).text, '> ');
     });
 
-    test('引用ブロックの後ろの空行は無視される', () {
-      // mfm-js互換テスト
+    // mfm.js/test/parser.ts:151-164
+    test('mfm-js互換テスト: 引用ブロックの後ろの空行は無視される', () {
       const input = '> foo\n> bar\n\nhoge';
       final m = MfmParser().build();
       final result = m.parse(input);
@@ -211,8 +214,8 @@ void main() {
       expect((nodes[1] as TextNode).text, 'hoge');
     });
 
-    test('2つの引用行の間に空行がある場合は2つの引用ブロックが生成される', () {
-      // mfm-js互換テスト
+    // mfm.js/test/parser.ts:165-182
+    test('mfm-js互換テスト: 2つの引用行の間に空行がある場合は2つの引用ブロックが生成される', () {
       const input = '> foo\n\n> bar\n\nhoge';
       final m = MfmParser().build();
       final result = m.parse(input);

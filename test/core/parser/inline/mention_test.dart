@@ -7,7 +7,8 @@ void main() {
   group('MentionParser（メンション）', () {
     final parser = MentionParser().build();
 
-    test('基本的なローカルメンションを解析できる', () {
+    // mfm.js/test/parser.ts:683-686
+    test('mfm-js互換テスト: basic', () {
       final result = parser.parse('@user');
       expect(result is Success, isTrue);
       final node = (result as Success).value as MfmNode;
@@ -18,7 +19,8 @@ void main() {
       expect(mention.acct, '@user');
     });
 
-    test('リモートメンションを解析できる', () {
+    // mfm.js/test/parser.ts:695-699
+    test('mfm-js互換テスト: basic remote', () {
       final result = parser.parse('@user@misskey.io');
       expect(result is Success, isTrue);
       final node = (result as Success).value as MfmNode;
@@ -36,14 +38,26 @@ void main() {
       expect(mention.username, 'user_name');
     });
 
-    test('ハイフンを含むユーザー名（中間）を解析できる', () {
+    // mfm.js/test/parser.ts:737-741
+    test('mfm-js互換テスト: ハイフンを含むユーザー名（中間）を解析できる', () {
       final result = parser.parse('@user-name');
       expect(result is Success, isTrue);
       final mention = (result as Success).value as MentionNode;
       expect(mention.username, 'user-name');
     });
 
-    test('ピリオドを含むユーザー名（中間）を解析できる', () {
+    // mfm.js/test/parser.ts:743-747
+    test('mfm-js互換テスト: allow "." in username', () {
+      final result = parser.parse('@bsky.brid.gy@bsky.brid.gy');
+      expect(result is Success, isTrue);
+      final mention = (result as Success).value as MentionNode;
+      expect(mention.username, 'bsky.brid.gy');
+      expect(mention.host, 'bsky.brid.gy');
+      expect(mention.acct, '@bsky.brid.gy@bsky.brid.gy');
+    });
+
+    // mfm.js/test/parser.ts:749-753
+    test('mfm-js互換テスト: ピリオドを含むユーザー名（中間）を解析できる', () {
       final result = parser.parse('@user.name');
       expect(result is Success, isTrue);
       final mention = (result as Success).value as MentionNode;
@@ -64,7 +78,8 @@ void main() {
       expect(mention.username, '12345');
     });
 
-    test('末尾ハイフンは除去される（@user- → @user）', () {
+    // mfm.js/test/parser.ts:761-765
+    test('mfm-js互換テスト: 末尾ハイフンは除去される', () {
       final result = parser.parse('@user-');
       expect(result is Success, isTrue);
       final mention = (result as Success).value as MentionNode;
@@ -74,7 +89,8 @@ void main() {
       expect((result as Success).position, 5);
     });
 
-    test('末尾ピリオドは除去される（@user. → @user）', () {
+    // mfm.js/test/parser.ts:773-777
+    test('mfm-js互換テスト: 末尾ピリオドは除去される', () {
       final result = parser.parse('@user.');
       expect(result is Success, isTrue);
       final mention = (result as Success).value as MentionNode;
@@ -98,7 +114,8 @@ void main() {
       expect((result as Success).position, 5);
     });
 
-    test('先頭ハイフンは無効（@-user）', () {
+    // mfm.js/test/parser.ts:749-753
+    test('mfm-js互換テスト: disallow "-" in head of username', () {
       final result = parser.parse('@-user');
       expect(result is Failure, isTrue);
     });
@@ -178,13 +195,30 @@ void main() {
     });
   });
 
-  // mfm-js準拠: 統合テスト（MfmParser使用）
-  // test/parser.ts:700-783
-  group('MentionParser（mfm-js準拠 統合テスト）', () {
+  // mfm-js互換: 統合テスト（MfmParser使用）
+  group('MentionParser（mfm-js互換 統合テスト）', () {
     final parser = MfmParser().build();
 
-    test('basic remote 2', () {
-      // mfm.js/test/parser.ts:701-704
+    // mfm.js/test/parser.ts:689-693
+    test('mfm-js互換テスト: basic 2', () {
+      const input = 'before @abc after';
+      final result = parser.parse(input);
+      expect(result is Success, isTrue);
+      final nodes = (result as Success).value as List<MfmNode>;
+      expect(nodes.length, 3);
+      expect(nodes[0], isA<TextNode>());
+      expect((nodes[0] as TextNode).text, 'before ');
+      expect(nodes[1], isA<MentionNode>());
+      final mention = nodes[1] as MentionNode;
+      expect(mention.username, 'abc');
+      expect(mention.host, isNull);
+      expect(mention.acct, '@abc');
+      expect(nodes[2], isA<TextNode>());
+      expect((nodes[2] as TextNode).text, ' after');
+    });
+
+    // mfm.js/test/parser.ts:701-705
+    test('mfm-js互換テスト: basic remote 2', () {
       const input = 'before @abc@misskey.io after';
       final result = parser.parse(input);
       expect(result is Success, isTrue);
@@ -201,8 +235,8 @@ void main() {
       expect((nodes[2] as TextNode).text, ' after');
     });
 
-    test('basic remote 3', () {
-      // mfm.js/test/parser.ts:707-710
+    // mfm.js/test/parser.ts:707-711
+    test('mfm-js互換テスト: basic remote 3', () {
       const input = 'before\n@abc@misskey.io\nafter';
       final result = parser.parse(input);
       expect(result is Success, isTrue);
@@ -219,8 +253,19 @@ void main() {
       expect((nodes[2] as TextNode).text, '\nafter');
     });
 
-    test('detect as a mention if the before char is [^a-z0-9]i', () {
-      // mfm.js/test/parser.ts:719-722
+    // mfm.js/test/parser.ts:713-717
+    test('mfm-js互換テスト: ignore format of mail address', () {
+      const input = 'abc@example.com';
+      final result = parser.parse(input);
+      expect(result is Success, isTrue);
+      final nodes = (result as Success).value as List<MfmNode>;
+      expect(nodes.length, 1);
+      expect(nodes[0], isA<TextNode>());
+      expect((nodes[0] as TextNode).text, 'abc@example.com');
+    });
+
+    // mfm.js/test/parser.ts:719-723
+    test('mfm-js互換テスト: detect as a mention if the before char is [^a-z0-9]i', () {
       // 直前の文字が英数字以外の場合はメンションとして認識される
       const input = 'あいう@abc';
       final result = parser.parse(input);
@@ -236,8 +281,8 @@ void main() {
       expect(mention.acct, '@abc');
     });
 
-    test('invalid char only username', () {
-      // mfm.js/test/parser.ts:725-728
+    // mfm.js/test/parser.ts:725-729
+    test('mfm-js互換テスト: invalid char only username', () {
       // ユーザー名が無効文字のみの場合はテキストになる
       const input = '@-';
       final result = parser.parse(input);
@@ -248,8 +293,8 @@ void main() {
       expect((nodes[0] as TextNode).text, '@-');
     });
 
-    test('invalid char only hostname', () {
-      // mfm.js/test/parser.ts:731-734
+    // mfm.js/test/parser.ts:731-735
+    test('mfm-js互換テスト: invalid char only hostname', () {
       // ホスト名が無効な場合はテキストになる
       const input = '@abc@.';
       final result = parser.parse(input);
@@ -260,8 +305,8 @@ void main() {
       expect((nodes[0] as TextNode).text, '@abc@.');
     });
 
-    test('disallow "." in head of hostname', () {
-      // mfm.js/test/parser.ts:773-776
+    // mfm.js/test/parser.ts:773-777
+    test('mfm-js互換テスト: disallow "." in head of hostname', () {
       // ホスト名の先頭に"."がある場合はテキストになる
       const input = '@abc@.aaa';
       final result = parser.parse(input);
@@ -272,8 +317,8 @@ void main() {
       expect((nodes[0] as TextNode).text, '@abc@.aaa');
     });
 
-    test('disallow "." in tail of hostname', () {
-      // mfm.js/test/parser.ts:779-782
+    // mfm.js/test/parser.ts:779-795
+    test('mfm-js互換テスト: disallow "." in tail of hostname', () {
       // ホスト名の末尾に"."がある場合は"."の前までをホスト名として扱う
       const input = '@abc@aaa.';
       final result = parser.parse(input);
@@ -287,6 +332,33 @@ void main() {
       expect(mention.acct, '@abc@aaa');
       expect(nodes[1], isA<TextNode>());
       expect((nodes[1] as TextNode).text, '.');
+    });
+
+    // mfm.js/test/parser.ts:785-789
+    test('mfm-js互換テスト: disallow "-" in head of hostname', () {
+      const input = '@abc@-aaa';
+      final result = parser.parse(input);
+      expect(result is Success, isTrue);
+      final nodes = (result as Success).value as List<MfmNode>;
+      expect(nodes.length, 1);
+      expect(nodes[0], isA<TextNode>());
+      expect((nodes[0] as TextNode).text, '@abc@-aaa');
+    });
+
+    // mfm.js/test/parser.ts:791-795
+    test('mfm-js互換テスト: disallow "-" in tail of hostname', () {
+      const input = '@abc@aaa-';
+      final result = parser.parse(input);
+      expect(result is Success, isTrue);
+      final nodes = (result as Success).value as List<MfmNode>;
+      expect(nodes.length, 2);
+      expect(nodes[0], isA<MentionNode>());
+      final mention = nodes[0] as MentionNode;
+      expect(mention.username, 'abc');
+      expect(mention.host, 'aaa');
+      expect(mention.acct, '@abc@aaa');
+      expect(nodes[1], isA<TextNode>());
+      expect((nodes[1] as TextNode).text, '-');
     });
   });
 }

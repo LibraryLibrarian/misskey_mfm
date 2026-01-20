@@ -8,7 +8,8 @@ void main() {
     final parser = MfmParser().buildSimple();
 
     group('text', () {
-      test('basic', () {
+      // mfm.js/test/parser.ts:10-14
+      test('mfm-js互換テスト: basic', () {
         final result = parser.parse('abc');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
@@ -17,8 +18,9 @@ void main() {
         expect((nodes[0] as TextNode).text, 'abc');
       });
 
-      test('ignore hashtag', () {
-        // mfm-js仕様: simpleParserではハッシュタグは無視される
+      // mfm.js/test/parser.ts:16-20
+      test('mfm-js互換テスト: ignore hashtag', () {
+        // simpleParserではハッシュタグは無視される
         final result = parser.parse('abc#abc');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
@@ -27,7 +29,8 @@ void main() {
         expect((nodes[0] as TextNode).text, 'abc#abc');
       });
 
-      test('keycap number sign', () {
+      // mfm.js/test/parser.ts:22-26
+      test('mfm-js互換テスト: keycap number sign', () {
         // #️⃣ はUnicode絵文字として認識される
         final result = parser.parse('abc#️⃣abc');
         expect(result is Success, isTrue);
@@ -43,7 +46,8 @@ void main() {
     });
 
     group('emoji', () {
-      test('basic emojiCode', () {
+      // mfm.js/test/parser.ts:30-34
+      test('mfm-js互換テスト: basic emojiCode', () {
         final result = parser.parse(':foo:');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
@@ -52,8 +56,9 @@ void main() {
         expect((nodes[0] as EmojiCodeNode).name, 'foo');
       });
 
-      test('between texts', () {
-        // mfm-js仕様: 英数字で挟まれたemojiCodeは無効
+      // mfm.js/test/parser.ts:36-40
+      test('mfm-js互換テスト: between texts', () {
+        // 英数字で挟まれたemojiCodeは無効
         final result = parser.parse('foo:bar:baz');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
@@ -62,8 +67,9 @@ void main() {
         expect((nodes[0] as TextNode).text, 'foo:bar:baz');
       });
 
-      test('between texts 2', () {
-        // mfm-js仕様: 数字で挟まれたemojiCodeは無効
+      // mfm.js/test/parser.ts:42-46
+      test('mfm-js互換テスト: between texts 2', () {
+        // 数字で挟まれたemojiCodeは無効
         final result = parser.parse('12:34:56');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
@@ -72,8 +78,9 @@ void main() {
         expect((nodes[0] as TextNode).text, '12:34:56');
       });
 
-      test('between texts 3', () {
-        // mfm-js仕様: 日本語で挟まれたemojiCodeは有効
+      // mfm.js/test/parser.ts:48-52
+      test('mfm-js互換テスト: between texts 3', () {
+        // 日本語で挟まれたemojiCodeは有効
         final result = parser.parse('あ:bar:い');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
@@ -106,8 +113,9 @@ void main() {
         expect((nodes[1] as UnicodeEmojiNode).emoji, '😇');
       });
 
-      test('Ignore Variation Selector preceded by Unicode Emoji', () {
-        // mfm-js仕様: 異体字セレクタ(U+FE0F)単体はテキストとして扱う
+      // mfm.js/test/parser.ts:54-58
+      test('mfm-js互換テスト: Ignore Variation Selector preceded by Unicode Emoji', () {
+        // 異体字セレクタ(U+FE0F)単体はテキストとして扱う
         final result = parser.parse('\uFE0F');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
@@ -117,8 +125,9 @@ void main() {
       });
     });
 
+    // mfm.js/test/parser.ts:61-65
     group('disallow other syntaxes', () {
-      test('bold is ignored', () {
+      test('mfm-js互換テスト: bold is ignored', () {
         final result = parser.parse('foo **bar** baz');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;

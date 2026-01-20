@@ -5,7 +5,8 @@ import 'package:test/test.dart';
 
 void main() {
   group('SmallParser（small タグ）', () {
-    test('基本: <small>abc</small>', () {
+    // mfm.js/test/parser.ts:479-487
+    test('mfm-js互換テスト: basic', () {
       final m = MfmParser().build();
       final result = m.parse('<small>abc</small>');
       expect(result is Success, isTrue);
@@ -18,7 +19,7 @@ void main() {
     });
 
     // mfm.js/test/parser.ts:488-499
-    test('内容にはインライン構文を利用できる: <small>abc**123**abc</small>', () {
+    test('mfm-js互換テスト: 内容にはインライン構文を利用できる', () {
       final m = MfmParser().build();
       final result = m.parse('<small>abc**123**abc</small>');
       expect(result is Success, isTrue);
@@ -36,7 +37,7 @@ void main() {
     });
 
     // mfm.js/test/parser.ts:501-513
-    test('内容は改行できる: <small>abc\\n**123**\\nabc</small>', () {
+    test('mfm-js互換テスト: 内容は改行できる', () {
       final m = MfmParser().build();
       final result = m.parse('<small>abc\n**123**\nabc</small>');
       expect(result is Success, isTrue);

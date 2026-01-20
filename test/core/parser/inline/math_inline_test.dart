@@ -5,7 +5,8 @@ import 'package:test/test.dart';
 
 void main() {
   group('MathInlineParser（インライン数式）', () {
-    test(r'基本: \(x = 2\)', () {
+    // mfm.js/test/parser.ts:675-679
+    test(r'mfm-js互換テスト: basic', () {
       final m = MfmParser().build();
       final result = m.parse(r'\(x = 2\)');
       expect(result is Success, isTrue);

@@ -7,7 +7,8 @@ void main() {
   group('BigParser（big構文 ***...***）', () {
     final parser = BigParser().buildWithFallback();
 
-    test('基本的なbig構文を解析できる', () {
+    // mfm.js/test/parser.ts:365-373
+    test('mfm-js互換テスト: basic', () {
       final result = parser.parse('***abc***');
       expect(result is Success, isTrue);
       final node = (result as Success).value as MfmNode;
@@ -73,7 +74,8 @@ void main() {
       expect((fn.children.first as TextNode).text, 'abc');
     });
 
-    test('内容にはインライン構文を利用できる', () {
+    // mfm.js/test/parser.ts:374-386
+    test('mfm-js互換テスト: 内容にはインライン構文を利用できる', () {
       final result = mfmParser.parse('***123**abc**123***');
       expect(result is Success, isTrue);
       final nodes = (result as Success).value as List<MfmNode>;
@@ -90,7 +92,8 @@ void main() {
       expect((fn.children[2] as TextNode).text, '123');
     });
 
-    test('内容は改行できる', () {
+    // mfm.js/test/parser.ts:387-399
+    test('mfm-js互換テスト: 内容は改行できる', () {
       final result = mfmParser.parse('***123\n**abc**\n123***');
       expect(result is Success, isTrue);
       final nodes = (result as Success).value as List<MfmNode>;

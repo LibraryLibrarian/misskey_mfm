@@ -5,7 +5,8 @@ import 'package:test/test.dart';
 
 void main() {
   group('InlineCodeParser（インラインコード）', () {
-    test('基本: `var x = 1;`', () {
+    // mfm.js/test/parser.ts:655-659
+    test('mfm-js互換テスト: basic', () {
       final m = MfmParser().build();
       final result = m.parse('AiScript: `#abc = 2`');
       expect(result is Success, isTrue);
@@ -16,7 +17,8 @@ void main() {
       expect((nodes[1] as InlineCodeNode).code, '#abc = 2');
     });
 
-    test('改行は不可: 無効としてテキスト化', () {
+    // mfm.js/test/parser.ts:661-665
+    test('mfm-js互換テスト: disallow line break', () {
       final m = MfmParser().build();
       final result = m.parse('`foo\nbar`');
       expect(result is Success, isTrue);
@@ -25,7 +27,8 @@ void main() {
       expect((nodes[0] as TextNode).text, '`foo\nbar`');
     });
 
-    test('アキュートアクセントは不可: 無効としてテキスト化', () {
+    // mfm.js/test/parser.ts:667-671
+    test('mfm-js互換テスト: disallow ´', () {
       final m = MfmParser().build();
       final result = m.parse('`foo´bar`');
       expect(result is Success, isTrue);

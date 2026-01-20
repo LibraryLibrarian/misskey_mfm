@@ -19,13 +19,30 @@ void main() {
 
   group('UrlParser', () {
     group('生URL（フルパーサー経由）', () {
-      test('基本的なHTTPS URL', () {
+      // mfm.js/test/parser.ts:932-938
+      test('mfm-js互換テスト: basic', () {
         final result = fullParser.parse('https://example.com');
         expect(result is Success, isTrue);
         final node = getFirstUrl(result);
         expect(node, isNotNull);
         expect(node!.url, equals('https://example.com'));
         expect(node.brackets, isFalse);
+      });
+
+      // mfm.js/test/parser.ts:940-948
+      test('mfm-js互換テスト: with other texts', () {
+        final result = fullParser.parse(
+          'official instance: https://misskey.io/@ai.',
+        );
+        expect(result is Success, isTrue);
+        final nodes = (result as Success).value as List<MfmNode>;
+        expect(nodes.length, 3);
+        expect(nodes[0], isA<TextNode>());
+        expect((nodes[0] as TextNode).text, 'official instance: ');
+        expect(nodes[1], isA<UrlNode>());
+        expect((nodes[1] as UrlNode).url, 'https://misskey.io/@ai');
+        expect(nodes[2], isA<TextNode>());
+        expect((nodes[2] as TextNode).text, '.');
       });
 
       test('基本的なHTTP URL', () {
@@ -55,6 +72,15 @@ void main() {
         expect(node!.url, equals('https://example.com/search?q=test&lang=ja'));
       });
 
+      // mfm.js/test/parser.ts:976-982
+      test('mfm-js互換テスト: with comma', () {
+        final result = fullParser.parse('https://example.com/foo?bar=a,b');
+        expect(result is Success, isTrue);
+        final node = getFirstUrl(result);
+        expect(node, isNotNull);
+        expect(node!.url, equals('https://example.com/foo?bar=a,b'));
+      });
+
       test('フラグメント付きURL', () {
         final result = fullParser.parse('https://example.com/page#section');
         expect(result is Success, isTrue);
@@ -80,6 +106,15 @@ void main() {
       });
 
       group('括弧のネスト処理', () {
+        // mfm.js/test/parser.ts:993-999
+        test('mfm-js互換テスト: with brackets', () {
+          final result = fullParser.parse('https://example.com/foo(bar)');
+          expect(result is Success, isTrue);
+          final node = getFirstUrl(result);
+          expect(node, isNotNull);
+          expect(node!.url, equals('https://example.com/foo(bar)'));
+        });
+
         test('丸括弧を含むURL', () {
           final result = fullParser.parse(
             'https://example.com/wiki/Test_(programming)',
@@ -126,8 +161,9 @@ void main() {
         });
       });
 
+      // mfm.js/test/parser.ts:950-991
       group('末尾の無効文字除去', () {
-        test('末尾のピリオドを除去', () {
+        test('mfm-js互換テスト: 末尾のピリオドを除去', () {
           final result = fullParser.parse('https://example.com.');
           expect(result is Success, isTrue);
           final nodes = (result as Success).value as List<MfmNode>;
@@ -138,7 +174,7 @@ void main() {
           expect((nodes[1] as TextNode).text, equals('.'));
         });
 
-        test('末尾のカンマを除去', () {
+        test('mfm-js互換テスト: 末尾のカンマを除去', () {
           final result = fullParser.parse('https://example.com,');
           expect(result is Success, isTrue);
           final nodes = (result as Success).value as List<MfmNode>;
@@ -146,7 +182,7 @@ void main() {
           expect((nodes[0] as UrlNode).url, equals('https://example.com'));
         });
 
-        test('末尾の複数ピリオド・カンマを除去', () {
+        test('mfm-js互換テスト: 末尾の複数ピリオド・カンマを除去', () {
           final result = fullParser.parse('https://example.com.,.');
           expect(result is Success, isTrue);
           final nodes = (result as Success).value as List<MfmNode>;
@@ -288,9 +324,10 @@ void main() {
     });
   });
 
+  // mfm.js/test/parser.ts:931-1063
   group('mfm-js互換テスト', () {
     group('edge cases', () {
-      test('disallow period only', () {
+      test('mfm-js互換テスト: disallow period only', () {
         // mfm-js: https://. はURLとして認識されず、テキストとして扱われる
         final result = fullParser.parse('https://.');
         expect(result is Success, isTrue);
@@ -302,7 +339,7 @@ void main() {
     });
 
     group('parent brackets handling', () {
-      test('ignore parent brackets', () {
+      test('mfm-js互換テスト: ignore parent brackets', () {
         // mfm-js: 親括弧内のURLは括弧を含まない
         final result = fullParser.parse('(https://example.com/foo)');
         expect(result is Success, isTrue);
@@ -316,7 +353,7 @@ void main() {
         expect((nodes[2] as TextNode).text, equals(')'));
       });
 
-      test('ignore parent brackets (2)', () {
+      test('mfm-js互換テスト: ignore parent brackets (2)', () {
         // mfm-js: テキスト後の親括弧内URLも同様
         final result = fullParser.parse('(foo https://example.com/foo)');
         expect(result is Success, isTrue);
@@ -330,7 +367,7 @@ void main() {
         expect((nodes[2] as TextNode).text, equals(')'));
       });
 
-      test('ignore parent brackets with internal brackets', () {
+      test('mfm-js互換テスト: ignore parent brackets with internal brackets', () {
         // mfm-js: 内部括弧を含むURLは内部括弧を保持し、親括弧は除外
         final result = fullParser.parse('(https://example.com/foo(bar))');
         expect(result is Success, isTrue);
@@ -347,7 +384,7 @@ void main() {
         expect((nodes[2] as TextNode).text, equals(')'));
       });
 
-      test('ignore parent []', () {
+      test('mfm-js互換テスト: ignore parent []', () {
         // mfm-js: 角括弧内のURLも同様に処理
         final result = fullParser.parse('foo [https://example.com/foo] bar');
         expect(result is Success, isTrue);
@@ -364,7 +401,7 @@ void main() {
 
     group('non-ascii and xss prevention', () {
       test(
-        'ignore non-ascii characters contained url without angle brackets',
+        'mfm-js互換テスト: ignore non-ascii characters contained url without angle brackets',
         () {
           // mfm-js: 非ASCII文字を含むURLはブラケットなしではテキストとして扱う
           final result = fullParser.parse('https://大石泉すき.example.com');
@@ -379,7 +416,7 @@ void main() {
         },
       );
 
-      test('match non-ascii characters contained url with angle brackets', () {
+      test('mfm-js互換テスト: match non-ascii characters contained url with angle brackets', () {
         // mfm-js: ブラケット付きなら非ASCII文字を含むURLも認識
         final result = fullParser.parse('<https://大石泉すき.example.com>');
         expect(result is Success, isTrue);
@@ -391,7 +428,7 @@ void main() {
         expect(urlNode.brackets, isTrue);
       });
 
-      test('prevent xss', () {
+      test('mfm-js互換テスト: prevent xss', () {
         // mfm-js: javascript: スキームはURLとして認識しない（XSS防止）
         final result = fullParser.parse('javascript:foo');
         expect(result is Success, isTrue);
