@@ -237,6 +237,17 @@ void main() {
       expect(textNode, isA<TextNode>());
       expect((textNode as TextNode).text, r'$[');
     });
+
+    // mfm-js互換テスト: test/parser.ts:1261-1266
+    test('無効なfn名（日本語など非ASCII文字）はテキストとして扱う', () {
+      final result = parser.parse(r'$[関数 text]');
+      expect(result is Success, isTrue);
+      final nodes = (result as Success).value as List<MfmNode>;
+      // fn名が無効（日本語文字）のためfnとして認識されず、テキストとして扱われる
+      expect(nodes.length, 1);
+      expect(nodes.first, isA<TextNode>());
+      expect((nodes.first as TextNode).text, r'$[関数 text]');
+    });
   });
 
   group('FnParser エッジケーステスト', () {
