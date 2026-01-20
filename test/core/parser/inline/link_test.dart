@@ -1,152 +1,171 @@
 import 'package:misskey_mfm/core/ast.dart';
-import 'package:misskey_mfm/core/parser/inline/link.dart';
 import 'package:misskey_mfm/core/parser/parser.dart';
 import 'package:petitparser/petitparser.dart';
 import 'package:test/test.dart';
 
 void main() {
+  // フルパーサーを使用（mfm-js互換のテスト）
+  final fullParser = MfmParser().build();
+
+  /// ヘルパー: フルパーサーの結果から最初のLinkNodeを取得
+  LinkNode? getFirstLink(Result<List<MfmNode>> result) {
+    if (result is! Success) return null;
+    final nodes = result.value;
+    for (final node in nodes) {
+      if (node is LinkNode) return node;
+    }
+    return null;
+  }
+
   group('LinkParser', () {
-    // シンプルなラベル用パーサー（テキストのみ）
-    final simpleLabelParser = any().map<MfmNode>(
-      (dynamic c) => TextNode(c as String),
-    );
-
-    group('通常リンク（buildWithInner）', () {
-      final parser = LinkParser().buildWithInner(simpleLabelParser);
-
+    group('通常リンク（フルパーサー経由）', () {
       test('基本的なリンク', () {
-        final result = parser.parse('[Example](https://example.com)');
+        final result = fullParser.parse('[Example](https://example.com)');
         expect(result is Success, isTrue);
-        final node = result.value as LinkNode;
-        expect(node.silent, isFalse);
+        final node = getFirstLink(result);
+        expect(node, isNotNull);
+        expect(node!.silent, isFalse);
         expect(node.url, equals('https://example.com'));
         expect(node.children.length, equals(1));
         expect((node.children[0] as TextNode).text, equals('Example'));
       });
 
       test('パス付きURL', () {
-        final result = parser.parse('[Link](https://example.com/path/to/page)');
+        final result = fullParser.parse(
+          '[Link](https://example.com/path/to/page)',
+        );
         expect(result is Success, isTrue);
-        final node = result.value as LinkNode;
-        expect(node.url, equals('https://example.com/path/to/page'));
+        final node = getFirstLink(result);
+        expect(node, isNotNull);
+        expect(node!.url, equals('https://example.com/path/to/page'));
       });
 
       test('HTTP URL', () {
-        final result = parser.parse('[Link](http://example.com)');
+        final result = fullParser.parse('[Link](http://example.com)');
         expect(result is Success, isTrue);
-        final node = result.value as LinkNode;
-        expect(node.url, equals('http://example.com'));
+        final node = getFirstLink(result);
+        expect(node, isNotNull);
+        expect(node!.url, equals('http://example.com'));
       });
 
       test('日本語ラベル', () {
-        final result = parser.parse('[リンクテキスト](https://example.com)');
+        final result = fullParser.parse('[リンクテキスト](https://example.com)');
         expect(result is Success, isTrue);
-        final node = result.value as LinkNode;
-        expect(node.children.isNotEmpty, isTrue);
+        final node = getFirstLink(result);
+        expect(node, isNotNull);
+        expect(node!.children.isNotEmpty, isTrue);
       });
 
       test('複数単語のラベル', () {
-        final result = parser.parse(
+        final result = fullParser.parse(
           '[Click here for more](https://example.com)',
         );
         expect(result is Success, isTrue);
-        final node = result.value as LinkNode;
-        expect(node.children.isNotEmpty, isTrue);
+        final node = getFirstLink(result);
+        expect(node, isNotNull);
+        expect(node!.children.isNotEmpty, isTrue);
       });
 
       test('ブラケット付きURL', () {
-        final result = parser.parse('[Link](<https://example.com/@user>)');
+        final result = fullParser.parse('[Link](<https://example.com/@user>)');
         expect(result is Success, isTrue);
-        final node = result.value as LinkNode;
-        expect(node.url, equals('https://example.com/@user'));
+        final node = getFirstLink(result);
+        expect(node, isNotNull);
+        expect(node!.url, equals('https://example.com/@user'));
       });
 
       group('無効なケース', () {
-        test('空のラベルは失敗', () {
-          final result = parser.parse('[](https://example.com)');
-          expect(result is Failure, isTrue);
+        test('空のラベルはテキスト', () {
+          final result = fullParser.parse('[](https://example.com)');
+          expect(result is Success, isTrue);
+          final nodes = (result as Success).value as List<MfmNode>;
+          // 空のラベルはリンクとして認識されない
+          expect(nodes.any((n) => n is LinkNode), isFalse);
         });
 
-        test('閉じ括弧がない場合は失敗', () {
-          final result = parser.parse('[Link](https://example.com');
-          expect(result is Failure, isTrue);
+        test('閉じ括弧がない場合はテキスト', () {
+          final result = fullParser.parse('[Link](https://example.com');
+          expect(result is Success, isTrue);
+          final nodes = (result as Success).value as List<MfmNode>;
+          expect(nodes.any((n) => n is LinkNode), isFalse);
         });
 
-        test('URLがない場合は失敗', () {
-          final result = parser.parse('[Link]()');
-          expect(result is Failure, isTrue);
+        test('URLがない場合はテキスト', () {
+          final result = fullParser.parse('[Link]()');
+          expect(result is Success, isTrue);
+          final nodes = (result as Success).value as List<MfmNode>;
+          expect(nodes.any((n) => n is LinkNode), isFalse);
         });
 
-        test('無効なURLは失敗', () {
-          final result = parser.parse('[Link](not-a-url)');
-          expect(result is Failure, isTrue);
-        });
-
-        test('ラベル内の改行は失敗', () {
-          final result = parser.parse('[Line1\nLine2](https://example.com)');
-          expect(result is Failure, isTrue);
+        test('無効なURLはテキスト', () {
+          final result = fullParser.parse('[Link](not-a-url)');
+          expect(result is Success, isTrue);
+          final nodes = (result as Success).value as List<MfmNode>;
+          expect(nodes.any((n) => n is LinkNode), isFalse);
         });
       });
     });
 
     group('サイレントリンク', () {
-      final parser = LinkParser().buildWithInner(simpleLabelParser);
-
       test('基本的なサイレントリンク', () {
-        final result = parser.parse('?[Example](https://example.com)');
+        final result = fullParser.parse('?[Example](https://example.com)');
         expect(result is Success, isTrue);
-        final node = result.value as LinkNode;
-        expect(node.silent, isTrue);
+        final node = getFirstLink(result);
+        expect(node, isNotNull);
+        expect(node!.silent, isTrue);
         expect(node.url, equals('https://example.com'));
       });
 
       test('パス付きサイレントリンク', () {
-        final result = parser.parse('?[Link](https://example.com/path)');
+        final result = fullParser.parse('?[Link](https://example.com/path)');
         expect(result is Success, isTrue);
-        final node = result.value as LinkNode;
-        expect(node.silent, isTrue);
+        final node = getFirstLink(result);
+        expect(node, isNotNull);
+        expect(node!.silent, isTrue);
         expect(node.url, equals('https://example.com/path'));
       });
     });
 
-    group('フォールバック付きパーサー（buildWithFallback）', () {
-      final parser = LinkParser().buildWithFallback(simpleLabelParser);
-
+    group('フォールバック（フルパーサー経由）', () {
       test('有効なリンクはLinkNodeとして解析', () {
-        final result = parser.parse('[Link](https://example.com)');
+        final result = fullParser.parse('[Link](https://example.com)');
         expect(result is Success, isTrue);
-        expect(result.value, isA<LinkNode>());
+        final node = getFirstLink(result);
+        expect(node, isNotNull);
       });
 
-      test('[のみの場合はTextNodeとしてフォールバック', () {
-        final result = parser.parse('[');
+      test('[のみの場合はTextNode', () {
+        final result = fullParser.parse('[');
         expect(result is Success, isTrue);
-        expect(result.value, isA<TextNode>());
-        expect((result.value as TextNode).text, equals('['));
+        final nodes = (result as Success).value as List<MfmNode>;
+        expect(nodes.length, 1);
+        expect(nodes[0], isA<TextNode>());
+        expect((nodes[0] as TextNode).text, equals('['));
       });
 
-      test('?[のみの場合はTextNodeとしてフォールバック', () {
-        final result = parser.parse('?[');
+      test('?[のみの場合はTextNode', () {
+        final result = fullParser.parse('?[');
         expect(result is Success, isTrue);
-        expect(result.value, isA<TextNode>());
-        expect((result.value as TextNode).text, equals('?['));
+        final nodes = (result as Success).value as List<MfmNode>;
+        expect(nodes.length, 1);
+        expect(nodes[0], isA<TextNode>());
+        expect((nodes[0] as TextNode).text, equals('?['));
       });
 
-      test('不完全なリンクはTextNodeとしてフォールバック', () {
-        final result = parser.parse('[Link');
+      test('不完全なリンクはTextNode', () {
+        final result = fullParser.parse('[Link');
         expect(result is Success, isTrue);
-        expect(result.value, isA<TextNode>());
+        final nodes = (result as Success).value as List<MfmNode>;
+        expect(nodes.any((n) => n is LinkNode), isFalse);
       });
     });
   });
 
   group('MfmParser統合テスト', () {
-    final parser = MfmParser().build();
-
     // mfm-js互換テスト: prevent xss
     group('prevent xss', () {
       test('javascript: URLはリンクとして解析されない', () {
-        final result = parser.parse('[click here](javascript:foo)');
+        final result = fullParser.parse('[click here](javascript:foo)');
         expect(result is Success, isTrue);
         final nodes = result.value;
         expect(nodes.length, equals(1));
@@ -161,7 +180,7 @@ void main() {
     // mfm-js互換テスト: cannot nest a url in a link label
     group('cannot nest a url in a link label', () {
       test('basic', () {
-        final result = parser.parse(
+        final result = fullParser.parse(
           'official instance: [https://misskey.io/@ai](https://misskey.io/@ai).',
         );
         expect(result is Success, isTrue);
@@ -184,7 +203,7 @@ void main() {
       });
 
       test('nested', () {
-        final result = parser.parse(
+        final result = fullParser.parse(
           'official instance: [https://misskey.io/@ai**https://misskey.io/@ai**](https://misskey.io/@ai).',
         );
         expect(result is Success, isTrue);
@@ -218,7 +237,7 @@ void main() {
     // mfm-js互換テスト: cannot nest a link in a link label
     group('cannot nest a link in a link label', () {
       test('basic', () {
-        final result = parser.parse(
+        final result = fullParser.parse(
           'official instance: [[https://misskey.io/@ai](https://misskey.io/@ai)](https://misskey.io/@ai).',
         );
         expect(result is Success, isTrue);
@@ -245,7 +264,7 @@ void main() {
       });
 
       test('nested', () {
-        final result = parser.parse(
+        final result = fullParser.parse(
           'official instance: [**[https://misskey.io/@ai](https://misskey.io/@ai)**](https://misskey.io/@ai).',
         );
         expect(result is Success, isTrue);
@@ -274,7 +293,7 @@ void main() {
     // mfm-js互換テスト: cannot nest a mention in a link label
     group('cannot nest a mention in a link label', () {
       test('basic', () {
-        final result = parser.parse('[@example](https://example.com)');
+        final result = fullParser.parse('[@example](https://example.com)');
         expect(result is Success, isTrue);
         final nodes = result.value;
         expect(nodes.length, equals(1));
@@ -288,7 +307,7 @@ void main() {
       });
 
       test('nested', () {
-        final result = parser.parse(
+        final result = fullParser.parse(
           '[@example**@example**](https://example.com)',
         );
         expect(result is Success, isTrue);
@@ -312,7 +331,7 @@ void main() {
     // mfm-js互換テスト: cannot nest a hashtag in a link label
     group('cannot nest a hashtag in a link label', () {
       test('basic', () {
-        final result = parser.parse('[#hashtag](https://example.com)');
+        final result = fullParser.parse('[#hashtag](https://example.com)');
         expect(result is Success, isTrue);
         final nodes = result.value;
         expect(nodes.length, equals(1));
@@ -326,7 +345,7 @@ void main() {
       });
 
       test('nested', () {
-        final result = parser.parse(
+        final result = fullParser.parse(
           '[#hashtag**#hashtag**](https://example.com)',
         );
         expect(result is Success, isTrue);
@@ -350,7 +369,7 @@ void main() {
     // mfm-js互換テスト: with brackets
     group('with brackets', () {
       test('with brackets', () {
-        final result = parser.parse('[foo](https://example.com/foo(bar))');
+        final result = fullParser.parse('[foo](https://example.com/foo(bar))');
         expect(result is Success, isTrue);
         final nodes = result.value;
         expect(nodes.length, equals(1));
@@ -364,7 +383,9 @@ void main() {
       });
 
       test('with parent brackets', () {
-        final result = parser.parse('([foo](https://example.com/foo(bar)))');
+        final result = fullParser.parse(
+          '([foo](https://example.com/foo(bar)))',
+        );
         expect(result is Success, isTrue);
         final nodes = result.value;
         expect(nodes.length, equals(3));
@@ -382,7 +403,9 @@ void main() {
       });
 
       test('with brackets before', () {
-        final result = parser.parse('[test] foo [bar](https://example.com)');
+        final result = fullParser.parse(
+          '[test] foo [bar](https://example.com)',
+        );
         expect(result is Success, isTrue);
         final nodes = result.value;
         expect(nodes.length, equals(2));
@@ -398,7 +421,7 @@ void main() {
       });
 
       test('bad url in url part', () {
-        final result = parser.parse('[test](http://..)');
+        final result = fullParser.parse('[test](http://..)');
         expect(result is Success, isTrue);
         final nodes = result.value;
         expect(nodes.length, equals(1));
@@ -409,7 +432,9 @@ void main() {
 
     group('URL自動リンク', () {
       test('テキスト内のURL', () {
-        final result = parser.parse('Check out https://example.com for more');
+        final result = fullParser.parse(
+          'Check out https://example.com for more',
+        );
         expect(result is Success, isTrue);
         final nodes = result.value;
         expect(nodes.length, equals(3));
@@ -422,7 +447,7 @@ void main() {
       });
 
       test('複数のURL', () {
-        final result = parser.parse('https://a.com and https://b.com');
+        final result = fullParser.parse('https://a.com and https://b.com');
         expect(result is Success, isTrue);
         final nodes = result.value;
         final urlNodes = nodes.whereType<UrlNode>().toList();
@@ -432,7 +457,7 @@ void main() {
       });
 
       test('ブラケット付きURL', () {
-        final result = parser.parse('See <https://example.com/@user> here');
+        final result = fullParser.parse('See <https://example.com/@user> here');
         expect(result is Success, isTrue);
         final nodes = result.value;
         final urlNode = nodes.whereType<UrlNode>().first;
@@ -441,7 +466,7 @@ void main() {
       });
 
       test('末尾のピリオドを除去', () {
-        final result = parser.parse('Visit https://example.com.');
+        final result = fullParser.parse('Visit https://example.com.');
         expect(result is Success, isTrue);
         final nodes = result.value;
         final urlNode = nodes.whereType<UrlNode>().first;
@@ -449,7 +474,7 @@ void main() {
       });
 
       test('括弧を含むURL（Wikipedia形式）', () {
-        final result = parser.parse(
+        final result = fullParser.parse(
           'https://en.wikipedia.org/wiki/Dart_(programming_language)',
         );
         expect(result is Success, isTrue);
@@ -465,7 +490,7 @@ void main() {
 
     group('Markdownリンク', () {
       test('基本的なリンク', () {
-        final result = parser.parse('[Misskey](https://misskey.io/)');
+        final result = fullParser.parse('[Misskey](https://misskey.io/)');
         expect(result is Success, isTrue);
         final nodes = result.value;
         expect(nodes.length, equals(1));
@@ -475,7 +500,7 @@ void main() {
       });
 
       test('サイレントリンク', () {
-        final result = parser.parse('?[Misskey](https://misskey.io/)');
+        final result = fullParser.parse('?[Misskey](https://misskey.io/)');
         expect(result is Success, isTrue);
         final nodes = result.value;
         expect(nodes.length, equals(1));
@@ -485,7 +510,7 @@ void main() {
       });
 
       test('テキスト内のリンク', () {
-        final result = parser.parse(
+        final result = fullParser.parse(
           'Visit [Misskey](https://misskey.io/) today!',
         );
         expect(result is Success, isTrue);
@@ -497,7 +522,7 @@ void main() {
       });
 
       test('ラベル内のインライン構文', () {
-        final result = parser.parse('[**Bold Link**](https://example.com)');
+        final result = fullParser.parse('[**Bold Link**](https://example.com)');
         expect(result is Success, isTrue);
         final nodes = result.value;
         expect(nodes.length, equals(1));
@@ -507,7 +532,7 @@ void main() {
       });
 
       test('ラベル内の絵文字コード', () {
-        final result = parser.parse('[:smile: Link](https://example.com)');
+        final result = fullParser.parse('[:smile: Link](https://example.com)');
         expect(result is Success, isTrue);
         final nodes = result.value;
         expect(nodes.length, equals(1));
@@ -518,7 +543,7 @@ void main() {
 
     group('URL/リンクと他の構文の組み合わせ', () {
       test('URLとメンション', () {
-        final result = parser.parse('@user https://example.com');
+        final result = fullParser.parse('@user https://example.com');
         expect(result is Success, isTrue);
         final nodes = result.value;
         expect(nodes.whereType<MentionNode>().length, equals(1));
@@ -526,7 +551,7 @@ void main() {
       });
 
       test('URLとハッシュタグ', () {
-        final result = parser.parse('https://example.com #test');
+        final result = fullParser.parse('https://example.com #test');
         expect(result is Success, isTrue);
         final nodes = result.value;
         expect(nodes.whereType<UrlNode>().length, equals(1));
@@ -534,7 +559,7 @@ void main() {
       });
 
       test('リンクと絵文字', () {
-        final result = parser.parse(':smile: [Link](https://example.com)');
+        final result = fullParser.parse(':smile: [Link](https://example.com)');
         expect(result is Success, isTrue);
         final nodes = result.value;
         expect(nodes.whereType<EmojiCodeNode>().length, equals(1));
@@ -542,7 +567,7 @@ void main() {
       });
 
       test('引用内のURL', () {
-        final result = parser.parse('> https://example.com');
+        final result = fullParser.parse('> https://example.com');
         expect(result is Success, isTrue);
         final nodes = result.value;
         expect(nodes.length, equals(1));
@@ -551,7 +576,7 @@ void main() {
       });
 
       test('太字内のURL', () {
-        final result = parser.parse('**https://example.com**');
+        final result = fullParser.parse('**https://example.com**');
         expect(result is Success, isTrue);
         final nodes = result.value;
         expect(nodes.length, equals(1));

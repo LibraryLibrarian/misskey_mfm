@@ -76,7 +76,7 @@ class MfmParser {
 
     // メンション・ハッシュタグパーサー
     final mention = MentionParser().buildWithFallback();
-    final hashtag = HashtagParser().buildWithFallback();
+    final hashtag = HashtagParser().buildWithFallback(state: nestState);
 
     // URL・リンクパーサー
     final url = UrlParser().buildWithFallback(state: nestState);
@@ -175,7 +175,7 @@ class MfmParser {
     );
 
     // リンクパーサー（ラベル用インラインパーサーを使用）
-    final link = LinkParser().buildWithFallback(labelInline);
+    final link = LinkParser().buildWithFallback(labelInline, state: nestState);
 
     final stopper =
         char('`') |

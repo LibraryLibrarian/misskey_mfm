@@ -2,6 +2,7 @@ import 'package:petitparser/petitparser.dart';
 
 import '../../ast.dart';
 import '../common/utils.dart';
+import '../core/nest.dart';
 import 'url.dart';
 
 /// リンクパーサー
@@ -17,15 +18,23 @@ class LinkParser {
   ///
   /// [labelInlineParser] はラベル内のインライン構文をパースするパーサー
   /// このパーサーにはURL、リンク、メンションを除外したものを渡す必要がある
-  Parser<MfmNode> buildWithInner(Parser<MfmNode> labelInlineParser) {
-    return _LinkParserImpl(labelInlineParser);
+  /// [state] ネスト状態（グローバルな深度制限を共有）
+  Parser<MfmNode> buildWithInner(
+    Parser<MfmNode> labelInlineParser, {
+    required NestState state,
+  }) {
+    return _LinkParserImpl(labelInlineParser, state: state);
   }
 
   /// フォールバック付きリンクパーサー
   ///
   /// リンクとして解析できない場合は、開始文字をテキストとして扱う
-  Parser<MfmNode> buildWithFallback(Parser<MfmNode> labelInlineParser) {
-    final completeLink = buildWithInner(labelInlineParser);
+  /// [state] ネスト状態（グローバルな深度制限を共有）
+  Parser<MfmNode> buildWithFallback(
+    Parser<MfmNode> labelInlineParser, {
+    required NestState state,
+  }) {
+    final completeLink = buildWithInner(labelInlineParser, state: state);
 
     // フォールバック: `?[` または `[` で始まるがリンクとして解析できない場合
     final fallback = (string('?[') | char('[')).flatten().map(
@@ -38,15 +47,18 @@ class LinkParser {
 
 /// リンクパーサーの実装
 class _LinkParserImpl extends Parser<MfmNode> {
-  _LinkParserImpl(this._labelInlineParser);
+  _LinkParserImpl(this._labelInlineParser, {required this.state});
 
   final Parser<MfmNode> _labelInlineParser;
 
-  /// URLパーサー（生URL）
-  final Parser<MfmNode> _urlParser = UrlParser().build();
+  /// 共有ネスト状態（グローバルな深度制限を共有）
+  final NestState state;
 
-  /// URLパーサー（ブラケット付き）
-  final Parser<MfmNode> _urlAltParser = UrlParser().buildAlt();
+  /// URLパーサー（生URL）を取得
+  Parser<MfmNode> get _urlParser => UrlParser().build(state: state);
+
+  /// URLパーサー（ブラケット付き）を取得
+  Parser<MfmNode> get _urlAltParser => UrlParser().buildAlt();
 
   @override
   Result<MfmNode> parseOn(Context context) {
@@ -152,5 +164,5 @@ class _LinkParserImpl extends Parser<MfmNode> {
   }
 
   @override
-  Parser<MfmNode> copy() => _LinkParserImpl(_labelInlineParser);
+  Parser<MfmNode> copy() => _LinkParserImpl(_labelInlineParser, state: state);
 }

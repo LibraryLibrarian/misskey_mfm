@@ -24,7 +24,8 @@ class UrlParser {
   /// 生URLパーサーを構築
   ///
   /// `https://example.com` 形式のURLを解析
-  Parser<MfmNode> build({NestState? state}) {
+  /// [state] ネスト状態（グローバルな深度制限を共有、必須）
+  Parser<MfmNode> build({required NestState state}) {
     return _UrlParserImpl(state: state);
   }
 
@@ -38,7 +39,8 @@ class UrlParser {
   /// フォールバック付き生URLパーサー
   ///
   /// URLとして解析できない場合は、スキーマ部分をテキストとして扱う
-  Parser<MfmNode> buildWithFallback({NestState? state}) {
+  /// [state] ネスト状態（グローバルな深度制限を共有、必須）
+  Parser<MfmNode> buildWithFallback({required NestState state}) {
     final completeUrl = build(state: state);
 
     // フォールバック: `http` で始まるがURLとして解析できない場合
@@ -62,13 +64,10 @@ class UrlParser {
 ///
 /// 括弧のネスト構造をサポートし、末尾の無効文字を除去する
 class _UrlParserImpl extends Parser<MfmNode> {
-  _UrlParserImpl({this.state});
+  _UrlParserImpl({required this.state});
 
-  /// 共有ネスト状態（nullの場合は独自のデフォルト制限を使用）
-  final NestState? state;
-
-  /// デフォルトのネスト深度制限（state未指定時）
-  static const _defaultNestLimit = 20;
+  /// 共有ネスト状態（グローバルな深度制限を共有）
+  final NestState state;
 
   @override
   Result<MfmNode> parseOn(Context context) {
@@ -87,10 +86,9 @@ class _UrlParserImpl extends Parser<MfmNode> {
       return context.failure('expected http:// or https://');
     }
 
-    // URL内容を解析（グローバルdepthから開始）
+    // URL内容を解析
     final contentBuffer = StringBuffer();
-    final initialDepth = state?.depth ?? 0;
-    position = _parseUrlContent(buffer, position, contentBuffer, initialDepth);
+    position = _parseUrlContent(buffer, position, contentBuffer);
 
     var content = contentBuffer.toString();
 
@@ -118,17 +116,22 @@ class _UrlParserImpl extends Parser<MfmNode> {
 
   /// URL内容を再帰的に解析
   ///
-  /// [depth] は現在のグローバルネスト深度を含む
+  /// mfm-js互換: 括弧に入る際にグローバルな state.depth を直接変更
+  /// ネスト制限に達した場合、括弧内は文字単位でマッチ（フォールバック）
+  ///
+  /// [buffer] 入力文字列
+  /// [startPosition] 開始位置
+  /// [output] 出力バッファ
+  /// 戻り値: 新しい位置
   int _parseUrlContent(
     String buffer,
     int startPosition,
     StringBuffer output,
-    int depth,
   ) {
     var currentPos = startPosition;
 
-    // ネスト制限を取得（グローバル or デフォルト）
-    final limit = state?.limit ?? _defaultNestLimit;
+    // ネスト制限を取得
+    final limit = state.limit!;
 
     while (currentPos < buffer.length) {
       final c = buffer[currentPos];
@@ -137,19 +140,34 @@ class _UrlParserImpl extends Parser<MfmNode> {
       if (c == '(' || c == '[') {
         final closing = c == '(' ? ')' : ']';
 
-        // ネスト深度制限チェック（mfm-js互換: depth + 1 > limit）
-        if (depth + 1 > limit) {
-          break;
-        }
+        // mfm-js互換: グローバル深度をインクリメント
+        state.depth++;
+
+        // ネスト深度制限チェック（mfm-js互換: depth >= limit でフォールバック）
+        final useFallback = state.depth >= limit;
 
         // 括弧内の内容を一時バッファに解析
         final innerBuffer = StringBuffer();
-        final newPosition = _parseUrlContent(
-          buffer,
-          currentPos + 1,
-          innerBuffer,
-          depth + 1,
-        );
+        final int newPosition;
+
+        if (useFallback) {
+          // フォールバック: 文字単位でマッチ（括弧で停止）
+          newPosition = _parseUrlContentFallback(
+            buffer,
+            currentPos + 1,
+            innerBuffer,
+          );
+        } else {
+          // 通常: 再帰的にパース
+          newPosition = _parseUrlContent(
+            buffer,
+            currentPos + 1,
+            innerBuffer,
+          );
+        }
+
+        // mfm-js互換: グローバル深度をデクリメント
+        state.depth--;
 
         // 閉じ括弧があるかチェック
         if (newPosition < buffer.length && buffer[newPosition] == closing) {
@@ -168,6 +186,38 @@ class _UrlParserImpl extends Parser<MfmNode> {
         break;
       } else if (UrlParser.isUrlChar(c)) {
         // 通常のURL文字
+        output.write(c);
+        currentPos++;
+      } else {
+        // URL文字以外で終了
+        break;
+      }
+    }
+
+    return currentPos;
+  }
+
+  /// フォールバック用のURL内容解析（文字単位マッチ）
+  ///
+  /// mfm-js互換: nest()のfallback=urlCharに相当
+  /// URL文字のみマッチし、括弧類で停止する
+  int _parseUrlContentFallback(
+    String buffer,
+    int startPosition,
+    StringBuffer output,
+  ) {
+    var currentPos = startPosition;
+
+    while (currentPos < buffer.length) {
+      final c = buffer[currentPos];
+
+      // 括弧類なら終了（フォールバックでは括弧をマッチしない）
+      if (c == '(' || c == '[' || c == ')' || c == ']') {
+        break;
+      }
+
+      // URL文字ならマッチ
+      if (UrlParser.isUrlChar(c)) {
         output.write(c);
         currentPos++;
       } else {

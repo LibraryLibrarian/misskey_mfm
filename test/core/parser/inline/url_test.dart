@@ -5,144 +5,186 @@ import 'package:petitparser/petitparser.dart';
 import 'package:test/test.dart';
 
 void main() {
-  group('UrlParser', () {
-    group('生URL（build）', () {
-      final parser = UrlParser().build();
+  final fullParser = MfmParser().build();
 
+  /// ヘルパー: フルパーサーの結果から最初のUrlNodeを取得
+  UrlNode? getFirstUrl(Result<List<MfmNode>> result) {
+    if (result is! Success) return null;
+    final nodes = result.value;
+    for (final node in nodes) {
+      if (node is UrlNode) return node;
+    }
+    return null;
+  }
+
+  group('UrlParser', () {
+    group('生URL（フルパーサー経由）', () {
       test('基本的なHTTPS URL', () {
-        final result = parser.parse('https://example.com');
+        final result = fullParser.parse('https://example.com');
         expect(result is Success, isTrue);
-        final node = result.value as UrlNode;
-        expect(node.url, equals('https://example.com'));
+        final node = getFirstUrl(result);
+        expect(node, isNotNull);
+        expect(node!.url, equals('https://example.com'));
         expect(node.brackets, isFalse);
       });
 
       test('基本的なHTTP URL', () {
-        final result = parser.parse('http://example.com');
+        final result = fullParser.parse('http://example.com');
         expect(result is Success, isTrue);
-        final node = result.value as UrlNode;
-        expect(node.url, equals('http://example.com'));
+        final node = getFirstUrl(result);
+        expect(node, isNotNull);
+        expect(node!.url, equals('http://example.com'));
         expect(node.brackets, isFalse);
       });
 
       test('パス付きURL', () {
-        final result = parser.parse('https://example.com/path/to/page');
+        final result = fullParser.parse('https://example.com/path/to/page');
         expect(result is Success, isTrue);
-        final node = result.value as UrlNode;
-        expect(node.url, equals('https://example.com/path/to/page'));
+        final node = getFirstUrl(result);
+        expect(node, isNotNull);
+        expect(node!.url, equals('https://example.com/path/to/page'));
       });
 
       test('クエリパラメータ付きURL', () {
-        final result = parser.parse(
+        final result = fullParser.parse(
           'https://example.com/search?q=test&lang=ja',
         );
         expect(result is Success, isTrue);
-        final node = result.value as UrlNode;
-        expect(node.url, equals('https://example.com/search?q=test&lang=ja'));
+        final node = getFirstUrl(result);
+        expect(node, isNotNull);
+        expect(node!.url, equals('https://example.com/search?q=test&lang=ja'));
       });
 
       test('フラグメント付きURL', () {
-        final result = parser.parse('https://example.com/page#section');
+        final result = fullParser.parse('https://example.com/page#section');
         expect(result is Success, isTrue);
-        final node = result.value as UrlNode;
-        expect(node.url, equals('https://example.com/page#section'));
+        final node = getFirstUrl(result);
+        expect(node, isNotNull);
+        expect(node!.url, equals('https://example.com/page#section'));
       });
 
       test('ポート番号付きURL', () {
-        final result = parser.parse('https://example.com:8080/path');
+        final result = fullParser.parse('https://example.com:8080/path');
         expect(result is Success, isTrue);
-        final node = result.value as UrlNode;
-        expect(node.url, equals('https://example.com:8080/path'));
+        final node = getFirstUrl(result);
+        expect(node, isNotNull);
+        expect(node!.url, equals('https://example.com:8080/path'));
       });
 
       test('認証情報付きURL', () {
-        final result = parser.parse('https://user:pass@example.com/path');
+        final result = fullParser.parse('https://user:pass@example.com/path');
         expect(result is Success, isTrue);
-        final node = result.value as UrlNode;
-        expect(node.url, equals('https://user:pass@example.com/path'));
+        final node = getFirstUrl(result);
+        expect(node, isNotNull);
+        expect(node!.url, equals('https://user:pass@example.com/path'));
       });
 
       group('括弧のネスト処理', () {
         test('丸括弧を含むURL', () {
-          final result = parser.parse(
+          final result = fullParser.parse(
             'https://example.com/wiki/Test_(programming)',
           );
           expect(result is Success, isTrue);
-          final node = result.value as UrlNode;
+          final node = getFirstUrl(result);
+          expect(node, isNotNull);
           expect(
-            node.url,
+            node!.url,
             equals('https://example.com/wiki/Test_(programming)'),
           );
         });
 
         test('角括弧を含むURL', () {
-          final result = parser.parse('https://example.com/path[1]');
+          final result = fullParser.parse('https://example.com/path[1]');
           expect(result is Success, isTrue);
-          final node = result.value as UrlNode;
-          expect(node.url, equals('https://example.com/path[1]'));
+          final node = getFirstUrl(result);
+          expect(node, isNotNull);
+          expect(node!.url, equals('https://example.com/path[1]'));
         });
 
         test('ネストした括弧を含むURL', () {
-          final result = parser.parse(
+          final result = fullParser.parse(
             'https://example.com/wiki/Test_(foo_(bar))',
           );
           expect(result is Success, isTrue);
-          final node = result.value as UrlNode;
-          expect(node.url, equals('https://example.com/wiki/Test_(foo_(bar))'));
+          final node = getFirstUrl(result);
+          expect(node, isNotNull);
+          expect(
+            node!.url,
+            equals('https://example.com/wiki/Test_(foo_(bar))'),
+          );
         });
 
         test('閉じ括弧がない場合は括弧で終了', () {
-          final result = parser.parse('https://example.com/(test');
+          final result = fullParser.parse('https://example.com/(test');
           expect(result is Success, isTrue);
-          final node = result.value as UrlNode;
-          expect(node.url, equals('https://example.com/'));
+          final nodes = (result as Success).value as List<MfmNode>;
+          expect(nodes.length, 2);
+          expect(nodes[0], isA<UrlNode>());
+          expect((nodes[0] as UrlNode).url, equals('https://example.com/'));
+          expect(nodes[1], isA<TextNode>());
+          expect((nodes[1] as TextNode).text, equals('(test'));
         });
       });
 
       group('末尾の無効文字除去', () {
         test('末尾のピリオドを除去', () {
-          final result = parser.parse('https://example.com.');
+          final result = fullParser.parse('https://example.com.');
           expect(result is Success, isTrue);
-          final node = result.value as UrlNode;
-          expect(node.url, equals('https://example.com'));
+          final nodes = (result as Success).value as List<MfmNode>;
+          expect(nodes.length, 2);
+          expect(nodes[0], isA<UrlNode>());
+          expect((nodes[0] as UrlNode).url, equals('https://example.com'));
+          expect(nodes[1], isA<TextNode>());
+          expect((nodes[1] as TextNode).text, equals('.'));
         });
 
         test('末尾のカンマを除去', () {
-          final result = parser.parse('https://example.com,');
+          final result = fullParser.parse('https://example.com,');
           expect(result is Success, isTrue);
-          final node = result.value as UrlNode;
-          expect(node.url, equals('https://example.com'));
+          final nodes = (result as Success).value as List<MfmNode>;
+          expect(nodes.length, 2);
+          expect((nodes[0] as UrlNode).url, equals('https://example.com'));
         });
 
         test('末尾の複数ピリオド・カンマを除去', () {
-          final result = parser.parse('https://example.com.,.');
+          final result = fullParser.parse('https://example.com.,.');
           expect(result is Success, isTrue);
-          final node = result.value as UrlNode;
-          expect(node.url, equals('https://example.com'));
+          final nodes = (result as Success).value as List<MfmNode>;
+          expect((nodes[0] as UrlNode).url, equals('https://example.com'));
         });
 
         test('パス内のピリオドは保持', () {
-          final result = parser.parse('https://example.com/file.html');
+          final result = fullParser.parse('https://example.com/file.html');
           expect(result is Success, isTrue);
-          final node = result.value as UrlNode;
-          expect(node.url, equals('https://example.com/file.html'));
+          final node = getFirstUrl(result);
+          expect(node, isNotNull);
+          expect(node!.url, equals('https://example.com/file.html'));
         });
       });
 
       group('無効なケース', () {
-        test('スキーマがない場合は失敗', () {
-          final result = parser.parse('example.com');
-          expect(result is Failure, isTrue);
+        test('スキーマがない場合はテキスト', () {
+          final result = fullParser.parse('example.com');
+          expect(result is Success, isTrue);
+          final nodes = (result as Success).value as List<MfmNode>;
+          expect(nodes.length, 1);
+          expect(nodes[0], isA<TextNode>());
         });
 
-        test('ftp:// は失敗', () {
-          final result = parser.parse('ftp://example.com');
-          expect(result is Failure, isTrue);
+        test('ftp:// はテキスト', () {
+          final result = fullParser.parse('ftp://example.com');
+          expect(result is Success, isTrue);
+          final nodes = (result as Success).value as List<MfmNode>;
+          expect(nodes.length, 1);
+          expect(nodes[0], isA<TextNode>());
         });
 
-        test('スキーマのみは失敗', () {
-          final result = parser.parse('https://');
-          expect(result is Failure, isTrue);
+        test('スキーマのみはテキスト', () {
+          final result = fullParser.parse('https://');
+          expect(result is Success, isTrue);
+          final nodes = (result as Success).value as List<MfmNode>;
+          expect(nodes.length, 1);
+          expect(nodes[0], isA<TextNode>());
         });
       });
     });
@@ -218,38 +260,39 @@ void main() {
       });
     });
 
-    group('フォールバック付きパーサー（buildWithFallback）', () {
-      final parser = UrlParser().buildWithFallback();
-
+    group('フォールバック付きパーサー（フルパーサー経由）', () {
       test('有効なURLはUrlNodeとして解析', () {
-        final result = parser.parse('https://example.com');
+        final result = fullParser.parse('https://example.com');
         expect(result is Success, isTrue);
-        expect(result.value, isA<UrlNode>());
+        final node = getFirstUrl(result);
+        expect(node, isNotNull);
       });
 
       test('スキーマのみの場合はTextNodeとしてフォールバック', () {
-        final result = parser.parse('https://');
+        final result = fullParser.parse('https://');
         expect(result is Success, isTrue);
-        expect(result.value, isA<TextNode>());
-        expect((result.value as TextNode).text, equals('https://'));
+        final nodes = (result as Success).value as List<MfmNode>;
+        expect(nodes.length, 1);
+        expect(nodes[0], isA<TextNode>());
+        expect((nodes[0] as TextNode).text, equals('https://'));
       });
 
       test('http://のみの場合もTextNodeとしてフォールバック', () {
-        final result = parser.parse('http://');
+        final result = fullParser.parse('http://');
         expect(result is Success, isTrue);
-        expect(result.value, isA<TextNode>());
-        expect((result.value as TextNode).text, equals('http://'));
+        final nodes = (result as Success).value as List<MfmNode>;
+        expect(nodes.length, 1);
+        expect(nodes[0], isA<TextNode>());
+        expect((nodes[0] as TextNode).text, equals('http://'));
       });
     });
   });
 
   group('mfm-js互換テスト', () {
-    final parser = MfmParser().build();
-
     group('edge cases', () {
       test('disallow period only', () {
         // mfm-js: https://. はURLとして認識されず、テキストとして扱われる
-        final result = parser.parse('https://.');
+        final result = fullParser.parse('https://.');
         expect(result is Success, isTrue);
         final nodes = result.value;
         expect(nodes.length, equals(1));
@@ -261,7 +304,7 @@ void main() {
     group('parent brackets handling', () {
       test('ignore parent brackets', () {
         // mfm-js: 親括弧内のURLは括弧を含まない
-        final result = parser.parse('(https://example.com/foo)');
+        final result = fullParser.parse('(https://example.com/foo)');
         expect(result is Success, isTrue);
         final nodes = result.value;
         expect(nodes.length, equals(3));
@@ -275,7 +318,7 @@ void main() {
 
       test('ignore parent brackets (2)', () {
         // mfm-js: テキスト後の親括弧内URLも同様
-        final result = parser.parse('(foo https://example.com/foo)');
+        final result = fullParser.parse('(foo https://example.com/foo)');
         expect(result is Success, isTrue);
         final nodes = result.value;
         expect(nodes.length, equals(3));
@@ -289,7 +332,7 @@ void main() {
 
       test('ignore parent brackets with internal brackets', () {
         // mfm-js: 内部括弧を含むURLは内部括弧を保持し、親括弧は除外
-        final result = parser.parse('(https://example.com/foo(bar))');
+        final result = fullParser.parse('(https://example.com/foo(bar))');
         expect(result is Success, isTrue);
         final nodes = result.value;
         expect(nodes.length, equals(3));
@@ -306,7 +349,7 @@ void main() {
 
       test('ignore parent []', () {
         // mfm-js: 角括弧内のURLも同様に処理
-        final result = parser.parse('foo [https://example.com/foo] bar');
+        final result = fullParser.parse('foo [https://example.com/foo] bar');
         expect(result is Success, isTrue);
         final nodes = result.value;
         expect(nodes.length, equals(3));
@@ -324,7 +367,7 @@ void main() {
         'ignore non-ascii characters contained url without angle brackets',
         () {
           // mfm-js: 非ASCII文字を含むURLはブラケットなしではテキストとして扱う
-          final result = parser.parse('https://大石泉すき.example.com');
+          final result = fullParser.parse('https://大石泉すき.example.com');
           expect(result is Success, isTrue);
           final nodes = result.value;
           expect(nodes.length, equals(1));
@@ -338,7 +381,7 @@ void main() {
 
       test('match non-ascii characters contained url with angle brackets', () {
         // mfm-js: ブラケット付きなら非ASCII文字を含むURLも認識
-        final result = parser.parse('<https://大石泉すき.example.com>');
+        final result = fullParser.parse('<https://大石泉すき.example.com>');
         expect(result is Success, isTrue);
         final nodes = result.value;
         expect(nodes.length, equals(1));
@@ -350,7 +393,7 @@ void main() {
 
       test('prevent xss', () {
         // mfm-js: javascript: スキームはURLとして認識しない（XSS防止）
-        final result = parser.parse('javascript:foo');
+        final result = fullParser.parse('javascript:foo');
         expect(result is Success, isTrue);
         final nodes = result.value;
         expect(nodes.length, equals(1));

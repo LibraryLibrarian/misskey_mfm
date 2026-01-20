@@ -567,16 +567,16 @@ void main() {
         expect((nodes[2] as TextNode).text, '」');
       });
 
-      test('2重ネストは無効（#tag(x(y)z) → #tag）', () {
+      test('mfm.js互換: 2重ネストも有効（#tag(x(y)z) → tag(x(y)z)）', () {
+        // mfm-js互換: デフォルトのnestLimitは20なので2重ネストも有効
         final result = parser.parse('#tag(x(y)z) text');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
         expect(nodes.length, 2);
         expect(nodes[0], isA<HashtagNode>());
-        expect((nodes[0] as HashtagNode).hashtag, 'tag');
+        expect((nodes[0] as HashtagNode).hashtag, 'tag(x(y)z)');
         expect(nodes[1], isA<TextNode>());
-        // 残りは (x(y)z) text がテキスト
-        expect((nodes[1] as TextNode).text, '(x(y)z) text');
+        expect((nodes[1] as TextNode).text, ' text');
       });
 
       test('括弧が閉じていない場合は括弧で分離（#tag(value → #tag）', () {
