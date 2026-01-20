@@ -675,29 +675,14 @@ void main() {
     group('italic tag', () {
       // mfm.js/test/parser.ts:517-525
       test('mfm-js互換テスト: basic', () {
-        final result = parser.parse('<i>italic</i>');
+        final result = parser.parse('<i>abc</i>');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
         expect(nodes.length, 1);
         expect(nodes[0], isA<ItalicNode>());
         final italic = nodes[0] as ItalicNode;
         expect(italic.children.length, 1);
-        expect((italic.children.first as TextNode).text, 'italic');
-      });
-
-      // mfm.js/test/parser.ts:517-525
-      test('mfm-js互換テスト: basic 2', () {
-        final result = parser.parse('before <i>abc</i> after');
-        expect(result is Success, isTrue);
-        final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 3);
-        expect((nodes[0] as TextNode).text, 'before ');
-        expect(nodes[1], isA<ItalicNode>());
-        expect(
-          ((nodes[1] as ItalicNode).children.first as TextNode).text,
-          'abc',
-        );
-        expect((nodes[2] as TextNode).text, ' after');
+        expect((italic.children.first as TextNode).text, 'abc');
       });
 
       // mfm.js/test/parser.ts:526-538
@@ -741,7 +726,7 @@ void main() {
     group('italic alt 1', () {
       // mfm.js/test/parser.ts:555-563
       test('mfm-js互換テスト: basic', () {
-        final result = parser.parse('*italic*');
+        final result = parser.parse('*abc*');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
         expect(nodes.length, 1);
@@ -749,7 +734,7 @@ void main() {
         final italic = nodes[0] as ItalicNode;
         expect(italic.children.length, 1);
         expect(italic.children.first, isA<TextNode>());
-        expect((italic.children.first as TextNode).text, 'italic');
+        expect((italic.children.first as TextNode).text, 'abc');
       });
 
       // mfm.js/test/parser.ts:565-575
@@ -767,37 +752,40 @@ void main() {
         expect((nodes[2] as TextNode).text, ' after');
       });
 
-      // mfm.js/test/parser.ts:577-631
-      test('mfm-js互換テスト: 直前が英数字のときは * を無視する', () {
-        final result = parser.parse('before*abc*after');
-        expect(result is Success, isTrue);
-        final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<TextNode>());
-        expect((nodes[0] as TextNode).text, 'before*abc*after');
-      });
+      // mfm.js/test/parser.ts:577-591
+      test(
+        'mfm-js互換テスト: ignore a italic syntax if the before char is '
+        'neither a space nor an LF nor [^a-z0-9]i',
+        () {
+          // 英数字の直後では無視される
+          var result = parser.parse('before*abc*after');
+          expect(result is Success, isTrue);
+          var nodes = (result as Success).value as List<MfmNode>;
+          expect(nodes.length, 1);
+          expect(nodes[0], isA<TextNode>());
+          expect((nodes[0] as TextNode).text, 'before*abc*after');
 
-      // mfm.js/test/parser.ts:577-631
-      test('mfm-js互換テスト: 日本語の直後では * を許可する', () {
-        final result = parser.parse('あいう*abc*えお');
-        expect(result is Success, isTrue);
-        final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 3);
-        expect((nodes[0] as TextNode).text, 'あいう');
-        expect(nodes[1], isA<ItalicNode>());
-        expect(
-          ((nodes[1] as ItalicNode).children.first as TextNode).text,
-          'abc',
-        );
-        expect((nodes[2] as TextNode).text, 'えお');
-      });
+          // 日本語の直後では許可される
+          result = parser.parse('あいう*abc*えお');
+          expect(result is Success, isTrue);
+          nodes = (result as Success).value as List<MfmNode>;
+          expect(nodes.length, 3);
+          expect((nodes[0] as TextNode).text, 'あいう');
+          expect(nodes[1], isA<ItalicNode>());
+          expect(
+            ((nodes[1] as ItalicNode).children.first as TextNode).text,
+            'abc',
+          );
+          expect((nodes[2] as TextNode).text, 'えお');
+        },
+      );
     });
 
     // mfm.js:594-632
     group('italic alt 2', () {
-      // mfm.js/test/parser.ts:596-603
+      // mfm.js/test/parser.ts:595-603
       test('mfm-js互換テスト: basic', () {
-        final result = parser.parse('_italic_');
+        final result = parser.parse('_abc_');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
         expect(nodes.length, 1);
@@ -805,7 +793,7 @@ void main() {
         final italic = nodes[0] as ItalicNode;
         expect(italic.children.length, 1);
         expect(italic.children.first, isA<TextNode>());
-        expect((italic.children.first as TextNode).text, 'italic');
+        expect((italic.children.first as TextNode).text, 'abc');
       });
 
       // mfm.js/test/parser.ts:605-615
@@ -823,30 +811,33 @@ void main() {
         expect((nodes[2] as TextNode).text, ' after');
       });
 
-      // mfm.js/test/parser.ts:577-631
-      test('mfm-js互換テスト: 直前が英数字のときは _ を無視する', () {
-        final result = parser.parse('before_abc_after');
-        expect(result is Success, isTrue);
-        final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<TextNode>());
-        expect((nodes[0] as TextNode).text, 'before_abc_after');
-      });
+      // mfm.js/test/parser.ts:617-631
+      test(
+        'mfm-js互換テスト: ignore a italic syntax if the before char is '
+        'neither a space nor an LF nor [^a-z0-9]i',
+        () {
+          // 英数字の直後では無視される
+          var result = parser.parse('before_abc_after');
+          expect(result is Success, isTrue);
+          var nodes = (result as Success).value as List<MfmNode>;
+          expect(nodes.length, 1);
+          expect(nodes[0], isA<TextNode>());
+          expect((nodes[0] as TextNode).text, 'before_abc_after');
 
-      // mfm.js/test/parser.ts:577-631
-      test('mfm-js互換テスト: 日本語の直後では _ を許可する', () {
-        final result = parser.parse('あいう_abc_えお');
-        expect(result is Success, isTrue);
-        final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 3);
-        expect((nodes[0] as TextNode).text, 'あいう');
-        expect(nodes[1], isA<ItalicNode>());
-        expect(
-          ((nodes[1] as ItalicNode).children.first as TextNode).text,
-          'abc',
-        );
-        expect((nodes[2] as TextNode).text, 'えお');
-      });
+          // 日本語の直後では許可される
+          result = parser.parse('あいう_abc_えお');
+          expect(result is Success, isTrue);
+          nodes = (result as Success).value as List<MfmNode>;
+          expect(nodes.length, 3);
+          expect((nodes[0] as TextNode).text, 'あいう');
+          expect(nodes[1], isA<ItalicNode>());
+          expect(
+            ((nodes[1] as ItalicNode).children.first as TextNode).text,
+            'abc',
+          );
+          expect((nodes[2] as TextNode).text, 'えお');
+        },
+      );
     });
 
     // mfm.js:634-642
@@ -1204,373 +1195,232 @@ void main() {
 
     // mfm.js:798-928
     group('hashtag', () {
-      group('HashtagParser（ハッシュタグ）', () {
-        // mfm.js/test/parser.ts:799-803
-        test('mfm-js互換テスト: basic', () {
-          final result = parser.parse('#tag');
-          expect(result is Success, isTrue);
-          final hashtag = getFirstHashtag(result);
-          expect(hashtag, isNotNull);
-          expect(hashtag!.hashtag, 'tag');
-        });
+      // mfm.js/test/parser.ts:799-803
+      test('mfm-js互換テスト: basic', () {
+        final result = parser.parse('#abc');
+        expect(result is Success, isTrue);
+        final nodes = (result as Success).value as List<MfmNode>;
+        expect(nodes.length, 1);
+        expect(nodes[0], isA<HashtagNode>());
+        expect((nodes[0] as HashtagNode).hashtag, 'abc');
+      });
 
-        // mfm.js/test/parser.ts:805-809
-        test('mfm-js互換テスト: basic 2', () {
-          final result = parser.parse('before #abc after');
+      // mfm.js/test/parser.ts:805-809
+      test('mfm-js互換テスト: basic 2', () {
+        final result = parser.parse('before #abc after');
+        expect(result is Success, isTrue);
+        final nodes = (result as Success).value as List<MfmNode>;
+        expect(nodes.length, 3);
+        expect((nodes[0] as TextNode).text, 'before ');
+        expect((nodes[1] as HashtagNode).hashtag, 'abc');
+        expect((nodes[2] as TextNode).text, ' after');
+      });
+
+      // mfm.js/test/parser.ts:811-815
+      test('mfm-js互換テスト: with keycap number sign', () {
+        final result = parser.parse('#️⃣abc123 #abc');
+        expect(result is Success, isTrue);
+        final nodes = (result as Success).value as List<MfmNode>;
+        expect(nodes.length, 3);
+        expect((nodes[0] as UnicodeEmojiNode).emoji, '#️⃣');
+        expect((nodes[1] as TextNode).text, 'abc123 ');
+        expect((nodes[2] as HashtagNode).hashtag, 'abc');
+      });
+
+      // mfm.js/test/parser.ts:817-822
+      test('mfm-js互換テスト: with keycap number sign 2', () {
+        final result = parser.parse('abc\n#️⃣abc');
+        expect(result is Success, isTrue);
+        final nodes = (result as Success).value as List<MfmNode>;
+        expect(nodes.length, 3);
+        expect((nodes[0] as TextNode).text, 'abc\n');
+        expect((nodes[1] as UnicodeEmojiNode).emoji, '#️⃣');
+        expect((nodes[2] as TextNode).text, 'abc');
+      });
+
+      // mfm.js/test/parser.ts:824-832
+      test(
+        'mfm-js互換テスト: ignore a hashtag if the before char is '
+        'neither a space nor an LF nor [^a-z0-9]i',
+        () {
+          var result = parser.parse('abc#abc');
           expect(result is Success, isTrue);
-          final nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 3);
-          expect(nodes[0], isA<TextNode>());
-          expect((nodes[0] as TextNode).text, 'before ');
-          expect(nodes[1], isA<HashtagNode>());
+          var nodes = (result as Success).value as List<MfmNode>;
+          expect(nodes.length, 1);
+          expect((nodes[0] as TextNode).text, 'abc#abc');
+
+          result = parser.parse('あいう#abc');
+          expect(result is Success, isTrue);
+          nodes = (result as Success).value as List<MfmNode>;
+          expect(nodes.length, 2);
+          expect((nodes[0] as TextNode).text, 'あいう');
           expect((nodes[1] as HashtagNode).hashtag, 'abc');
-          expect(nodes[2], isA<TextNode>());
-          expect((nodes[2] as TextNode).text, ' after');
-        });
+        },
+      );
 
-        // mfm.js/test/parser.ts:811-815
-        test('mfm-js互換テスト: with keycap number sign', () {
-          final result = parser.parse('#️⃣abc123 #abc');
-          expect(result is Success, isTrue);
-          final nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 3);
-          expect(nodes[0], isA<UnicodeEmojiNode>());
-          expect((nodes[0] as UnicodeEmojiNode).emoji, '#️⃣');
-          expect(nodes[1], isA<TextNode>());
-          expect((nodes[1] as TextNode).text, 'abc123 ');
-          expect(nodes[2], isA<HashtagNode>());
-          expect((nodes[2] as HashtagNode).hashtag, 'abc');
-        });
-
-        // mfm.js/test/parser.ts:817-822
-        test('mfm-js互換テスト: with keycap number sign 2', () {
-          final result = parser.parse('abc\n#️⃣abc');
-          expect(result is Success, isTrue);
-          final nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 3);
-          expect(nodes[0], isA<TextNode>());
-          expect((nodes[0] as TextNode).text, 'abc\n');
-          expect(nodes[1], isA<UnicodeEmojiNode>());
-          expect((nodes[1] as UnicodeEmojiNode).emoji, '#️⃣');
-          expect(nodes[2], isA<TextNode>());
-          expect((nodes[2] as TextNode).text, 'abc');
-        });
-
-        // mfm.js/test/parser.ts:824-832
-        test(
-          'mfm-js互換テスト: ignore a hashtag if the before char is neither a space nor an LF nor [^a-z0-9]i',
-          () {
-            var result = parser.parse('abc#abc');
-            expect(result is Success, isTrue);
-            var nodes = (result as Success).value as List<MfmNode>;
-            expect(nodes.length, 1);
-            expect(nodes[0], isA<TextNode>());
-            expect((nodes[0] as TextNode).text, 'abc#abc');
-
-            result = parser.parse('あいう#abc');
-            expect(result is Success, isTrue);
-            nodes = (result as Success).value as List<MfmNode>;
-            expect(nodes.length, 2);
-            expect(nodes[0], isA<TextNode>());
-            expect((nodes[0] as TextNode).text, 'あいう');
-            expect(nodes[1], isA<HashtagNode>());
-            expect((nodes[1] as HashtagNode).hashtag, 'abc');
-          },
-        );
-
-        // mfm.js/test/parser.ts:882-886
-        test('mfm-js互換テスト: allow including number', () {
-          final result = parser.parse('#foo123');
-          expect(result is Success, isTrue);
-          final hashtag = getFirstHashtag(result);
-          expect(hashtag, isNotNull);
-          expect(hashtag!.hashtag, 'foo123');
-        });
-
-        // mfm.js/test/parser.ts:918-922
-        test('mfm-js互換テスト: disallow number only', () {
-          final result = parser.parse('#123');
-          expect(result is Success, isTrue);
-          final nodes = (result as Success).value as List<MfmNode>;
-          // 数字のみのタグは無効なので、テキストとして扱われる
-          expect(nodes.length, 1);
-          expect(nodes[0], isA<TextNode>());
-        });
+      // mfm.js/test/parser.ts:834-838
+      test('mfm-js互換テスト: ignore comma and period', () {
+        final result = parser.parse('Foo #bar, baz #piyo.');
+        expect(result is Success, isTrue);
+        final nodes = (result as Success).value as List<MfmNode>;
+        expect(nodes.length, 5);
+        expect((nodes[0] as TextNode).text, 'Foo ');
+        expect((nodes[1] as HashtagNode).hashtag, 'bar');
+        expect((nodes[2] as TextNode).text, ', baz ');
+        expect((nodes[3] as HashtagNode).hashtag, 'piyo');
+        expect((nodes[4] as TextNode).text, '.');
       });
 
-      // mfm.js/test/parser.ts:834-880
-      group('HashtagParser（禁止文字で分離）', () {
-        test('mfm-js互換テスト: ピリオドで分離される', () {
-          final result = parser.parse('#tag.rest');
-          expect(result is Success, isTrue);
-          final nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 2);
-          expect(nodes[0], isA<HashtagNode>());
-          expect((nodes[0] as HashtagNode).hashtag, 'tag');
-          expect(nodes[1], isA<TextNode>());
-          expect((nodes[1] as TextNode).text, '.rest');
-        });
-
-        test('mfm-js互換テスト: 感嘆符で分離される', () {
-          final result = parser.parse('#tag!rest');
-          expect(result is Success, isTrue);
-          final nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 2);
-          expect((nodes[0] as HashtagNode).hashtag, 'tag');
-          expect((nodes[1] as TextNode).text, '!rest');
-        });
-
-        test('mfm-js互換テスト: 疑問符で分離される', () {
-          final result = parser.parse('#tag?rest');
-          expect(result is Success, isTrue);
-          final nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 2);
-          expect((nodes[0] as HashtagNode).hashtag, 'tag');
-          expect((nodes[1] as TextNode).text, '?rest');
-        });
-
-        test('mfm-js互換テスト: コンマで分離される', () {
-          final result = parser.parse('#tag,rest');
-          expect(result is Success, isTrue);
-          final nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 2);
-          expect((nodes[0] as HashtagNode).hashtag, 'tag');
-          expect((nodes[1] as TextNode).text, ',rest');
-        });
-
-        test('mfm-js互換テスト: コロンで分離される', () {
-          final result = parser.parse('#tag:rest');
-          expect(result is Success, isTrue);
-          final nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 2);
-          expect((nodes[0] as HashtagNode).hashtag, 'tag');
-          expect((nodes[1] as TextNode).text, ':rest');
-        });
-
-        test('mfm-js互換テスト: スラッシュで分離される', () {
-          final result = parser.parse('#tag/rest');
-          expect(result is Success, isTrue);
-          final nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 2);
-          expect((nodes[0] as HashtagNode).hashtag, 'tag');
-          expect((nodes[1] as TextNode).text, '/rest');
-        });
-
-        test('mfm-js互換テスト: 半角スペースで分離される', () {
-          final result = parser.parse('#tag rest');
-          expect(result is Success, isTrue);
-          final nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 2);
-          expect((nodes[0] as HashtagNode).hashtag, 'tag');
-          expect((nodes[1] as TextNode).text, ' rest');
-        });
-
-        test('mfm-js互換テスト: 全角スペースで分離される', () {
-          final result = parser.parse('#tag\u3000rest');
-          expect(result is Success, isTrue);
-          final nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 2);
-          expect((nodes[0] as HashtagNode).hashtag, 'tag');
-          expect((nodes[1] as TextNode).text, '\u3000rest');
-        });
-
-        test('mfm-js互換テスト: 閉じ括弧で分離される', () {
-          final result = parser.parse('#tag)rest');
-          expect(result is Success, isTrue);
-          final nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 2);
-          expect((nodes[0] as HashtagNode).hashtag, 'tag');
-          expect((nodes[1] as TextNode).text, ')rest');
-        });
-
-        test('mfm-js互換テスト: シングルクォートで分離される', () {
-          final result = parser.parse("#tag'rest");
-          expect(result is Success, isTrue);
-          final nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 2);
-          expect((nodes[0] as HashtagNode).hashtag, 'tag');
-          expect((nodes[1] as TextNode).text, "'rest");
-        });
-
-        test('mfm-js互換テスト: ダブルクォートで分離される', () {
-          final result = parser.parse('#tag"rest');
-          expect(result is Success, isTrue);
-          final nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 2);
-          expect((nodes[0] as HashtagNode).hashtag, 'tag');
-          expect((nodes[1] as TextNode).text, '"rest');
-        });
-
-        test('mfm-js互換テスト: 山括弧で分離される', () {
-          final result = parser.parse('#tag<rest>');
-          expect(result is Success, isTrue);
-          final nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 2);
-          expect((nodes[0] as HashtagNode).hashtag, 'tag');
-        });
-
-        // mfm.js/test/parser.ts:864-868
-        test('mfm-js互換テスト: ignore square bracket', () {
-          final result = parser.parse('#Foo]');
-          expect(result is Success, isTrue);
-          final nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 2);
-          expect(nodes[0], isA<HashtagNode>());
-          expect((nodes[0] as HashtagNode).hashtag, 'Foo');
-          expect(nodes[1], isA<TextNode>());
-          expect((nodes[1] as TextNode).text, ']');
-        });
-
-        test('mfm-js互換テスト: ハッシュ記号で分離される', () {
-          // 直前文字が英数字の場合はハッシュタグとして認識されない
-          // 'g' が直前にあるため '#rest' はハッシュタグにならない
-          final result = parser.parse('#tag#rest');
-          expect(result is Success, isTrue);
-          final nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 2);
-          expect(nodes[0], isA<HashtagNode>());
-          expect((nodes[0] as HashtagNode).hashtag, 'tag');
-          expect(nodes[1], isA<TextNode>());
-          expect((nodes[1] as TextNode).text, '#rest');
-        });
+      // mfm.js/test/parser.ts:840-844
+      test('mfm-js互換テスト: ignore exclamation mark', () {
+        final result = parser.parse('#Foo!');
+        expect(result is Success, isTrue);
+        final nodes = (result as Success).value as List<MfmNode>;
+        expect(nodes.length, 2);
+        expect((nodes[0] as HashtagNode).hashtag, 'Foo');
+        expect((nodes[1] as TextNode).text, '!');
       });
 
-      // mfm.js/test/parser.ts:888-928
-      group('HashtagParser（括弧ネスト構造）', () {
-        test('mfm-js互換テスト: 丸括弧ペアを含むタグを解析できる', () {
-          final result = parser.parse('#tag(value)');
-          expect(result is Success, isTrue);
-          final hashtag = getFirstHashtag(result);
-          expect(hashtag, isNotNull);
-          expect(hashtag!.hashtag, 'tag(value)');
-        });
+      // mfm.js/test/parser.ts:846-850
+      test('mfm-js互換テスト: ignore colon', () {
+        final result = parser.parse('#Foo:');
+        expect(result is Success, isTrue);
+        final nodes = (result as Success).value as List<MfmNode>;
+        expect(nodes.length, 2);
+        expect((nodes[0] as HashtagNode).hashtag, 'Foo');
+        expect((nodes[1] as TextNode).text, ':');
+      });
 
-        test('mfm-js互換テスト: 角括弧ペアを含むタグを解析できる', () {
-          final result = parser.parse('#tag[value]');
-          expect(result is Success, isTrue);
-          final hashtag = getFirstHashtag(result);
-          expect(hashtag, isNotNull);
-          expect(hashtag!.hashtag, 'tag[value]');
-        });
+      // mfm.js/test/parser.ts:852-856
+      test('mfm-js互換テスト: ignore single quote', () {
+        final result = parser.parse("#Foo'");
+        expect(result is Success, isTrue);
+        final nodes = (result as Success).value as List<MfmNode>;
+        expect(nodes.length, 2);
+        expect((nodes[0] as HashtagNode).hashtag, 'Foo');
+        expect((nodes[1] as TextNode).text, "'");
+      });
 
-        test('mfm-js互換テスト: 鉤括弧ペアを含むタグを解析できる', () {
-          final result = parser.parse('#tag「value」');
-          expect(result is Success, isTrue);
-          final hashtag = getFirstHashtag(result);
-          expect(hashtag, isNotNull);
-          expect(hashtag!.hashtag, 'tag「value」');
-        });
+      // mfm.js/test/parser.ts:858-862
+      test('mfm-js互換テスト: ignore double quote', () {
+        final result = parser.parse('#Foo"');
+        expect(result is Success, isTrue);
+        final nodes = (result as Success).value as List<MfmNode>;
+        expect(nodes.length, 2);
+        expect((nodes[0] as HashtagNode).hashtag, 'Foo');
+        expect((nodes[1] as TextNode).text, '"');
+      });
 
-        test('mfm-js互換テスト: 全角丸括弧ペアを含むタグを解析できる', () {
-          final result = parser.parse('#tag（value）');
-          expect(result is Success, isTrue);
-          final hashtag = getFirstHashtag(result);
-          expect(hashtag, isNotNull);
-          expect(hashtag!.hashtag, 'tag（value）');
-        });
+      // mfm.js/test/parser.ts:864-868
+      test('mfm-js互換テスト: ignore square bracket', () {
+        final result = parser.parse('#Foo]');
+        expect(result is Success, isTrue);
+        final nodes = (result as Success).value as List<MfmNode>;
+        expect(nodes.length, 2);
+        expect((nodes[0] as HashtagNode).hashtag, 'Foo');
+        expect((nodes[1] as TextNode).text, ']');
+      });
 
-        // mfm.js/test/parser.ts:906-910
-        test('mfm-js互換テスト: with brackets "()" (space before)', () {
-          final result = parser.parse('(bar #foo)');
-          expect(result is Success, isTrue);
-          final nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 3);
-          expect(nodes[0], isA<TextNode>());
-          expect((nodes[0] as TextNode).text, '(bar ');
-          expect(nodes[1], isA<HashtagNode>());
-          expect((nodes[1] as HashtagNode).hashtag, 'foo');
-          expect(nodes[2], isA<TextNode>());
-          expect((nodes[2] as TextNode).text, ')');
-        });
+      // mfm.js/test/parser.ts:870-874
+      test('mfm-js互換テスト: ignore slash', () {
+        final result = parser.parse('#foo/bar');
+        expect(result is Success, isTrue);
+        final nodes = (result as Success).value as List<MfmNode>;
+        expect(nodes.length, 2);
+        expect((nodes[0] as HashtagNode).hashtag, 'foo');
+        expect((nodes[1] as TextNode).text, '/bar');
+      });
 
-        // mfm.js/test/parser.ts:912-916
-        test('mfm-js互換テスト: with brackets "「」" (space before)', () {
-          final result = parser.parse('「bar #foo」');
-          expect(result is Success, isTrue);
-          final nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 3);
-          expect(nodes[0], isA<TextNode>());
-          expect((nodes[0] as TextNode).text, '「bar ');
-          expect(nodes[1], isA<HashtagNode>());
-          expect((nodes[1] as HashtagNode).hashtag, 'foo');
-          expect(nodes[2], isA<TextNode>());
-          expect((nodes[2] as TextNode).text, '」');
-        });
+      // mfm.js/test/parser.ts:876-880
+      test('mfm-js互換テスト: ignore angle bracket', () {
+        final result = parser.parse('#foo<bar>');
+        expect(result is Success, isTrue);
+        final nodes = (result as Success).value as List<MfmNode>;
+        expect(nodes.length, 2);
+        expect((nodes[0] as HashtagNode).hashtag, 'foo');
+        expect((nodes[1] as TextNode).text, '<bar>');
+      });
 
-        test('mfm-js互換テスト: 括弧が閉じていない場合は括弧で分離される', () {
-          final result = parser.parse('#tag(value');
-          expect(result is Success, isTrue);
-          final nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 2);
-          expect(nodes[0], isA<HashtagNode>());
-          expect((nodes[0] as HashtagNode).hashtag, 'tag');
-          expect(nodes[1], isA<TextNode>());
-          expect((nodes[1] as TextNode).text, '(value');
-        });
+      // mfm.js/test/parser.ts:882-886
+      test('mfm-js互換テスト: allow including number', () {
+        final result = parser.parse('#foo123');
+        expect(result is Success, isTrue);
+        final nodes = (result as Success).value as List<MfmNode>;
+        expect(nodes.length, 1);
+        expect((nodes[0] as HashtagNode).hashtag, 'foo123');
+      });
 
-        test('mfm-js互換テスト: 角括弧が閉じていない場合は分離される', () {
-          final result = parser.parse('#tag[value');
-          expect(result is Success, isTrue);
-          final nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 2);
-          expect((nodes[0] as HashtagNode).hashtag, 'tag');
-        });
+      // mfm.js/test/parser.ts:888-892
+      test('mfm-js互換テスト: with brackets "()"', () {
+        final result = parser.parse('(#foo)');
+        expect(result is Success, isTrue);
+        final nodes = (result as Success).value as List<MfmNode>;
+        expect(nodes.length, 3);
+        expect((nodes[0] as TextNode).text, '(');
+        expect((nodes[1] as HashtagNode).hashtag, 'foo');
+        expect((nodes[2] as TextNode).text, ')');
+      });
 
-        test('mfm-js互換テスト: 2重ネストも有効', () {
-          // デフォルトのnestLimitは20なので2重ネストも有効
-          final result = parser.parse('#tag(x(y)z)');
-          expect(result is Success, isTrue);
-          final hashtag = getFirstHashtag(result);
-          expect(hashtag, isNotNull);
-          expect(hashtag!.hashtag, 'tag(x(y)z)');
-        });
+      // mfm.js/test/parser.ts:894-898
+      test('mfm-js互換テスト: with brackets "「」"', () {
+        final result = parser.parse('「#foo」');
+        expect(result is Success, isTrue);
+        final nodes = (result as Success).value as List<MfmNode>;
+        expect(nodes.length, 3);
+        expect((nodes[0] as TextNode).text, '「');
+        expect((nodes[1] as HashtagNode).hashtag, 'foo');
+        expect((nodes[2] as TextNode).text, '」');
+      });
 
-        test('mfm-js互換テスト: nestLimit=1では2重ネストは無効', () {
-          // nestLimit=1の場合は1重ネストまでしか許可されない
-          final parserLimit1 = MfmParser().build(nestLimit: 1);
-          final result = parserLimit1.parse('#tag(x(y)z)');
-          expect(result is Success, isTrue);
-          final nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 2);
-          expect(nodes[0], isA<HashtagNode>());
-          expect((nodes[0] as HashtagNode).hashtag, 'tag');
-        });
+      // mfm.js/test/parser.ts:900-904
+      test('mfm-js互換テスト: with mixed brackets', () {
+        final result = parser.parse('「#foo(bar)」');
+        expect(result is Success, isTrue);
+        final nodes = (result as Success).value as List<MfmNode>;
+        expect(nodes.length, 3);
+        expect((nodes[0] as TextNode).text, '「');
+        expect((nodes[1] as HashtagNode).hashtag, 'foo(bar)');
+        expect((nodes[2] as TextNode).text, '」');
+      });
 
-        test('mfm-js互換テスト: 混合括弧', () {
-          final result = parser.parse('#foo(bar)');
-          expect(result is Success, isTrue);
-          final hashtag = getFirstHashtag(result);
-          expect(hashtag, isNotNull);
-          expect(hashtag!.hashtag, 'foo(bar)');
-        });
+      // mfm.js/test/parser.ts:906-910
+      test('mfm-js互換テスト: with brackets "()" (space before)', () {
+        final result = parser.parse('(bar #foo)');
+        expect(result is Success, isTrue);
+        final nodes = (result as Success).value as List<MfmNode>;
+        expect(nodes.length, 3);
+        expect((nodes[0] as TextNode).text, '(bar ');
+        expect((nodes[1] as HashtagNode).hashtag, 'foo');
+        expect((nodes[2] as TextNode).text, ')');
+      });
 
-        test('mfm-js互換テスト: nestLimit=2では2重ネストが有効', () {
-          final parserNest2 = MfmParser().build(nestLimit: 2);
-          final result = parserNest2.parse('#tag(x(y)z)');
-          expect(result is Success, isTrue);
-          final hashtag = getFirstHashtag(result);
-          expect(hashtag, isNotNull);
-          expect(hashtag!.hashtag, 'tag(x(y)z)');
-        });
+      // mfm.js/test/parser.ts:912-916
+      test('mfm-js互換テスト: with brackets "「」" (space before)', () {
+        final result = parser.parse('「bar #foo」');
+        expect(result is Success, isTrue);
+        final nodes = (result as Success).value as List<MfmNode>;
+        expect(nodes.length, 3);
+        expect((nodes[0] as TextNode).text, '「bar ');
+        expect((nodes[1] as HashtagNode).hashtag, 'foo');
+        expect((nodes[2] as TextNode).text, '」');
+      });
 
-        test('mfm-js互換テスト: デフォルトのnestLimit=20では多重ネストが有効', () {
-          // デフォルトでは20レベルまでネスト可能
-          final result = parser.parse('#tag(x(y)z)');
-          expect(result is Success, isTrue);
-          final hashtag = getFirstHashtag(result);
-          expect(hashtag, isNotNull);
-          expect(hashtag!.hashtag, 'tag(x(y)z)');
-        });
+      // mfm.js/test/parser.ts:918-922
+      test('mfm-js互換テスト: disallow number only', () {
+        final result = parser.parse('#123');
+        expect(result is Success, isTrue);
+        final nodes = (result as Success).value as List<MfmNode>;
+        expect(nodes.length, 1);
+        expect((nodes[0] as TextNode).text, '#123');
+      });
 
-        // mfm.js/test/parser.ts:924-928
-        test('mfm-js互換テスト: disallow number only (with brackets)', () {
-          final result = parser.parse('(#123)');
-          expect(result is Success, isTrue);
-          final nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 1);
-          expect(nodes[0], isA<TextNode>());
-          expect((nodes[0] as TextNode).text, '(#123)');
-        });
+      // mfm.js/test/parser.ts:924-928
+      test('mfm-js互換テスト: disallow number only (with brackets)', () {
+        final result = parser.parse('(#123)');
+        expect(result is Success, isTrue);
+        final nodes = (result as Success).value as List<MfmNode>;
+        expect(nodes.length, 1);
+        expect((nodes[0] as TextNode).text, '(#123)');
       });
     });
 
@@ -2010,44 +1860,6 @@ void main() {
             expect(boldNode.children.length, equals(1));
             expect(boldNode.children[0], isA<TextNode>());
             expect((boldNode.children[0] as TextNode).text, equals('@example'));
-          });
-        });
-
-        // mfm.js/test/parser.ts:1167-1186
-        group('cannot nest a hashtag in a link label', () {
-          test('mfm-js互換テスト: basic', () {
-            final result = parser.parse('[#hashtag](https://example.com)');
-            expect(result is Success, isTrue);
-            final nodes = result.value;
-            expect(nodes.length, equals(1));
-            expect(nodes[0], isA<LinkNode>());
-            final linkNode = nodes[0] as LinkNode;
-            expect(linkNode.silent, isFalse);
-            expect(linkNode.url, equals('https://example.com'));
-            expect(linkNode.children.length, equals(1));
-            expect(linkNode.children[0], isA<TextNode>());
-            expect((linkNode.children[0] as TextNode).text, equals('#hashtag'));
-          });
-
-          test('mfm-js互換テスト: nested', () {
-            final result = parser.parse(
-              '[#hashtag**#hashtag**](https://example.com)',
-            );
-            expect(result is Success, isTrue);
-            final nodes = result.value;
-            expect(nodes.length, equals(1));
-            expect(nodes[0], isA<LinkNode>());
-            final linkNode = nodes[0] as LinkNode;
-            expect(linkNode.silent, isFalse);
-            expect(linkNode.url, equals('https://example.com'));
-            expect(linkNode.children.length, equals(2));
-            expect(linkNode.children[0], isA<TextNode>());
-            expect((linkNode.children[0] as TextNode).text, equals('#hashtag'));
-            expect(linkNode.children[1], isA<BoldNode>());
-            final boldNode = linkNode.children[1] as BoldNode;
-            expect(boldNode.children.length, equals(1));
-            expect(boldNode.children[0], isA<TextNode>());
-            expect((boldNode.children[0] as TextNode).text, equals('#hashtag'));
           });
         });
 
