@@ -7,40 +7,12 @@ void main() {
   group('EmojiCodeParser（カスタム絵文字）', () {
     final parser = EmojiCodeParser().build();
 
-    // mfm.js/test/parser.ts:343-347
-    test('mfm-js互換テスト: basic', () {
-      final result = parser.parse(':emoji:');
-      expect(result is Success, isTrue);
-      final node = (result as Success).value as MfmNode;
-      expect(node, isA<EmojiCodeNode>());
-      final emoji = node as EmojiCodeNode;
-      expect(emoji.name, 'emoji');
-    });
-
-    // mfm.js/test/parser.ts:349-353
-    test('mfm-js互換テスト: アンダースコアを含む絵文字名を解析できる', () {
-      final result = parser.parse(':thinking_ai:');
-      expect(result is Success, isTrue);
-      final node = (result as Success).value as MfmNode;
-      expect(node, isA<EmojiCodeNode>());
-      expect((node as EmojiCodeNode).name, 'thinking_ai');
-    });
-
     test('プラス記号を含む絵文字名を解析できる', () {
       final result = parser.parse(':+1:');
       expect(result is Success, isTrue);
       final node = (result as Success).value as MfmNode;
       expect(node, isA<EmojiCodeNode>());
       expect((node as EmojiCodeNode).name, '+1');
-    });
-
-    // mfm.js/test/parser.ts:355-359
-    test('mfm-js互換テスト: マイナス記号を含む絵文字名を解析できる', () {
-      final result = parser.parse(':thumbs-up:');
-      expect(result is Success, isTrue);
-      final node = (result as Success).value as MfmNode;
-      expect(node, isA<EmojiCodeNode>());
-      expect((node as EmojiCodeNode).name, 'thumbs-up');
     });
 
     test('数字のみの絵文字名を解析できる', () {

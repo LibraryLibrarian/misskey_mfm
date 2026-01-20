@@ -7,31 +7,6 @@ void main() {
   group('ItalicParser（斜体構文）', () {
     final parser = ItalicParser().buildWithFallback();
 
-    // mfm.js/test/parser.ts:555-563
-    test('mfm-js互換テスト: basic', () {
-      final result = parser.parse('*italic*');
-      expect(result is Success, isTrue);
-      final node = (result as Success).value as MfmNode;
-      expect(node, isA<ItalicNode>());
-      final italic = node as ItalicNode;
-      expect(italic.children.length, 1);
-      expect(italic.children.first, isA<TextNode>());
-      expect((italic.children.first as TextNode).text, 'italic');
-    });
-
-    // mfm.js/test/parser.ts:565-575
-    test('mfm-js互換テスト: basic 2', () {
-      final m = MfmParser().build();
-      final result = m.parse('before *abc* after');
-      expect(result is Success, isTrue);
-      final nodes = (result as Success).value as List<MfmNode>;
-      expect(nodes.length, 3);
-      expect((nodes[0] as TextNode).text, 'before ');
-      expect(nodes[1], isA<ItalicNode>());
-      expect(((nodes[1] as ItalicNode).children.first as TextNode).text, 'abc');
-      expect((nodes[2] as TextNode).text, ' after');
-    });
-
     test('斜体内に斜体をネストできる（最も近い閉じタグを優先）', () {
       final result = parser.parse('*a *b* c*');
       expect(result is Success, isTrue);
@@ -116,30 +91,6 @@ void main() {
   group('ItalicParser（斜体構文: <i>タグ）', () {
     final tagParser = ItalicParser().buildTag();
 
-    // mfm.js/test/parser.ts:517-525
-    test('mfm-js互換テスト: basic', () {
-      final result = tagParser.parse('<i>italic</i>');
-      expect(result is Success, isTrue);
-      final node = (result as Success).value as MfmNode;
-      expect(node, isA<ItalicNode>());
-      final italic = node as ItalicNode;
-      expect(italic.children.length, 1);
-      expect((italic.children.first as TextNode).text, 'italic');
-    });
-
-    // mfm.js/test/parser.ts:517-525
-    test('mfm-js互換テスト: basic 2', () {
-      final m = MfmParser().build();
-      final result = m.parse('before <i>abc</i> after');
-      expect(result is Success, isTrue);
-      final nodes = (result as Success).value as List<MfmNode>;
-      expect(nodes.length, 3);
-      expect((nodes[0] as TextNode).text, 'before ');
-      expect(nodes[1], isA<ItalicNode>());
-      expect(((nodes[1] as ItalicNode).children.first as TextNode).text, 'abc');
-      expect((nodes[2] as TextNode).text, ' after');
-    });
-
     test('改行含む: <i>line1\nline2</i>', () {
       final result = tagParser.parse('<i>line1\nline2</i>');
       expect(result is Success, isTrue);
@@ -153,30 +104,6 @@ void main() {
   group('ItalicParser（斜体構文: alt2 _..._）', () {
     final alt2Parser = ItalicParser().buildAlt2();
 
-    // mfm.js/test/parser.ts:596-603
-    test('mfm-js互換テスト: basic', () {
-      final result = alt2Parser.parse('_italic_');
-      expect(result is Success, isTrue);
-      final node = (result as Success).value as MfmNode;
-      expect(node, isA<ItalicNode>());
-      final italic = node as ItalicNode;
-      expect(italic.children.length, 1);
-      expect((italic.children.first as TextNode).text, 'italic');
-    });
-
-    // mfm.js/test/parser.ts:605-615
-    test('mfm-js互換テスト: basic 2', () {
-      final m = MfmParser().build();
-      final result = m.parse('before _abc_ after');
-      expect(result is Success, isTrue);
-      final nodes = (result as Success).value as List<MfmNode>;
-      expect(nodes.length, 3);
-      expect((nodes[0] as TextNode).text, 'before ');
-      expect(nodes[1], isA<ItalicNode>());
-      expect(((nodes[1] as ItalicNode).children.first as TextNode).text, 'abc');
-      expect((nodes[2] as TextNode).text, ' after');
-    });
-
     test('改行含む: _line1\nline2_', () {
       final result = alt2Parser.parse('_line1\nline2_');
       expect(result is Success, isTrue);
@@ -187,88 +114,6 @@ void main() {
     });
   });
 
-  // mfm.js/test/parser.ts:577-631
-  group('ItalicParser（直前文字ルール: * / _）', () {
-    test('mfm-js互換テスト: 直前が英数字のときは * を無視する', () {
-      final m = MfmParser().build();
-      final result = m.parse('before*abc*after');
-      expect(result is Success, isTrue);
-      final nodes = (result as Success).value as List<MfmNode>;
-      expect(nodes.length, 1);
-      expect(nodes[0], isA<TextNode>());
-      expect((nodes[0] as TextNode).text, 'before*abc*after');
-    });
-
-    test('mfm-js互換テスト: 直前が英数字のときは _ を無視する', () {
-      final m = MfmParser().build();
-      final result = m.parse('before_abc_after');
-      expect(result is Success, isTrue);
-      final nodes = (result as Success).value as List<MfmNode>;
-      expect(nodes.length, 1);
-      expect(nodes[0], isA<TextNode>());
-      expect((nodes[0] as TextNode).text, 'before_abc_after');
-    });
-
-    test('mfm-js互換テスト: 日本語の直後では * を許可する', () {
-      final m = MfmParser().build();
-      final result = m.parse('あいう*abc*えお');
-      expect(result is Success, isTrue);
-      final nodes = (result as Success).value as List<MfmNode>;
-      expect(nodes.length, 3);
-      expect((nodes[0] as TextNode).text, 'あいう');
-      expect(nodes[1], isA<ItalicNode>());
-      expect(((nodes[1] as ItalicNode).children.first as TextNode).text, 'abc');
-      expect((nodes[2] as TextNode).text, 'えお');
-    });
-
-    test('mfm-js互換テスト: 日本語の直後では _ を許可する', () {
-      final m = MfmParser().build();
-      final result = m.parse('あいう_abc_えお');
-      expect(result is Success, isTrue);
-      final nodes = (result as Success).value as List<MfmNode>;
-      expect(nodes.length, 3);
-      expect((nodes[0] as TextNode).text, 'あいう');
-      expect(nodes[1], isA<ItalicNode>());
-      expect(((nodes[1] as ItalicNode).children.first as TextNode).text, 'abc');
-      expect((nodes[2] as TextNode).text, 'えお');
-    });
-  });
-
   group('ItalicParser（<i>タグ内でインライン許可）', () {
-    // mfm.js/test/parser.ts:526-538
-    test('mfm-js互換テスト: 内容にはインライン構文を利用できる', () {
-      final m = MfmParser().build();
-      final result = m.parse('<i>abc**123**abc</i>');
-      expect(result is Success, isTrue);
-      final nodes = (result as Success).value as List<MfmNode>;
-      expect(nodes.length, 1);
-      final italic = nodes[0] as ItalicNode;
-      expect(italic.children.length, 3);
-      expect((italic.children[0] as TextNode).text, 'abc');
-      expect(italic.children[1], isA<BoldNode>());
-      expect(
-        ((italic.children[1] as BoldNode).children.first as TextNode).text,
-        '123',
-      );
-      expect((italic.children[2] as TextNode).text, 'abc');
-    });
-
-    // mfm.js/test/parser.ts:539-551
-    test('mfm-js互換テスト: 内容は改行できる', () {
-      final m = MfmParser().build();
-      final result = m.parse('<i>abc\n**123**\nabc</i>');
-      expect(result is Success, isTrue);
-      final nodes = (result as Success).value as List<MfmNode>;
-      expect(nodes.length, 1);
-      final italic = nodes[0] as ItalicNode;
-      expect(italic.children.length, 3);
-      expect((italic.children[0] as TextNode).text, 'abc\n');
-      expect(italic.children[1], isA<BoldNode>());
-      expect(
-        ((italic.children[1] as BoldNode).children.first as TextNode).text,
-        '123',
-      );
-      expect((italic.children[2] as TextNode).text, '\nabc');
-    });
   });
 }

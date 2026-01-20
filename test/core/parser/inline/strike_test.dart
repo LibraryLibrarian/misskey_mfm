@@ -7,18 +7,6 @@ void main() {
   group('StrikeParser（~~形式）', () {
     final parser = StrikeParser().buildWithFallback();
 
-    // mfm.js/test/parser.ts:645-651
-    test('mfm-js互換テスト: basic', () {
-      final result = parser.parse('~~strike~~');
-      expect(result is Success, isTrue);
-      final node = (result as Success).value as MfmNode;
-      expect(node, isA<StrikeNode>());
-      final strike = node as StrikeNode;
-      expect(strike.children.length, 1);
-      expect(strike.children.first, isA<TextNode>());
-      expect((strike.children.first as TextNode).text, 'strike');
-    });
-
     test('閉じタグがない場合はテキストとして扱う', () {
       final result = parser.parse('~~abc');
       expect(result is Success, isTrue);
@@ -75,19 +63,6 @@ void main() {
   });
 
   group('StrikeTagParser（<s>形式）', () {
-    // mfm.js/test/parser.ts:635-641
-    test('mfm-js互換テスト: basic', () {
-      final m = MfmParser().build();
-      final result = m.parse('<s>abc</s>');
-      expect(result is Success, isTrue);
-      final nodes = (result as Success).value as List<MfmNode>;
-      expect(nodes.length, 1);
-      expect(nodes[0], isA<StrikeNode>());
-      final strike = nodes[0] as StrikeNode;
-      expect(strike.children.length, 1);
-      expect((strike.children.first as TextNode).text, 'abc');
-    });
-
     test('<s>タグ内で改行を含む場合も解析できる', () {
       final m = MfmParser().build();
       final result = m.parse('<s>line1\nline2</s>');

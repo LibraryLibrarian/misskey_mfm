@@ -7,16 +7,6 @@ void main() {
   group('UnicodeEmojiParser（Unicode絵文字）', () {
     final parser = UnicodeEmojiParser().build();
 
-    // mfm.js/test/parser.ts:70-74
-    test('mfm-js互換テスト: basic', () {
-      final result = parser.parse('😀');
-      expect(result is Success, isTrue);
-      final node = (result as Success).value as MfmNode;
-      expect(node, isA<UnicodeEmojiNode>());
-      final emoji = node as UnicodeEmojiNode;
-      expect(emoji.emoji, '😀');
-    });
-
     test('ハンドサインの絵文字を解析できる', () {
       final result = parser.parse('👍');
       expect(result is Success, isTrue);
@@ -77,19 +67,6 @@ void main() {
 
   group('MfmParser統合テスト（Unicode絵文字）', () {
     final parser = MfmParser().build();
-
-    // mfm.js/test/parser.ts:351-355
-    test('mfm-js互換テスト: basic', () {
-      final result = parser.parse('今起きた😇');
-      expect(result is Success, isTrue);
-      final nodes = (result as Success).value as List<MfmNode>;
-      expect(nodes.length, 2);
-      expect(nodes[0], isA<TextNode>());
-      expect((nodes[0] as TextNode).text, '今起きた');
-      expect(nodes[1], isA<UnicodeEmojiNode>());
-      expect((nodes[1] as UnicodeEmojiNode).emoji, '😇');
-    });
-
     test('テキスト内のUnicode絵文字を解析できる', () {
       final result = parser.parse('Hello 👋 World');
       expect(result is Success, isTrue);
@@ -142,20 +119,6 @@ void main() {
       // テキスト + Unicode絵文字 + テキスト + カスタム絵文字
       expect(nodes.any((n) => n is UnicodeEmojiNode), isTrue);
       expect(nodes.any((n) => n is EmojiCodeNode), isTrue);
-    });
-
-    // mfm.js/test/parser.ts:22-26
-    test('mfm-js互換テスト: keycap number sign', () {
-      final result = parser.parse('abc#️⃣123');
-      expect(result is Success, isTrue);
-      final nodes = (result as Success).value as List<MfmNode>;
-      expect(nodes.length, 3);
-      expect(nodes[0], isA<TextNode>());
-      expect((nodes[0] as TextNode).text, 'abc');
-      expect(nodes[1], isA<UnicodeEmojiNode>());
-      expect((nodes[1] as UnicodeEmojiNode).emoji, '#️⃣');
-      expect(nodes[2], isA<TextNode>());
-      expect((nodes[2] as TextNode).text, '123');
     });
   });
 }

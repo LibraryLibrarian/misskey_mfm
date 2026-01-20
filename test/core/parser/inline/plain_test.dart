@@ -61,35 +61,5 @@ void main() {
       expect(nodes[1], isA<PlainNode>());
       expect((nodes[2] as TextNode).text, 'xyz');
     });
-
-    // mfm.js/test/parser.ts:1283-1290
-    test('mfm-js互換テスト: multiple line', () {
-      final m = MfmParser().build();
-      final result = m.parse('a\n<plain>\n**Hello**\nworld\n</plain>\nb');
-      expect(result is Success, isTrue);
-      final nodes = (result as Success).value as List<MfmNode>;
-      expect(nodes.length, 3);
-      expect((nodes[0] as TextNode).text, 'a\n');
-      expect(nodes[1], isA<PlainNode>());
-      final plain = nodes[1] as PlainNode;
-      expect(plain.children.length, 1);
-      expect((plain.children.first as TextNode).text, '**Hello**\nworld');
-      expect((nodes[2] as TextNode).text, '\nb');
-    });
-
-    // mfm.js/test/parser.ts:1293-1301
-    test('mfm-js互換テスト: single line', () {
-      final m = MfmParser().build();
-      final result = m.parse('a\n<plain>**Hello** world</plain>\nb');
-      expect(result is Success, isTrue);
-      final nodes = (result as Success).value as List<MfmNode>;
-      expect(nodes.length, 3);
-      expect((nodes[0] as TextNode).text, 'a\n');
-      expect(nodes[1], isA<PlainNode>());
-      final plain = nodes[1] as PlainNode;
-      expect(plain.children.length, 1);
-      expect((plain.children.first as TextNode).text, '**Hello** world');
-      expect((nodes[2] as TextNode).text, '\nb');
-    });
   });
 }

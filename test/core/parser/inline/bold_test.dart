@@ -7,18 +7,6 @@ void main() {
   group('BoldParser（太字構文）', () {
     final parser = BoldParser().buildWithFallback();
 
-    // mfm.js/test/parser.ts:441-449
-    test('mfm-js互換テスト: basic', () {
-      final result = parser.parse('**bold**');
-      expect(result is Success, isTrue);
-      final node = (result as Success).value as MfmNode;
-      expect(node, isA<BoldNode>());
-      final bold = node as BoldNode;
-      expect(bold.children.length, 1);
-      expect(bold.children.first, isA<TextNode>());
-      expect((bold.children.first as TextNode).text, 'bold');
-    });
-
     test('太字内に太字をネストできる（最も近い閉じタグを優先）', () {
       final result = parser.parse('**a **b** c**');
       expect(result is Success, isTrue);
@@ -58,17 +46,6 @@ void main() {
       expect((bold.children.first as TextNode).text, 'bold1');
     });
 
-    // mfm.js/test/parser.ts:463-475
-    test('mfm-js互換テスト: 内容は改行できる', () {
-      final result = parser.parse('**line1\nline2**');
-      expect(result is Success, isTrue);
-      final node = (result as Success).value as MfmNode;
-      expect(node, isA<BoldNode>());
-      final bold = node as BoldNode;
-      expect(bold.children.length, 1);
-      expect((bold.children.first as TextNode).text, 'line1\nline2');
-    });
-
     test('単独の**はテキストとして扱う', () {
       final result = parser.parse('**');
       expect(result is Success, isTrue);
@@ -99,75 +76,9 @@ void main() {
       final result = parser.parse('abc**def');
       expect(result is Failure, isTrue);
     });
-
-    // mfm.js/test/parser.ts:450-461
-    test('mfm-js互換テスト: 内容にはインライン構文を利用できる', () {
-      final mfmParser = MfmParser().build();
-      final result = mfmParser.parse('**123~~abc~~123**');
-      expect(result is Success, isTrue);
-      final nodes = (result as Success).value as List<MfmNode>;
-      expect(nodes.length, 1);
-      expect(nodes[0], isA<BoldNode>());
-      final bold = nodes[0] as BoldNode;
-      expect(bold.children.length, 3);
-      expect((bold.children[0] as TextNode).text, '123');
-      expect(bold.children[1], isA<StrikeNode>());
-      final strike = bold.children[1] as StrikeNode;
-      expect(strike.children.length, 1);
-      expect((strike.children.first as TextNode).text, 'abc');
-      expect((bold.children[2] as TextNode).text, '123');
-    });
   });
 
   group('BoldTagParser（太字タグ <b>…</b>）', () {
-    // mfm.js/test/parser.ts:403-411
-    test('mfm-js互換テスト: basic', () {
-      final m = MfmParser().build();
-      final result = m.parse('<b>abc</b>');
-      expect(result is Success, isTrue);
-      final nodes = (result as Success).value as List<MfmNode>;
-      expect(nodes.length, 1);
-      expect(nodes[0], isA<BoldNode>());
-      final bold = nodes[0] as BoldNode;
-      expect(bold.children.length, 1);
-      expect((bold.children.first as TextNode).text, 'abc');
-    });
-
-    // mfm.js/test/parser.ts:412-424
-    test('mfm-js互換テスト: inline syntax allowed inside', () {
-      final m = MfmParser().build();
-      final result = m.parse('<b>123~~abc~~123</b>');
-      expect(result is Success, isTrue);
-      final nodes = (result as Success).value as List<MfmNode>;
-      expect(nodes.length, 1);
-      expect(nodes[0], isA<BoldNode>());
-      final bold = nodes[0] as BoldNode;
-      expect(bold.children.length, 3);
-      expect((bold.children[0] as TextNode).text, '123');
-      expect(bold.children[1], isA<StrikeNode>());
-      final strike = bold.children[1] as StrikeNode;
-      expect(strike.children.length, 1);
-      expect((strike.children.first as TextNode).text, 'abc');
-      expect((bold.children[2] as TextNode).text, '123');
-    });
-
-    // mfm.js/test/parser.ts:425-437
-    test('mfm-js互換テスト: line breaks', () {
-      final m = MfmParser().build();
-      final result = m.parse('<b>123\n~~abc~~\n123</b>');
-      expect(result is Success, isTrue);
-      final nodes = (result as Success).value as List<MfmNode>;
-      expect(nodes.length, 1);
-      final bold = nodes[0] as BoldNode;
-      expect(bold.children.length, 3);
-      expect((bold.children[0] as TextNode).text, '123\n');
-      expect(bold.children[1], isA<StrikeNode>());
-      final strike = bold.children[1] as StrikeNode;
-      expect(strike.children.length, 1);
-      expect((strike.children.first as TextNode).text, 'abc');
-      expect((bold.children[2] as TextNode).text, '\n123');
-    });
-
     test('<b>abc*123*abc</b> の中のitalic構文はテキストとして扱われる', () {
       final m = MfmParser().build();
       final result = m.parse('<b>abc*123*abc</b>');

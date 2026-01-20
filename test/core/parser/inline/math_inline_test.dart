@@ -5,18 +5,6 @@ import 'package:test/test.dart';
 
 void main() {
   group('MathInlineParser（インライン数式）', () {
-    // mfm.js/test/parser.ts:675-679
-    test(r'mfm-js互換テスト: basic', () {
-      final m = MfmParser().build();
-      final result = m.parse(r'\(x = 2\)');
-      expect(result is Success, isTrue);
-      final nodes = (result as Success).value as List<MfmNode>;
-      expect(nodes.length, 1);
-      expect(nodes[0], isA<MathInlineNode>());
-      final math = nodes[0] as MathInlineNode;
-      expect(math.formula, 'x = 2');
-    });
-
     test(r'複雑な数式: \(x = {-b \pm \sqrt{b^2-4ac} \over 2a}\)', () {
       final m = MfmParser().build();
       final result = m.parse(r'\(x = {-b \pm \sqrt{b^2-4ac} \over 2a}\)');

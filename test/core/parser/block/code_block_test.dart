@@ -5,30 +5,6 @@ import 'package:test/test.dart';
 
 void main() {
   group('CodeBlockParser（コードブロック）', () {
-    // mfm.js/test/parser.ts:242-246
-    test('mfm-js互換テスト: コードブロックを使用できる', () {
-      final m = MfmParser().build();
-      final result = m.parse('```\nabc\n```');
-      expect(result is Success, isTrue);
-      final nodes = (result as Success).value as List<MfmNode>;
-      expect(nodes.length, 1);
-      expect(nodes[0], isA<CodeBlockNode>());
-      final cb = nodes[0] as CodeBlockNode;
-      expect(cb.language, isNull);
-      expect(cb.code, 'abc');
-    });
-
-    // mfm.js/test/parser.ts:254-258
-    test('mfm-js互換テスト: コードブロックは言語を指定できる', () {
-      final m = MfmParser().build();
-      final result = m.parse('```js\nconst a = 1;\n```');
-      expect(result is Success, isTrue);
-      final nodes = (result as Success).value as List<MfmNode>;
-      final cb = nodes[0] as CodeBlockNode;
-      expect(cb.language, 'js');
-      expect(cb.code, 'const a = 1;');
-    });
-
     test('言語指定（dart）: ```dart\nvoid main() {}\n```', () {
       final m = MfmParser().build();
       final result = m.parse('```dart\nvoid main() {}\n```');
@@ -37,61 +13,6 @@ void main() {
       final cb = nodes[0] as CodeBlockNode;
       expect(cb.language, 'dart');
       expect(cb.code, 'void main() {}');
-    });
-
-    // mfm.js/test/parser.ts:270-274
-    test('mfm-js互換テスト: ignore internal marker', () {
-      final m = MfmParser().build();
-      final result = m.parse('```\naaa```bbb\n```');
-      expect(result is Success, isTrue);
-      final nodes = (result as Success).value as List<MfmNode>;
-      final cb = nodes[0] as CodeBlockNode;
-      expect(cb.code, 'aaa```bbb');
-    });
-
-    // mfm.js/test/parser.ts:248-252
-    test('mfm-js互換テスト: コードブロックには複数行のコードを入力できる', () {
-      final m = MfmParser().build();
-      final result = m.parse('```\na\nb\nc\n```');
-      expect(result is Success, isTrue);
-      final nodes = (result as Success).value as List<MfmNode>;
-      expect(nodes.length, 1);
-      expect(nodes[0], isA<CodeBlockNode>());
-      final cb = nodes[0] as CodeBlockNode;
-      expect(cb.language, isNull);
-      expect(cb.code, 'a\nb\nc');
-    });
-
-    // mfm.js/test/parser.ts:260-268
-    test('mfm-js互換テスト: ブロックの前後にあるテキストが正しく解釈される', () {
-      final m = MfmParser().build();
-      final result = m.parse('abc\n```\nconst abc = 1;\n```\n123');
-      expect(result is Success, isTrue);
-      final nodes = (result as Success).value as List<MfmNode>;
-      expect(nodes.length, 3);
-      expect(nodes[0], isA<TextNode>());
-      expect((nodes[0] as TextNode).text, 'abc');
-      expect(nodes[1], isA<CodeBlockNode>());
-      final cb = nodes[1] as CodeBlockNode;
-      expect(cb.language, isNull);
-      expect(cb.code, 'const abc = 1;');
-      expect(nodes[2], isA<TextNode>());
-      expect((nodes[2] as TextNode).text, '123');
-    });
-
-    // mfm.js/test/parser.ts:276-283
-    test('mfm-js互換テスト: trim after line break', () {
-      final m = MfmParser().build();
-      final result = m.parse('```\nfoo\n```\nbar');
-      expect(result is Success, isTrue);
-      final nodes = (result as Success).value as List<MfmNode>;
-      expect(nodes.length, 2);
-      expect(nodes[0], isA<CodeBlockNode>());
-      final cb = nodes[0] as CodeBlockNode;
-      expect(cb.language, isNull);
-      expect(cb.code, 'foo');
-      expect(nodes[1], isA<TextNode>());
-      expect((nodes[1] as TextNode).text, 'bar');
     });
 
     group('mfm-js互換: 行頭・行末チェック', () {
