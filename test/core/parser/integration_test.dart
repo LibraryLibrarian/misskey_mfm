@@ -589,6 +589,92 @@ void main() {
         expect(nodes[1], isA<TextNode>());
         expect((nodes[1] as TextNode).text, '(value text');
       });
+
+      // mfm-js互換: keycapとハッシュタグの相互作用
+      test('mfm.js互換: with keycap number sign', () {
+        // mfm.js/test/parser.ts:810-815
+        // keycap number sign (#️⃣) はUnicode絵文字として認識
+        // 後続の#はハッシュタグとして認識される
+        final result = parser.parse('#️⃣abc123 #abc');
+        expect(result is Success, isTrue);
+        final nodes = (result as Success).value as List<MfmNode>;
+        expect(nodes.length, 3);
+        expect(nodes[0], isA<UnicodeEmojiNode>());
+        expect((nodes[0] as UnicodeEmojiNode).emoji, '#️⃣');
+        expect(nodes[1], isA<TextNode>());
+        expect((nodes[1] as TextNode).text, 'abc123 ');
+        expect(nodes[2], isA<HashtagNode>());
+        expect((nodes[2] as HashtagNode).hashtag, 'abc');
+      });
+
+      test('mfm.js互換: with keycap number sign 2', () {
+        // mfm.js/test/parser.ts:817-822
+        // 改行後のkeycap number signもUnicode絵文字として認識
+        final result = parser.parse('abc\n#️⃣abc');
+        expect(result is Success, isTrue);
+        final nodes = (result as Success).value as List<MfmNode>;
+        expect(nodes.length, 3);
+        expect(nodes[0], isA<TextNode>());
+        expect((nodes[0] as TextNode).text, 'abc\n');
+        expect(nodes[1], isA<UnicodeEmojiNode>());
+        expect((nodes[1] as UnicodeEmojiNode).emoji, '#️⃣');
+        expect(nodes[2], isA<TextNode>());
+        expect((nodes[2] as TextNode).text, 'abc');
+      });
+
+      test('mfm.js互換: ignore square bracket', () {
+        // mfm.js/test/parser.ts:863-866
+        // 角括弧 ] はハッシュタグに含まれない
+        final result = parser.parse('#Foo]');
+        expect(result is Success, isTrue);
+        final nodes = (result as Success).value as List<MfmNode>;
+        expect(nodes.length, 2);
+        expect(nodes[0], isA<HashtagNode>());
+        expect((nodes[0] as HashtagNode).hashtag, 'Foo');
+        expect(nodes[1], isA<TextNode>());
+        expect((nodes[1] as TextNode).text, ']');
+      });
+
+      test('mfm.js互換: with brackets "()" (space before)', () {
+        // mfm.js/test/parser.ts:901-905
+        // 括弧内でスペース後のハッシュタグは有効
+        final result = parser.parse('(bar #foo)');
+        expect(result is Success, isTrue);
+        final nodes = (result as Success).value as List<MfmNode>;
+        expect(nodes.length, 3);
+        expect(nodes[0], isA<TextNode>());
+        expect((nodes[0] as TextNode).text, '(bar ');
+        expect(nodes[1], isA<HashtagNode>());
+        expect((nodes[1] as HashtagNode).hashtag, 'foo');
+        expect(nodes[2], isA<TextNode>());
+        expect((nodes[2] as TextNode).text, ')');
+      });
+
+      test('mfm.js互換: with brackets "「」" (space before)', () {
+        // mfm.js/test/parser.ts:907-911
+        // 日本語括弧内でスペース後のハッシュタグは有効
+        final result = parser.parse('「bar #foo」');
+        expect(result is Success, isTrue);
+        final nodes = (result as Success).value as List<MfmNode>;
+        expect(nodes.length, 3);
+        expect(nodes[0], isA<TextNode>());
+        expect((nodes[0] as TextNode).text, '「bar ');
+        expect(nodes[1], isA<HashtagNode>());
+        expect((nodes[1] as HashtagNode).hashtag, 'foo');
+        expect(nodes[2], isA<TextNode>());
+        expect((nodes[2] as TextNode).text, '」');
+      });
+
+      test('mfm.js互換: disallow number only (with brackets)', () {
+        // mfm.js/test/parser.ts:921-925
+        // 括弧内でも数字のみのハッシュタグは無効
+        final result = parser.parse('(#123)');
+        expect(result is Success, isTrue);
+        final nodes = (result as Success).value as List<MfmNode>;
+        expect(nodes.length, 1);
+        expect(nodes[0], isA<TextNode>());
+        expect((nodes[0] as TextNode).text, '(#123)');
+      });
     });
 
     // 複合テストケース
