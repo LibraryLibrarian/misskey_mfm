@@ -35,7 +35,17 @@ void main() {
     }
 
     // mfm.js:69-75
-    group('text', () {});
+    group('text', () {
+      // mfm.js/test/parser.ts:70-74
+      test('mfm-js互換テスト: FullParser text - basic', () {
+        final result = parser.parse('abc');
+        expect(result is Success, isTrue);
+        final nodes = (result as Success).value as List<MfmNode>;
+        expect(nodes.length, 1);
+        expect(nodes[0], isA<TextNode>());
+        expect((nodes[0] as TextNode).text, 'abc');
+      });
+    });
 
     // mfm.js:77-183
     group('quote', () {
@@ -2528,6 +2538,77 @@ void main() {
     });
 
     // mfm.js:1512-1540
-    group('composite', () {});
+    group('composite', () {
+      // mfm.js/test/parser.ts:1512-1538
+      test('mfm.js互換: composite（大規模複合テスト）', () {
+        // テキスト、中央寄せ、FN関数、メンション、URL、Unicode絵文字の複合
+        const input = '''before
+<center>
+Hello \$[tada everynyan! 🎉]
+
+I'm @ai, A bot of misskey!
+
+https://github.com/syuilo/ai
+</center>
+after''';
+        final result = parser.parse(input);
+        expect(result is Success, isTrue);
+        final nodes = (result as Success).value as List<MfmNode>;
+
+        // 期待構造: TEXT('before'), CENTER([...]), TEXT('after')
+        expect(nodes.length, 3);
+
+        // 最初のノード: TEXT('before')
+        expect(nodes[0], isA<TextNode>());
+        expect((nodes[0] as TextNode).text, 'before');
+
+        // 中間のノード: CENTER
+        expect(nodes[1], isA<CenterNode>());
+        final centerNode = nodes[1] as CenterNode;
+
+        // CENTERの子要素を検証
+        final centerChildren = centerNode.children;
+
+        // TEXT('Hello ')
+        expect(centerChildren[0], isA<TextNode>());
+        expect((centerChildren[0] as TextNode).text, 'Hello ');
+
+        // FN('tada', {}, [TEXT('everynyan! '), UNI_EMOJI('🎉')])
+        expect(centerChildren[1], isA<FnNode>());
+        final fnNode = centerChildren[1] as FnNode;
+        expect(fnNode.name, 'tada');
+        expect(fnNode.args, isEmpty);
+        expect(fnNode.children.length, 2);
+        expect(fnNode.children[0], isA<TextNode>());
+        expect((fnNode.children[0] as TextNode).text, 'everynyan! ');
+        expect(fnNode.children[1], isA<UnicodeEmojiNode>());
+        expect((fnNode.children[1] as UnicodeEmojiNode).emoji, '🎉');
+
+        // TEXT('\n\nI\'m ')
+        expect(centerChildren[2], isA<TextNode>());
+        expect((centerChildren[2] as TextNode).text, "\n\nI'm ");
+
+        // MENTION('ai', null, '@ai')
+        expect(centerChildren[3], isA<MentionNode>());
+        final mentionNode = centerChildren[3] as MentionNode;
+        expect(mentionNode.username, 'ai');
+        expect(mentionNode.host, isNull);
+
+        // TEXT(', A bot of misskey!\n\n')
+        expect(centerChildren[4], isA<TextNode>());
+        expect((centerChildren[4] as TextNode).text, ', A bot of misskey!\n\n');
+
+        // N_URL('https://github.com/syuilo/ai')
+        expect(centerChildren[5], isA<UrlNode>());
+        expect(
+          (centerChildren[5] as UrlNode).url,
+          'https://github.com/syuilo/ai',
+        );
+
+        // 最後のノード: TEXT('after')
+        expect(nodes[2], isA<TextNode>());
+        expect((nodes[2] as TextNode).text, 'after');
+      });
+    });
   });
 }
