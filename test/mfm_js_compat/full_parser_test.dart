@@ -14,16 +14,6 @@ void main() {
   group('FullParser', () {
     final parser = MfmParser().build();
 
-    /// ヘルパー: フルパーサーの結果から最初のHashtagNodeを取得
-    HashtagNode? getFirstHashtag(Result<List<MfmNode>> result) {
-      if (result is! Success) return null;
-      final nodes = result.value;
-      for (final node in nodes) {
-        if (node is HashtagNode) return node;
-      }
-      return null;
-    }
-
     /// ヘルパー: フルパーサーの結果から最初のLinkNodeを取得
     LinkNode? getFirstLink(Result<List<MfmNode>> result) {
       if (result is! Success) return null;
@@ -1603,7 +1593,8 @@ void main() {
 
         group('non-ascii and xss prevention', () {
           test(
-            'mfm-js互換テスト: ignore non-ascii characters contained url without angle brackets',
+            'mfm-js互換テスト: ignore non-ascii characters contained url '
+            'without angle brackets',
             () {
               // mfm-js: 非ASCII文字を含むURLはブラケットなしではテキストとして扱う
               final result = parser.parse('https://大石泉すき.example.com');
@@ -1619,7 +1610,8 @@ void main() {
           );
 
           test(
-            'mfm-js互換テスト: match non-ascii characters contained url with angle brackets',
+            'mfm-js互換テスト: match non-ascii characters contained url '
+            'with angle brackets',
             () {
               // mfm-js: ブラケット付きなら非ASCII文字を含むURLも認識
               final result = parser.parse('<https://大石泉すき.example.com>');

@@ -1,8 +1,8 @@
 # mfm.js 互換テスト
 
-このディレクトリには、mfm.jsプロジェクトのテストを Dart に移植したテストが含まれる予定
+このディレクトリには、mfm.jsプロジェクトのテストを Dart に移植したテストが含まれる
 
-## ファイル構成（予定）
+## ファイル構成
 
 - `simple_parser_test.dart` - mfm.js/test/parser.ts の SimpleParser セクション（行8-66）
 - `full_parser_test.dart` - mfm.js/test/parser.ts の FullParser セクション（行68-1540）

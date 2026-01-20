@@ -101,15 +101,19 @@ void main() {
       });
 
       // mfm.js/test/parser.ts:54-58
-      test('mfm-js互換テスト: Ignore Variation Selector preceded by Unicode Emoji', () {
-        // 異体字セレクタ(U+FE0F)単体はテキストとして扱う
-        final result = parser.parse('\uFE0F');
-        expect(result is Success, isTrue);
-        final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<TextNode>());
-        expect((nodes[0] as TextNode).text, '\uFE0F');
-      });
+      test(
+        'mfm-js互換テスト: Ignore Variation Selector preceded by '
+        'Unicode Emoji',
+        () {
+          // 異体字セレクタ(U+FE0F)単体はテキストとして扱う
+          final result = parser.parse('\uFE0F');
+          expect(result is Success, isTrue);
+          final nodes = (result as Success).value as List<MfmNode>;
+          expect(nodes.length, 1);
+          expect(nodes[0], isA<TextNode>());
+          expect((nodes[0] as TextNode).text, '\uFE0F');
+        },
+      );
     });
 
     // mfm.js/test/parser.ts:61-65
