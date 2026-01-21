@@ -1,6 +1,11 @@
 name: misskey_mfm_parser
 version: 1.0.0
 homepage: https://librarylibrarian.com/
+topics:
+  - misskey
+  - mfm
+  - parser
+  - parsing
 environment:
   sdk: ^3.9.0
   flutter: ">=1.17.0"
@@ -20,4 +25,5 @@ dev_dependencies:
   test: ^1.26.2
 repository: https://github.com/LibraryLibrarian/misskey_mfm_parser
 issue_tracker: https://github.com/LibraryLibrarian/misskey_mfm_parser/issues
+documentation: https://pub.dev/documentation/misskey_mfm_parser/latest/
 flutter: null
