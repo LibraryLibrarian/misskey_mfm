@@ -1,5 +1,5 @@
-import 'package:misskey_mfm/core/ast.dart';
-import 'package:misskey_mfm/core/parser.dart';
+import 'package:misskey_mfm_parser/core/ast.dart';
+import 'package:misskey_mfm_parser/core/parser.dart';
 import 'package:petitparser/petitparser.dart';
 import 'package:test/test.dart';
 
@@ -24,6 +24,5 @@ void main() {
       final math = nodes[0] as MathBlockNode;
       expect(math.formula, r'x = {-b \pm \sqrt{b^2-4ac} \over 2a}');
     });
-
   });
 }

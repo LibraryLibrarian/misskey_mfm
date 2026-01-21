@@ -1,9 +1,9 @@
-name: misskey_mfm
-version: 0.0.1
+name: misskey_mfm_parser
+version: 1.0.0
 environment:
   sdk: ^3.9.0
   flutter: ">=1.17.0"
-description: A new Flutter package project.
+description: mfm parser rewritten in Dart.
 dependencies:
   emoji_regex: ^0.0.5
   flutter:

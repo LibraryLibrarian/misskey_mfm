@@ -1,4 +1,4 @@
-import 'package:misskey_mfm/core/parser.dart';
+import 'package:misskey_mfm_parser/core/parser.dart';
 import 'package:petitparser/petitparser.dart';
 import 'package:test/test.dart';
 

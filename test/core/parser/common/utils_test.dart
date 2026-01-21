@@ -1,5 +1,5 @@
-import 'package:misskey_mfm/core/ast.dart';
-import 'package:misskey_mfm/core/parser.dart';
+import 'package:misskey_mfm_parser/core/ast.dart';
+import 'package:misskey_mfm_parser/core/parser.dart';
 import 'package:test/test.dart';
 
 void main() {
