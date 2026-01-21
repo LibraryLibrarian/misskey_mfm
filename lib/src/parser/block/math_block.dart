@@ -37,10 +37,10 @@ class MathBlockParser {
     final endPart = seq3(newline.optional(), close, lineEnd());
 
     return seq4(startPart, formula, endPart, newline.optional()).map4((
-      _,
+      start,
       formulaStr,
-      _,
-      _,
+      end,
+      trailingNewline,
     ) {
       return MathBlockNode(formulaStr);
     });

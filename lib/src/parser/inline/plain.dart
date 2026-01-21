@@ -34,7 +34,7 @@ class PlainParser {
       content,
       newline.optional(),
       close,
-    ).map5((_, _, text, _, _) {
+    ).map5((openTag, leadingNewline, text, trailingNewline, closeTag) {
       // PlainNodeは子ノードとしてTextNodeのリストを持つ
       return PlainNode([TextNode(text)]);
     });
