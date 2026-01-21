@@ -8,7 +8,7 @@ topics:
   - parsing
 environment:
   sdk: ^3.0.0
-description: A library for parsing MFM (Markup language For Misskey) rewritten in Dart. Developed with the aim of conducting tests as expected by mfm.js and obtaining equivalent parsing results.
+description: A library for parsing MFM rewritten in Dart. Developed with the aim of conducting tests as expected by mfm.js and obtaining equivalent parsing results.
 dependencies:
   emoji_regex: ^0.0.5
   petitparser: ^7.0.1
