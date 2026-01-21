@@ -14,6 +14,5 @@ void main() {
       final search = nodes[0] as SearchNode;
       expect(search.query, 'MFM');
     });
-
   });
 }
