@@ -1,6 +1,6 @@
-import 'package:misskey_mfm_parser/core/ast.dart';
-import 'package:misskey_mfm_parser/core/parser/inline/url.dart';
-import 'package:misskey_mfm_parser/core/parser/parser.dart';
+import 'package:misskey_mfm_parser/src/ast.dart';
+import 'package:misskey_mfm_parser/src/parser/inline/url.dart';
+import 'package:misskey_mfm_parser/src/parser/parser.dart';
 import 'package:petitparser/petitparser.dart';
 import 'package:test/test.dart';
 
