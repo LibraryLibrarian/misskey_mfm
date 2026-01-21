@@ -24,13 +24,25 @@ import 'inline/strike.dart';
 import 'inline/unicode_emoji.dart';
 import 'inline/url.dart';
 
+/// Main parser for MFM (Misskey Flavored Markdown).
+///
+/// Integrates syntax parsers with appropriate priority.
+///
 /// MFM（Misskey Flavored Markdown）メインパーサー
 ///
 /// 各構文パーサーを統合し、適切な優先順位で解析を行う
 class MfmParser {
+  /// Default nesting limit value.
+  ///
   /// デフォルトのネスト制限値
   static const defaultNestLimit = 20;
 
+  /// Builds and returns the parser.
+  ///
+  /// [nestLimit] Nesting depth limit (default: 20).
+  /// mfm-js compatible: When depth reaches limit,
+  /// nested syntax is treated as text.
+  ///
   /// パーサーを構築して返す
   ///
   /// [nestLimit] ネストの深さ制限（デフォルト: 20）
@@ -265,6 +277,20 @@ class MfmParser {
     return start;
   }
 
+  /// Builds and returns a simple parser.
+  ///
+  /// Lightweight parser equivalent to mfm-js `parseSimple()`.
+  /// Parses only text, unicodeEmoji, emojiCode, and plain.
+  ///
+  /// Intended for performance-critical scenarios like username display.
+  /// Ignores formatting syntax like bold, italic, mention, hashtag.
+  ///
+  /// Examples:
+  /// - `foo **bar** baz` → `[TextNode('foo **bar** baz')]`
+  /// - `abc#abc` → `[TextNode('abc#abc')]`
+  /// - `Hello :wave:` → `[TextNode('Hello '), EmojiCodeNode('wave')]`
+  /// - `今起きた😇` → `[TextNode('今起きた'), UnicodeEmojiNode('😇')]`
+  ///
   /// シンプルパーサーを構築して返す
   ///
   /// mfm-js の `parseSimple()` に相当する軽量パーサー
