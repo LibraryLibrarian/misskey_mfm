@@ -33,11 +33,10 @@ class SearchParser {
     final lineEnd = newline.not() & endOfInput() | newline;
 
     // クエリ部分: 改行またはスペース+ボタン+行末が出現するまでの文字列
-    final queryChar =
-        (newline.not() &
-                (space & button & (newline | endOfInput())).not() &
-                any())
-            .pick(2);
+    final queryChar = (newline.not() &
+            (space & button & (newline | endOfInput())).not() &
+            any())
+        .pick(2);
     final query = queryChar.plus().flatten();
 
     // seq5で型安全なシーケンスパース
@@ -47,7 +46,7 @@ class SearchParser {
       space.flatten(),
       button,
       lineEnd.optional(),
-    ).map5((_, queryStr, spaceStr, buttonStr, _) {
+    ).map5((leadingNewline, queryStr, spaceStr, buttonStr, trailingLineEnd) {
       final content = '$queryStr$spaceStr$buttonStr';
       return SearchNode(query: queryStr, content: content);
     });

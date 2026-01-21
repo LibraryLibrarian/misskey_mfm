@@ -26,7 +26,7 @@ class MathInlineParser {
     final formula = formulaChar.plus().flatten();
 
     // seq3で型安全なシーケンスパース
-    return seq3(open, formula, close).map3((_, formulaStr, _) {
+    return seq3(open, formula, close).map3((openTag, formulaStr, closeTag) {
       return MathInlineNode(formulaStr);
     });
   }

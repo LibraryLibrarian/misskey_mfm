@@ -7,23 +7,16 @@ topics:
   - parser
   - parsing
 environment:
-  sdk: ^3.9.0
-  flutter: ">=1.17.0"
+  sdk: ^3.0.0
 description: A library for parsing MFM (Markup language For Misskey) rewritten in Dart. Developed with the aim of conducting tests as expected by mfm.js and obtaining equivalent parsing results.
 dependencies:
   emoji_regex: ^0.0.5
-  flutter:
-    sdk: flutter
   petitparser: ^7.0.1
 dev_dependencies:
   custom_lint: ^0.8.1
-  flutter_lints: ^5.0.0
-  flutter_test:
-    sdk: flutter
   pedantic_mono: ^1.33.0
   pubspec_dependency_sorter: ^1.0.5
   test: ^1.26.2
 repository: https://github.com/LibraryLibrarian/misskey_mfm_parser
 issue_tracker: https://github.com/LibraryLibrarian/misskey_mfm_parser/issues
 documentation: https://pub.dev/documentation/misskey_mfm_parser/latest/
-flutter: null
