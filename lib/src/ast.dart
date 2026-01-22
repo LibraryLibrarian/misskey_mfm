@@ -1,7 +1,12 @@
+import 'package:freezed_annotation/freezed_annotation.dart';
+
+part 'ast.freezed.dart';
+
 /// Base class for MFM (Misskey Flavored Markdown) Abstract Syntax Tree nodes.
 ///
 /// MFM（Misskey Flavored Markdown）の抽象構文木（AST）の基底クラス
-abstract class MfmNode {
+@freezed
+sealed class MfmNode with _$MfmNode {
   const MfmNode();
 }
 
