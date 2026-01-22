@@ -10,9 +10,7 @@ void main() {
       final result = m.parse('MFM SEARCH');
       expect(result is Success, isTrue);
       final nodes = (result as Success).value as List<MfmNode>;
-      expect(nodes[0], isA<SearchNode>());
-      final search = nodes[0] as SearchNode;
-      expect(search.query, 'MFM');
+      expect(nodes, [const SearchNode(query: 'MFM', content: 'MFM SEARCH')]);
     });
   });
 }

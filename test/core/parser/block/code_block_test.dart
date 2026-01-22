@@ -10,9 +10,15 @@ void main() {
       final result = m.parse('```dart\nvoid main() {}\n```');
       expect(result is Success, isTrue);
       final nodes = (result as Success).value as List<MfmNode>;
-      final cb = nodes[0] as CodeBlockNode;
-      expect(cb.language, 'dart');
-      expect(cb.code, 'void main() {}');
+      expect(
+        nodes,
+        [
+          const CodeBlockNode(
+            code: 'void main() {}',
+            language: 'dart',
+          ),
+        ],
+      );
     });
 
     group('mfm-js互換: 行頭・行末チェック', () {
@@ -39,8 +45,14 @@ void main() {
         final result = m.parse('```\ncode\n```');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<CodeBlockNode>());
+        expect(
+          nodes,
+          [
+            const CodeBlockNode(
+              code: 'code',
+            ),
+          ],
+        );
       });
 
       test('改行の後は行頭として認識される', () {
@@ -48,9 +60,15 @@ void main() {
         final result = m.parse('text\n```\ncode\n```');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 2);
-        expect(nodes[0], isA<TextNode>());
-        expect(nodes[1], isA<CodeBlockNode>());
+        expect(
+          nodes,
+          [
+            const TextNode('text'),
+            const CodeBlockNode(
+              code: 'code',
+            ),
+          ],
+        );
       });
 
       test('行末の後の改行がある場合も正常に認識される', () {
@@ -58,10 +76,14 @@ void main() {
         final result = m.parse('```\ncode\n```\n');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<CodeBlockNode>());
-        final cb = nodes[0] as CodeBlockNode;
-        expect(cb.code, 'code');
+        expect(
+          nodes,
+          [
+            const CodeBlockNode(
+              code: 'code',
+            ),
+          ],
+        );
       });
     });
   });

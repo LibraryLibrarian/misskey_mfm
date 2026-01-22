@@ -12,36 +12,42 @@ void main() {
       final result = parser.parse('***abc');
       expect(result is Success, isTrue);
       final node = (result as Success).value as MfmNode;
-      expect(node, isA<TextNode>());
-      expect((node as TextNode).text, '***abc');
+      expect(node, const TextNode('***abc'));
     });
 
     test('空のbig構文を解析できる', () {
       final result = parser.parse('******');
       expect(result is Success, isTrue);
       final node = (result as Success).value as MfmNode;
-      expect(node, isA<FnNode>());
-      final fn = node as FnNode;
-      expect(fn.name, 'tada');
-      expect(fn.children.length, 0);
+      expect(
+        node,
+        const FnNode(
+          name: 'tada',
+          args: {},
+          children: [],
+        ),
+      );
     });
 
     test('改行を含むbig構文を解析できる', () {
       final result = parser.parse('***line1\nline2***');
       expect(result is Success, isTrue);
       final node = (result as Success).value as MfmNode;
-      expect(node, isA<FnNode>());
-      final fn = node as FnNode;
-      expect(fn.children.length, 1);
-      expect((fn.children.first as TextNode).text, 'line1\nline2');
+      expect(
+        node,
+        const FnNode(
+          name: 'tada',
+          args: {},
+          children: [TextNode('line1\nline2')],
+        ),
+      );
     });
 
     test('単独の***はテキストとして扱う', () {
       final result = parser.parse('***');
       expect(result is Success, isTrue);
       final node = (result as Success).value as MfmNode;
-      expect(node, isA<TextNode>());
-      expect((node as TextNode).text, '***');
+      expect(node, const TextNode('***'));
     });
   });
 
@@ -52,26 +58,34 @@ void main() {
       final result = mfmParser.parse('***abc***');
       expect(result is Success, isTrue);
       final nodes = (result as Success).value as List<MfmNode>;
-      expect(nodes.length, 1);
-      expect(nodes[0], isA<FnNode>());
-      final fn = nodes[0] as FnNode;
-      expect(fn.name, 'tada');
-      expect(fn.args, isEmpty);
-      expect(fn.children.length, 1);
-      expect((fn.children.first as TextNode).text, 'abc');
+      expect(
+        nodes,
+        [
+          const FnNode(
+            name: 'tada',
+            args: {},
+            children: [TextNode('abc')],
+          ),
+        ],
+      );
     });
 
     test('テキストの前後にbig構文がある場合', () {
       final result = mfmParser.parse('before ***abc*** after');
       expect(result is Success, isTrue);
       final nodes = (result as Success).value as List<MfmNode>;
-      expect(nodes.length, 3);
-      expect((nodes[0] as TextNode).text, 'before ');
-      expect(nodes[1], isA<FnNode>());
-      final fn = nodes[1] as FnNode;
-      expect(fn.name, 'tada');
-      expect((fn.children.first as TextNode).text, 'abc');
-      expect((nodes[2] as TextNode).text, ' after');
+      expect(
+        nodes,
+        [
+          const TextNode('before '),
+          const FnNode(
+            name: 'tada',
+            args: {},
+            children: [TextNode('abc')],
+          ),
+          const TextNode(' after'),
+        ],
+      );
     });
 
     test('bigとboldが正しく区別される', () {
@@ -79,13 +93,24 @@ void main() {
       final bigResult = mfmParser.parse('***abc***');
       expect(bigResult is Success, isTrue);
       final bigNodes = (bigResult as Success).value as List<MfmNode>;
-      expect(bigNodes[0], isA<FnNode>());
+      expect(
+        bigNodes,
+        [
+          const FnNode(
+            name: 'tada',
+            args: {},
+            children: [TextNode('abc')],
+          ),
+        ],
+      );
 
       // ** は bold として解析されるべき
       final boldResult = mfmParser.parse('**abc**');
       expect(boldResult is Success, isTrue);
       final boldNodes = (boldResult as Success).value as List<MfmNode>;
-      expect(boldNodes[0], isA<BoldNode>());
+      expect(boldNodes, [
+        const BoldNode([TextNode('abc')]),
+      ]);
     });
   });
 }

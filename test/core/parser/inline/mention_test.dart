@@ -106,7 +106,7 @@ void main() {
       final result = parser.parse('@user');
       expect(result is Success, isTrue);
       final node = (result as Success).value as MfmNode;
-      expect(node, isA<MentionNode>());
+      expect(node, const MentionNode(username: 'user', acct: '@user'));
     });
 
     test('無効な場合は@をテキストとして返す', () {
@@ -114,8 +114,7 @@ void main() {
       final result = parser.parse('@');
       expect(result is Success, isTrue);
       final node = (result as Success).value as MfmNode;
-      expect(node, isA<TextNode>());
-      expect((node as TextNode).text, '@');
+      expect(node, const TextNode('@'));
     });
   });
 }

@@ -12,8 +12,7 @@ void main() {
       final result = parser.parse('~~abc');
       expect(result is Success, isTrue);
       final node = (result as Success).value as MfmNode;
-      expect(node, isA<TextNode>());
-      expect((node as TextNode).text, '~~abc');
+      expect(node, const TextNode('~~abc'));
     });
 
     test('空の打ち消し線タグを解析できる', () {
@@ -21,7 +20,7 @@ void main() {
       expect(result is Success, isTrue);
       final node = (result as Success).value as MfmNode;
       // 空の場合はテキストとして扱われる（内容が必須）
-      expect(node, isA<TextNode>());
+      expect(node, const TextNode('~~~~'));
     });
 
     test('改行を含む場合はテキストとして扱う', () {
@@ -29,15 +28,14 @@ void main() {
       expect(result is Success, isTrue);
       final node = (result as Success).value as MfmNode;
       // 改行を含む場合はパースに失敗してテキストになる
-      expect(node, isA<TextNode>());
+      expect(node, const TextNode('~~line1\nline2~~'));
     });
 
     test('単独の~~はテキストとして扱う', () {
       final result = parser.parse('~~');
       expect(result is Success, isTrue);
       final node = (result as Success).value as MfmNode;
-      expect(node, isA<TextNode>());
-      expect((node as TextNode).text, '~~');
+      expect(node, const TextNode('~~'));
     });
 
     test('閉じタグがない場合の詳細テスト', () {
@@ -51,8 +49,7 @@ void main() {
         final result = parser.parse(input);
         expect(result is Success, isTrue);
         final node = (result as Success).value as MfmNode;
-        expect(node, isA<TextNode>());
-        expect((node as TextNode).text, expected);
+        expect(node, TextNode(expected));
       }
     });
 
@@ -69,11 +66,9 @@ void main() {
       final result = m.parse('<s>line1\nline2</s>');
       expect(result is Success, isTrue);
       final nodes = (result as Success).value as List<MfmNode>;
-      expect(nodes.length, 1);
-      expect(nodes[0], isA<StrikeNode>());
-      final strike = nodes[0] as StrikeNode;
-      expect(strike.children.length, 1);
-      expect((strike.children.first as TextNode).text, 'line1\nline2');
+      expect(nodes, [
+        const StrikeNode([TextNode('line1\nline2')]),
+      ]);
     });
 
     test('<s>タグが閉じられていない場合はテキストとして扱う', () {
@@ -82,7 +77,7 @@ void main() {
       expect(result is Success, isTrue);
       final nodes = (result as Success).value as List<MfmNode>;
       // 閉じタグがない場合は個別の文字としてパースされる
-      expect(nodes.isNotEmpty, isTrue);
+      expect(nodes, [const TextNode('<s>abc')]);
     });
   });
 
@@ -92,11 +87,9 @@ void main() {
       final result = m.parse('~~strike~~');
       expect(result is Success, isTrue);
       final nodes = (result as Success).value as List<MfmNode>;
-      expect(nodes.length, 1);
-      expect(nodes[0], isA<StrikeNode>());
-      final strike = nodes[0] as StrikeNode;
-      expect(strike.children.length, 1);
-      expect((strike.children.first as TextNode).text, 'strike');
+      expect(nodes, [
+        const StrikeNode([TextNode('strike')]),
+      ]);
     });
 
     test('テキストと打ち消し線の組み合わせ', () {
@@ -104,12 +97,11 @@ void main() {
       final result = m.parse('before ~~strike~~ after');
       expect(result is Success, isTrue);
       final nodes = (result as Success).value as List<MfmNode>;
-      expect(nodes.length, 3);
-      expect(nodes[0], isA<TextNode>());
-      expect((nodes[0] as TextNode).text, 'before ');
-      expect(nodes[1], isA<StrikeNode>());
-      expect(nodes[2], isA<TextNode>());
-      expect((nodes[2] as TextNode).text, ' after');
+      expect(nodes, [
+        const TextNode('before '),
+        const StrikeNode([TextNode('strike')]),
+        const TextNode(' after'),
+      ]);
     });
 
     test('打ち消し線内にボールドをネストできる', () {
@@ -117,11 +109,11 @@ void main() {
       final result = m.parse('<s>**bold**</s>');
       expect(result is Success, isTrue);
       final nodes = (result as Success).value as List<MfmNode>;
-      expect(nodes.length, 1);
-      expect(nodes[0], isA<StrikeNode>());
-      final strike = nodes[0] as StrikeNode;
-      expect(strike.children.length, 1);
-      expect(strike.children.first, isA<BoldNode>());
+      expect(nodes, [
+        const StrikeNode([
+          BoldNode([TextNode('bold')]),
+        ]),
+      ]);
     });
 
     test('ボールド内に打ち消し線をネストできる', () {
@@ -129,11 +121,11 @@ void main() {
       final result = m.parse('**~~strike~~**');
       expect(result is Success, isTrue);
       final nodes = (result as Success).value as List<MfmNode>;
-      expect(nodes.length, 1);
-      expect(nodes[0], isA<BoldNode>());
-      final bold = nodes[0] as BoldNode;
-      expect(bold.children.length, 1);
-      expect(bold.children.first, isA<StrikeNode>());
+      expect(nodes, [
+        const BoldNode([
+          StrikeNode([TextNode('strike')]),
+        ]),
+      ]);
     });
 
     test('打ち消し線内にイタリックをネストできる', () {
@@ -141,11 +133,11 @@ void main() {
       final result = m.parse('~~<i>italic</i>~~');
       expect(result is Success, isTrue);
       final nodes = (result as Success).value as List<MfmNode>;
-      expect(nodes.length, 1);
-      expect(nodes[0], isA<StrikeNode>());
-      final strike = nodes[0] as StrikeNode;
-      expect(strike.children.length, 1);
-      expect(strike.children.first, isA<ItalicNode>());
+      expect(nodes, [
+        const StrikeNode([
+          ItalicNode([TextNode('italic')]),
+        ]),
+      ]);
     });
 
     test('複数の打ち消し線を連続で解析できる', () {
@@ -153,10 +145,11 @@ void main() {
       final result = m.parse('~~one~~ ~~two~~');
       expect(result is Success, isTrue);
       final nodes = (result as Success).value as List<MfmNode>;
-      expect(nodes.length, 3);
-      expect(nodes[0], isA<StrikeNode>());
-      expect(nodes[1], isA<TextNode>());
-      expect(nodes[2], isA<StrikeNode>());
+      expect(nodes, [
+        const StrikeNode([TextNode('one')]),
+        const TextNode(' '),
+        const StrikeNode([TextNode('two')]),
+      ]);
     });
 
     test('打ち消し線内に絵文字コードを含められる', () {
@@ -164,11 +157,9 @@ void main() {
       final result = m.parse('<s>:emoji:</s>');
       expect(result is Success, isTrue);
       final nodes = (result as Success).value as List<MfmNode>;
-      expect(nodes.length, 1);
-      expect(nodes[0], isA<StrikeNode>());
-      final strike = nodes[0] as StrikeNode;
-      expect(strike.children.length, 1);
-      expect(strike.children.first, isA<EmojiCodeNode>());
+      expect(nodes, [
+        const StrikeNode([EmojiCodeNode('emoji')]),
+      ]);
     });
   });
 }

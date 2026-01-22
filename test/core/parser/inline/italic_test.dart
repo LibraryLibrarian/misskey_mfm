@@ -11,57 +11,43 @@ void main() {
       final result = parser.parse('*a *b* c*');
       expect(result is Success, isTrue);
       final node = (result as Success).value as MfmNode;
-      expect(node, isA<ItalicNode>());
-      final italic = node as ItalicNode;
-      expect(italic.children.length, 1);
-      expect(italic.children.first, isA<TextNode>());
-      expect((italic.children.first as TextNode).text, 'a ');
+      expect(node, const ItalicNode([TextNode('a ')]));
     });
 
     test('閉じタグがない場合はテキストとして扱う', () {
       final result = parser.parse('*abc');
       expect(result is Success, isTrue);
       final node = (result as Success).value as MfmNode;
-      expect(node, isA<TextNode>());
       // *で始まるが閉じタグがない場合は、*以降の内容も含めてテキストとして返される
-      expect((node as TextNode).text, '*abc');
+      expect(node, const TextNode('*abc'));
     });
 
     test('空の斜体タグを解析できる', () {
       final result = parser.parse('**');
       expect(result is Success, isTrue);
       final node = (result as Success).value as MfmNode;
-      expect(node, isA<ItalicNode>());
-      final italic = node as ItalicNode;
-      expect(italic.children.length, 0);
+      expect(node, const ItalicNode([]));
     });
 
     test('複数の斜体タグを連続で解析できる', () {
       final result = parser.parse('*italic1**italic2*');
       expect(result is Success, isTrue);
       final node = (result as Success).value as MfmNode;
-      expect(node, isA<ItalicNode>());
-      final italic = node as ItalicNode;
-      expect(italic.children.length, 1);
-      expect((italic.children.first as TextNode).text, 'italic1');
+      expect(node, const ItalicNode([TextNode('italic1')]));
     });
 
     test('改行を含む斜体を解析できる', () {
       final result = parser.parse('*line1\nline2*');
       expect(result is Success, isTrue);
       final node = (result as Success).value as MfmNode;
-      expect(node, isA<ItalicNode>());
-      final italic = node as ItalicNode;
-      expect(italic.children.length, 1);
-      expect((italic.children.first as TextNode).text, 'line1\nline2');
+      expect(node, const ItalicNode([TextNode('line1\nline2')]));
     });
 
     test('単独の*はテキストとして扱う', () {
       final result = parser.parse('*');
       expect(result is Success, isTrue);
       final node = (result as Success).value as MfmNode;
-      expect(node, isA<TextNode>());
-      expect((node as TextNode).text, '*');
+      expect(node, const TextNode('*'));
     });
 
     test('閉じタグがない場合の詳細テスト', () {
@@ -76,8 +62,7 @@ void main() {
         final result = parser.parse(input);
         expect(result is Success, isTrue);
         final node = (result as Success).value as MfmNode;
-        expect(node, isA<TextNode>());
-        expect((node as TextNode).text, expected);
+        expect(node, TextNode(expected));
       }
     });
 
@@ -95,9 +80,7 @@ void main() {
       final result = tagParser.parse('<i>line1\nline2</i>');
       expect(result is Success, isTrue);
       final node = (result as Success).value as MfmNode;
-      expect(node, isA<ItalicNode>());
-      final italic = node as ItalicNode;
-      expect((italic.children.first as TextNode).text, 'line1\nline2');
+      expect(node, const ItalicNode([TextNode('line1\nline2')]));
     });
   });
 
@@ -108,9 +91,7 @@ void main() {
       final result = alt2Parser.parse('_line1\nline2_');
       expect(result is Success, isTrue);
       final node = (result as Success).value as MfmNode;
-      expect(node, isA<ItalicNode>());
-      final italic = node as ItalicNode;
-      expect((italic.children.first as TextNode).text, 'line1\nline2');
+      expect(node, const ItalicNode([TextNode('line1\nline2')]));
     });
   });
 

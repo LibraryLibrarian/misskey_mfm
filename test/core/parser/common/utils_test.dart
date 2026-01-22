@@ -15,12 +15,11 @@ void main() {
 
       final result = mergeAdjacentTextNodes(nodes);
 
-      expect(result.length, 3);
-      expect(result[0], isA<TextNode>());
-      expect((result[0] as TextNode).text, 'Hello World');
-      expect(result[1], isA<BoldNode>());
-      expect(result[2], isA<TextNode>());
-      expect((result[2] as TextNode).text, '!');
+      expect(result, [
+        const TextNode('Hello World'),
+        const BoldNode([TextNode('bold')]),
+        const TextNode('!'),
+      ]);
     });
 
     test('TextNodeのみの場合は1つにマージされる', () {
@@ -32,9 +31,7 @@ void main() {
 
       final result = mergeAdjacentTextNodes(nodes);
 
-      expect(result.length, 1);
-      expect(result[0], isA<TextNode>());
-      expect((result[0] as TextNode).text, 'Hello World');
+      expect(result, [const TextNode('Hello World')]);
     });
 
     test('TextNodeが混在しない場合は変更されない', () {
@@ -45,9 +42,10 @@ void main() {
 
       final result = mergeAdjacentTextNodes(nodes);
 
-      expect(result.length, 2);
-      expect(result[0], isA<BoldNode>());
-      expect(result[1], isA<ItalicNode>());
+      expect(result, [
+        const BoldNode([TextNode('bold')]),
+        const ItalicNode([TextNode('italic')]),
+      ]);
     });
 
     test('空のリストの場合は空のリストが返される', () {
@@ -55,7 +53,7 @@ void main() {
 
       final result = mergeAdjacentTextNodes(nodes);
 
-      expect(result.length, 0);
+      expect(result, const <MfmNode>[]);
     });
 
     test('単一のTextNodeの場合は変更されない', () {
@@ -63,9 +61,7 @@ void main() {
 
       final result = mergeAdjacentTextNodes(nodes);
 
-      expect(result.length, 1);
-      expect(result[0], isA<TextNode>());
-      expect((result[0] as TextNode).text, 'single');
+      expect(result, [const TextNode('single')]);
     });
   });
 }

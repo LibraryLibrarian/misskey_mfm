@@ -20,9 +20,7 @@ void main() {
         final result = parser.parse('abc');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<TextNode>());
-        expect((nodes[0] as TextNode).text, 'abc');
+        expect(nodes, [const TextNode('abc')]);
       });
 
       // mfm.js/test/parser.ts:16-20
@@ -31,9 +29,7 @@ void main() {
         final result = parser.parse('abc#abc');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<TextNode>());
-        expect((nodes[0] as TextNode).text, 'abc#abc');
+        expect(nodes, [const TextNode('abc#abc')]);
       });
 
       // mfm.js/test/parser.ts:22-26
@@ -42,13 +38,11 @@ void main() {
         final result = parser.parse('abc#️⃣abc');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 3);
-        expect(nodes[0], isA<TextNode>());
-        expect((nodes[0] as TextNode).text, 'abc');
-        expect(nodes[1], isA<UnicodeEmojiNode>());
-        expect((nodes[1] as UnicodeEmojiNode).emoji, '#️⃣');
-        expect(nodes[2], isA<TextNode>());
-        expect((nodes[2] as TextNode).text, 'abc');
+        expect(nodes, [
+          const TextNode('abc'),
+          const UnicodeEmojiNode('#️⃣'),
+          const TextNode('abc'),
+        ]);
       });
     });
 
@@ -58,9 +52,7 @@ void main() {
         final result = parser.parse(':foo:');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<EmojiCodeNode>());
-        expect((nodes[0] as EmojiCodeNode).name, 'foo');
+        expect(nodes, [const EmojiCodeNode('foo')]);
       });
 
       // mfm.js/test/parser.ts:36-40
@@ -69,9 +61,7 @@ void main() {
         final result = parser.parse('foo:bar:baz');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<TextNode>());
-        expect((nodes[0] as TextNode).text, 'foo:bar:baz');
+        expect(nodes, [const TextNode('foo:bar:baz')]);
       });
 
       // mfm.js/test/parser.ts:42-46
@@ -80,9 +70,7 @@ void main() {
         final result = parser.parse('12:34:56');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<TextNode>());
-        expect((nodes[0] as TextNode).text, '12:34:56');
+        expect(nodes, [const TextNode('12:34:56')]);
       });
 
       // mfm.js/test/parser.ts:48-52
@@ -91,13 +79,11 @@ void main() {
         final result = parser.parse('あ:bar:い');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 3);
-        expect(nodes[0], isA<TextNode>());
-        expect((nodes[0] as TextNode).text, 'あ');
-        expect(nodes[1], isA<EmojiCodeNode>());
-        expect((nodes[1] as EmojiCodeNode).name, 'bar');
-        expect(nodes[2], isA<TextNode>());
-        expect((nodes[2] as TextNode).text, 'い');
+        expect(nodes, [
+          const TextNode('あ'),
+          const EmojiCodeNode('bar'),
+          const TextNode('い'),
+        ]);
       });
 
       // mfm.js/test/parser.ts:54-58
@@ -109,9 +95,7 @@ void main() {
           final result = parser.parse('\uFE0F');
           expect(result is Success, isTrue);
           final nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 1);
-          expect(nodes[0], isA<TextNode>());
-          expect((nodes[0] as TextNode).text, '\uFE0F');
+          expect(nodes, [const TextNode('\uFE0F')]);
         },
       );
     });
@@ -122,9 +106,7 @@ void main() {
         final result = parser.parse('foo **bar** baz');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<TextNode>());
-        expect((nodes[0] as TextNode).text, 'foo **bar** baz');
+        expect(nodes, [const TextNode('foo **bar** baz')]);
       });
     });
   });

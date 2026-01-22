@@ -11,96 +11,86 @@ void main() {
       final result = parser.parse('**bold**');
       expect(result is Success, isTrue);
       final nodes = (result as Success).value as List<MfmNode>;
-      expect(nodes.length, 1);
-      expect(nodes.first, isA<BoldNode>());
-      final bold = nodes.first as BoldNode;
-      expect(bold.children.length, 1);
-      expect(bold.children.first, isA<TextNode>());
-      expect((bold.children.first as TextNode).text, 'bold');
+      expect(nodes, [
+        const BoldNode([TextNode('bold')]),
+      ]);
     });
 
     test('基本的な斜体構文を解析できる', () {
       final result = parser.parse('*italic*');
       expect(result is Success, isTrue);
       final nodes = (result as Success).value as List<MfmNode>;
-      expect(nodes.length, 1);
-      expect(nodes.first, isA<ItalicNode>());
-      final italic = nodes.first as ItalicNode;
-      expect(italic.children.length, 1);
-      expect(italic.children.first, isA<TextNode>());
-      expect((italic.children.first as TextNode).text, 'italic');
+      expect(nodes, [
+        const ItalicNode([TextNode('italic')]),
+      ]);
     });
 
     test('テキストと太字の連結を解析できる', () {
       final result = parser.parse('foo**bar**baz');
       expect(result is Success, isTrue);
       final nodes = (result as Success).value as List<MfmNode>;
-      expect(nodes.length, 3);
-      expect(nodes[0], isA<TextNode>());
-      expect((nodes[0] as TextNode).text, 'foo');
-      expect(nodes[1], isA<BoldNode>());
-      expect(nodes[2], isA<TextNode>());
-      expect((nodes[2] as TextNode).text, 'baz');
+      expect(nodes, [
+        const TextNode('foo'),
+        const BoldNode([TextNode('bar')]),
+        const TextNode('baz'),
+      ]);
     });
 
     test('太字と斜体の組み合わせを解析できる', () {
       final result = parser.parse('**bold** *italic*');
       expect(result is Success, isTrue);
       final nodes = (result as Success).value as List<MfmNode>;
-      expect(nodes.length, 3);
-      expect(nodes[0], isA<BoldNode>());
-      expect(nodes[1], isA<TextNode>());
-      expect((nodes[1] as TextNode).text, ' ');
-      expect(nodes[2], isA<ItalicNode>());
+      expect(nodes, [
+        const BoldNode([TextNode('bold')]),
+        const TextNode(' '),
+        const ItalicNode([TextNode('italic')]),
+      ]);
     });
 
     test('斜体内に太字をネストできる', () {
       final result = parser.parse('*italic **bold** text*');
       expect(result is Success, isTrue);
       final nodes = (result as Success).value as List<MfmNode>;
-      expect(nodes.length, 3);
-      expect(nodes[0], isA<ItalicNode>());
-      expect(nodes[1], isA<ItalicNode>());
-      expect(nodes[2], isA<ItalicNode>());
+      expect(nodes, [
+        const ItalicNode([TextNode('italic ')]),
+        const ItalicNode([TextNode('bold')]),
+        const ItalicNode([TextNode(' text')]),
+      ]);
     });
 
     test('太字内に斜体をネストできる', () {
       final result = parser.parse('**bold *italic* text**');
       expect(result is Success, isTrue);
       final nodes = (result as Success).value as List<MfmNode>;
-      expect(nodes.length, 1);
-      expect(nodes[0], isA<BoldNode>());
-      final bold = nodes[0] as BoldNode;
-      expect(bold.children.length, 3);
-      expect(bold.children[0], isA<TextNode>());
-      expect((bold.children[0] as TextNode).text, 'bold ');
-      expect(bold.children[1], isA<ItalicNode>());
-      expect(bold.children[2], isA<TextNode>());
-      expect((bold.children[2] as TextNode).text, ' text');
+      expect(nodes, [
+        const BoldNode([
+          TextNode('bold '),
+          ItalicNode([TextNode('italic')]),
+          TextNode(' text'),
+        ]),
+      ]);
     });
 
     test('複雑なネスト構造を解析できる', () {
       final result = parser.parse('**bold *italic **nested** text* more**');
       expect(result is Success, isTrue);
       final nodes = (result as Success).value as List<MfmNode>;
-      expect(nodes.length, 1);
-      expect(nodes[0], isA<BoldNode>());
-      final bold = nodes[0] as BoldNode;
-      expect(bold.children.first, isA<TextNode>());
-      expect((bold.children.first as TextNode).text, 'bold ');
-      expect(bold.children.last, isA<TextNode>());
-      expect((bold.children.last as TextNode).text, ' more');
-      // 中間に少なくとも1つ以上の斜体が存在する
-      expect(bold.children.whereType<ItalicNode>().isNotEmpty, isTrue);
+      expect(nodes, [
+        const BoldNode([
+          TextNode('bold '),
+          ItalicNode([TextNode('italic ')]),
+          ItalicNode([TextNode('nested')]),
+          ItalicNode([TextNode(' text')]),
+          TextNode(' more'),
+        ]),
+      ]);
     });
 
     test('プレーンテキストのみを解析できる', () {
       final result = parser.parse('plain text without formatting');
       expect(result is Success, isTrue);
       final nodes = (result as Success).value as List<MfmNode>;
-      expect(nodes.length, 1);
-      expect(nodes[0], isA<TextNode>());
-      expect((nodes[0] as TextNode).text, 'plain text without formatting');
+      expect(nodes, [const TextNode('plain text without formatting')]);
     });
 
     test('不完全な斜体構文を解析できる', () {
@@ -108,15 +98,10 @@ void main() {
       expect(result is Success, isTrue);
       final nodes = (result as Success).value as List<MfmNode>;
       // 斜体+余剰'*'テキストの2ノードになる
-      expect(nodes.length, 2);
-      expect(nodes[0], isA<ItalicNode>());
-      expect((nodes[0] as ItalicNode).children.first, isA<TextNode>());
-      expect(
-        ((nodes[0] as ItalicNode).children.first as TextNode).text,
-        'これは斜体',
-      );
-      expect(nodes[1], isA<TextNode>());
-      expect((nodes[1] as TextNode).text, '*');
+      expect(nodes, [
+        const ItalicNode([TextNode('これは斜体')]),
+        const TextNode('*'),
+      ]);
     });
 
     test('不完全な太字構文を解析できる', () {
@@ -124,9 +109,7 @@ void main() {
       expect(result is Success, isTrue);
       final nodes = (result as Success).value as List<MfmNode>;
       // 閉じ'**'が無いため全体テキストとして扱われる
-      expect(nodes.length, 1);
-      expect(nodes[0], isA<TextNode>());
-      expect((nodes[0] as TextNode).text, '**これは太字*');
+      expect(nodes, [const TextNode('**これは太字*')]);
     });
 
     test('複雑な不完全な構文を解析できる', () {
@@ -134,13 +117,11 @@ void main() {
       expect(result is Success, isTrue);
       final nodes = (result as Success).value as List<MfmNode>;
       // 斜体('斜体') + 斜体('太字') + 余剰'*' の3ノード
-      expect(nodes.length, 3);
-      expect(nodes[0], isA<ItalicNode>());
-      expect(((nodes[0] as ItalicNode).children.first as TextNode).text, '斜体');
-      expect(nodes[1], isA<ItalicNode>());
-      expect(((nodes[1] as ItalicNode).children.first as TextNode).text, '太字');
-      expect(nodes[2], isA<TextNode>());
-      expect((nodes[2] as TextNode).text, '*');
+      expect(nodes, [
+        const ItalicNode([TextNode('斜体')]),
+        const ItalicNode([TextNode('太字')]),
+        const TextNode('*'),
+      ]);
     });
 
     // 絵文字関連のテストケース
@@ -149,133 +130,134 @@ void main() {
         final result = parser.parse(':emoji:');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<EmojiCodeNode>());
-        expect((nodes[0] as EmojiCodeNode).name, 'emoji');
+        expect(nodes, [const EmojiCodeNode('emoji')]);
       });
 
       test('Unicode絵文字を解析できる', () {
         final result = parser.parse('😀');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<UnicodeEmojiNode>());
-        expect((nodes[0] as UnicodeEmojiNode).emoji, '😀');
+        expect(nodes, [const UnicodeEmojiNode('😀')]);
       });
 
       test('テキストとカスタム絵文字の混在を解析できる', () {
         final result = parser.parse('Hello :wave: World');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 3);
-        expect(nodes[0], isA<TextNode>());
-        expect((nodes[0] as TextNode).text, 'Hello ');
-        expect(nodes[1], isA<EmojiCodeNode>());
-        expect((nodes[1] as EmojiCodeNode).name, 'wave');
-        expect(nodes[2], isA<TextNode>());
-        expect((nodes[2] as TextNode).text, ' World');
+        expect(nodes, [
+          const TextNode('Hello '),
+          const EmojiCodeNode('wave'),
+          const TextNode(' World'),
+        ]);
       });
 
       test('テキストとUnicode絵文字の混在を解析できる', () {
         final result = parser.parse('Hello 👋 World');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 3);
-        expect(nodes[0], isA<TextNode>());
-        expect((nodes[0] as TextNode).text, 'Hello ');
-        expect(nodes[1], isA<UnicodeEmojiNode>());
-        expect((nodes[1] as UnicodeEmojiNode).emoji, '👋');
-        expect(nodes[2], isA<TextNode>());
-        expect((nodes[2] as TextNode).text, ' World');
+        expect(nodes, [
+          const TextNode('Hello '),
+          const UnicodeEmojiNode('👋'),
+          const TextNode(' World'),
+        ]);
       });
 
       test('カスタム絵文字とUnicode絵文字の混在を解析できる', () {
         final result = parser.parse(':wave: 👋 :smile:');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 5);
-        expect(nodes[0], isA<EmojiCodeNode>());
-        expect((nodes[0] as EmojiCodeNode).name, 'wave');
-        expect(nodes[1], isA<TextNode>());
-        expect(nodes[2], isA<UnicodeEmojiNode>());
-        expect(nodes[3], isA<TextNode>());
-        expect(nodes[4], isA<EmojiCodeNode>());
-        expect((nodes[4] as EmojiCodeNode).name, 'smile');
+        expect(nodes, [
+          const EmojiCodeNode('wave'),
+          const TextNode(' '),
+          const UnicodeEmojiNode('👋'),
+          const TextNode(' '),
+          const EmojiCodeNode('smile'),
+        ]);
       });
 
       test('太字内の絵文字を解析できる', () {
         final result = parser.parse('**:emoji: 😀**');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<BoldNode>());
-        final bold = nodes[0] as BoldNode;
-        expect(bold.children.length, 3);
-        expect(bold.children[0], isA<EmojiCodeNode>());
-        expect(bold.children[1], isA<TextNode>());
-        expect(bold.children[2], isA<UnicodeEmojiNode>());
+        expect(nodes, [
+          const BoldNode([
+            EmojiCodeNode('emoji'),
+            TextNode(' '),
+            UnicodeEmojiNode('😀'),
+          ]),
+        ]);
       });
 
       test('斜体内の絵文字を解析できる', () {
         final result = parser.parse('*Hello :wave:*');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<ItalicNode>());
-        final italic = nodes[0] as ItalicNode;
-        expect(italic.children.any((n) => n is EmojiCodeNode), isTrue);
+        expect(nodes, [
+          const ItalicNode([
+            TextNode('Hello '),
+            EmojiCodeNode('wave'),
+          ]),
+        ]);
       });
 
       test('複数のUnicode絵文字を連続で解析できる', () {
         final result = parser.parse('😀😁😂');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 3);
-        expect(nodes.every((n) => n is UnicodeEmojiNode), isTrue);
+        expect(nodes, [
+          const UnicodeEmojiNode('😀'),
+          const UnicodeEmojiNode('😁'),
+          const UnicodeEmojiNode('😂'),
+        ]);
       });
 
       test('複数のカスタム絵文字を連続で解析できる', () {
         final result = parser.parse(':a::b::c:');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 3);
-        expect(nodes.every((n) => n is EmojiCodeNode), isTrue);
+        expect(nodes, [
+          const EmojiCodeNode('a'),
+          const EmojiCodeNode('b'),
+          const EmojiCodeNode('c'),
+        ]);
       });
 
       test('肌色修飾子付き絵文字を解析できる', () {
         final result = parser.parse('👍🏻');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<UnicodeEmojiNode>());
-        expect((nodes[0] as UnicodeEmojiNode).emoji, '👍🏻');
+        expect(nodes, [const UnicodeEmojiNode('👍🏻')]);
       });
 
       test('ZWJ結合絵文字を解析できる', () {
         final result = parser.parse('👨‍👩‍👧‍👦');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<UnicodeEmojiNode>());
-        expect((nodes[0] as UnicodeEmojiNode).emoji, '👨‍👩‍👧‍👦');
+        expect(nodes, [const UnicodeEmojiNode('👨‍👩‍👧‍👦')]);
       });
 
       test('国旗絵文字を解析できる', () {
         final result = parser.parse('🇯🇵');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<UnicodeEmojiNode>());
-        expect((nodes[0] as UnicodeEmojiNode).emoji, '🇯🇵');
+        expect(nodes, [const UnicodeEmojiNode('🇯🇵')]);
       });
 
       test('複雑な絵文字を含む文章を解析できる', () {
         final result = parser.parse('こんにちは :wave: 👋 **太字 :bold:**');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.any((n) => n is EmojiCodeNode), isTrue);
-        expect(nodes.any((n) => n is UnicodeEmojiNode), isTrue);
-        expect(nodes.any((n) => n is BoldNode), isTrue);
+        expect(nodes, [
+          const TextNode('こんにちは '),
+          const EmojiCodeNode('wave'),
+          const TextNode(' '),
+          const UnicodeEmojiNode('👋'),
+          const TextNode(' '),
+          const BoldNode([
+            TextNode('太字 '),
+            EmojiCodeNode('bold'),
+          ]),
+        ]);
       });
     });
 
@@ -285,34 +267,33 @@ void main() {
         final result = parser.parse('@user');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<MentionNode>());
-        expect((nodes[0] as MentionNode).username, 'user');
-        expect((nodes[0] as MentionNode).host, isNull);
+        expect(nodes, [
+          const MentionNode(username: 'user', acct: '@user'),
+        ]);
       });
 
       test('リモートメンションを解析できる', () {
         final result = parser.parse('@user@misskey.io');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<MentionNode>());
-        final mention = nodes[0] as MentionNode;
-        expect(mention.username, 'user');
-        expect(mention.host, 'misskey.io');
+        expect(nodes, [
+          const MentionNode(
+            username: 'user',
+            host: 'misskey.io',
+            acct: '@user@misskey.io',
+          ),
+        ]);
       });
 
       test('テキストとメンションの混在を解析できる', () {
         final result = parser.parse('Hello @user World');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 3);
-        expect(nodes[0], isA<TextNode>());
-        expect((nodes[0] as TextNode).text, 'Hello ');
-        expect(nodes[1], isA<MentionNode>());
-        expect((nodes[1] as MentionNode).username, 'user');
-        expect(nodes[2], isA<TextNode>());
-        expect((nodes[2] as TextNode).text, ' World');
+        expect(nodes, [
+          const TextNode('Hello '),
+          const MentionNode(username: 'user', acct: '@user'),
+          const TextNode(' World'),
+        ]);
       });
 
       test('英字直後のメンションは無効（hello@user）', () {
@@ -320,60 +301,57 @@ void main() {
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
         // 全体がテキストとして扱われる
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<TextNode>());
-        expect((nodes[0] as TextNode).text, 'hello@user');
+        expect(nodes, [const TextNode('hello@user')]);
       });
 
       test('数字直後のメンションは無効（123@user）', () {
         final result = parser.parse('123@user');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<TextNode>());
-        expect((nodes[0] as TextNode).text, '123@user');
+        expect(nodes, [const TextNode('123@user')]);
       });
 
       test('末尾ハイフンは除去される（@user-）', () {
         final result = parser.parse('@user- text');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 2);
-        expect(nodes[0], isA<MentionNode>());
-        expect((nodes[0] as MentionNode).username, 'user');
-        expect(nodes[1], isA<TextNode>());
-        expect((nodes[1] as TextNode).text, '- text');
+        expect(nodes, [
+          const MentionNode(username: 'user', acct: '@user'),
+          const TextNode('- text'),
+        ]);
       });
 
       test('複数のメンションを解析できる', () {
         final result = parser.parse('@user1 @user2');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 3);
-        expect(nodes[0], isA<MentionNode>());
-        expect(nodes[1], isA<TextNode>());
-        expect(nodes[2], isA<MentionNode>());
+        expect(nodes, [
+          const MentionNode(username: 'user1', acct: '@user1'),
+          const TextNode(' '),
+          const MentionNode(username: 'user2', acct: '@user2'),
+        ]);
       });
 
       test('太字内のメンションを解析できる', () {
         final result = parser.parse('**@user**');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<BoldNode>());
-        final bold = nodes[0] as BoldNode;
-        expect(bold.children.length, 1);
-        expect(bold.children[0], isA<MentionNode>());
+        expect(nodes, [
+          const BoldNode([
+            MentionNode(username: 'user', acct: '@user'),
+          ]),
+        ]);
       });
 
       test('メンションと絵文字の混在を解析できる', () {
         final result = parser.parse('@user :wave:');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 3);
-        expect(nodes[0], isA<MentionNode>());
-        expect(nodes[1], isA<TextNode>());
-        expect(nodes[2], isA<EmojiCodeNode>());
+        expect(nodes, [
+          const MentionNode(username: 'user', acct: '@user'),
+          const TextNode(' '),
+          const EmojiCodeNode('wave'),
+        ]);
       });
     });
 
@@ -383,31 +361,25 @@ void main() {
         final result = parser.parse('#tag');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<HashtagNode>());
-        expect((nodes[0] as HashtagNode).hashtag, 'tag');
+        expect(nodes, [const HashtagNode('tag')]);
       });
 
       test('日本語ハッシュタグを解析できる', () {
         final result = parser.parse('#ミスキー');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<HashtagNode>());
-        expect((nodes[0] as HashtagNode).hashtag, 'ミスキー');
+        expect(nodes, [const HashtagNode('ミスキー')]);
       });
 
       test('テキストとハッシュタグの混在を解析できる', () {
         final result = parser.parse('Hello #tag World');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 3);
-        expect(nodes[0], isA<TextNode>());
-        expect((nodes[0] as TextNode).text, 'Hello ');
-        expect(nodes[1], isA<HashtagNode>());
-        expect((nodes[1] as HashtagNode).hashtag, 'tag');
-        expect(nodes[2], isA<TextNode>());
-        expect((nodes[2] as TextNode).text, ' World');
+        expect(nodes, [
+          const TextNode('Hello '),
+          const HashtagNode('tag'),
+          const TextNode(' World'),
+        ]);
       });
 
       test('英字直後のハッシュタグは無効（hello#tag）', () {
@@ -415,9 +387,7 @@ void main() {
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
         // 全体がテキストとして扱われる
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<TextNode>());
-        expect((nodes[0] as TextNode).text, 'hello#tag');
+        expect(nodes, [const TextNode('hello#tag')]);
       });
 
       test('数字のみのハッシュタグは無効（#123）', () {
@@ -425,29 +395,28 @@ void main() {
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
         // #はテキスト、123もテキストとして結合
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<TextNode>());
+        expect(nodes, [const TextNode('#123 text')]);
       });
 
       test('禁止文字で分離される（#tag.rest）', () {
         final result = parser.parse('#tag.rest');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 2);
-        expect(nodes[0], isA<HashtagNode>());
-        expect((nodes[0] as HashtagNode).hashtag, 'tag');
-        expect(nodes[1], isA<TextNode>());
-        expect((nodes[1] as TextNode).text, '.rest');
+        expect(nodes, [
+          const HashtagNode('tag'),
+          const TextNode('.rest'),
+        ]);
       });
 
       test('複数のハッシュタグを解析できる', () {
         final result = parser.parse('#tag1 #tag2');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 3);
-        expect(nodes[0], isA<HashtagNode>());
-        expect(nodes[1], isA<TextNode>());
-        expect(nodes[2], isA<HashtagNode>());
+        expect(nodes, [
+          const HashtagNode('tag1'),
+          const TextNode(' '),
+          const HashtagNode('tag2'),
+        ]);
       });
 
       test('太字内のハッシュタグ（mfm-js準拠: *は禁止文字ではない）', () {
@@ -457,9 +426,7 @@ void main() {
         final result = parser.parse('**#tag**');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<TextNode>());
-        expect((nodes[0] as TextNode).text, '**#tag**');
+        expect(nodes, [const TextNode('**#tag**')]);
       });
 
       test('太字内のハッシュタグを解析できる（スペースで区切る場合）', () {
@@ -467,30 +434,35 @@ void main() {
         final result = parser.parse('** #tag **');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<BoldNode>());
-        final bold = nodes[0] as BoldNode;
-        expect(bold.children.any((n) => n is HashtagNode), isTrue);
+        expect(nodes, [
+          const BoldNode([
+            TextNode(' '),
+            HashtagNode('tag'),
+            TextNode(' '),
+          ]),
+        ]);
       });
 
       test('ハッシュタグと絵文字の混在を解析できる', () {
         final result = parser.parse('#tag :wave:');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 3);
-        expect(nodes[0], isA<HashtagNode>());
-        expect(nodes[1], isA<TextNode>());
-        expect(nodes[2], isA<EmojiCodeNode>());
+        expect(nodes, [
+          const HashtagNode('tag'),
+          const TextNode(' '),
+          const EmojiCodeNode('wave'),
+        ]);
       });
 
       test('ハッシュタグとメンションの混在を解析できる', () {
         final result = parser.parse('#tag @user');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 3);
-        expect(nodes[0], isA<HashtagNode>());
-        expect(nodes[1], isA<TextNode>());
-        expect(nodes[2], isA<MentionNode>());
+        expect(nodes, [
+          const HashtagNode('tag'),
+          const TextNode(' '),
+          const MentionNode(username: 'user', acct: '@user'),
+        ]);
       });
 
       test('メンション直後のハッシュタグはテキストになる（@user#テスト）', () {
@@ -498,11 +470,10 @@ void main() {
         final result = parser.parse('@user#テスト');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 2);
-        expect(nodes[0], isA<MentionNode>());
-        expect((nodes[0] as MentionNode).username, 'user');
-        expect(nodes[1], isA<TextNode>());
-        expect((nodes[1] as TextNode).text, '#テスト');
+        expect(nodes, [
+          const MentionNode(username: 'user', acct: '@user'),
+          const TextNode('#テスト'),
+        ]);
       });
 
       // 括弧ネスト構造のテストケース
@@ -510,61 +481,51 @@ void main() {
         final result = parser.parse('#tag(value)');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<HashtagNode>());
-        expect((nodes[0] as HashtagNode).hashtag, 'tag(value)');
+        expect(nodes, [const HashtagNode('tag(value)')]);
       });
 
       test('括弧ペアを含むハッシュタグとテキストの混在', () {
         final result = parser.parse('Check #foo(bar) now');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 3);
-        expect(nodes[0], isA<TextNode>());
-        expect((nodes[0] as TextNode).text, 'Check ');
-        expect(nodes[1], isA<HashtagNode>());
-        expect((nodes[1] as HashtagNode).hashtag, 'foo(bar)');
-        expect(nodes[2], isA<TextNode>());
-        expect((nodes[2] as TextNode).text, ' now');
+        expect(nodes, [
+          const TextNode('Check '),
+          const HashtagNode('foo(bar)'),
+          const TextNode(' now'),
+        ]);
       });
 
       test('外側の括弧はハッシュタグに含まれない（(#tag)）', () {
         final result = parser.parse('(#tag)');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 3);
-        expect(nodes[0], isA<TextNode>());
-        expect((nodes[0] as TextNode).text, '(');
-        expect(nodes[1], isA<HashtagNode>());
-        expect((nodes[1] as HashtagNode).hashtag, 'tag');
-        expect(nodes[2], isA<TextNode>());
-        expect((nodes[2] as TextNode).text, ')');
+        expect(nodes, [
+          const TextNode('('),
+          const HashtagNode('tag'),
+          const TextNode(')'),
+        ]);
       });
 
       test('mfm.js互換: 鉤括弧で囲まれたハッシュタグ（「#foo」）', () {
         final result = parser.parse('「#foo」');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 3);
-        expect(nodes[0], isA<TextNode>());
-        expect((nodes[0] as TextNode).text, '「');
-        expect(nodes[1], isA<HashtagNode>());
-        expect((nodes[1] as HashtagNode).hashtag, 'foo');
-        expect(nodes[2], isA<TextNode>());
-        expect((nodes[2] as TextNode).text, '」');
+        expect(nodes, [
+          const TextNode('「'),
+          const HashtagNode('foo'),
+          const TextNode('」'),
+        ]);
       });
 
       test('mfm.js互換: 混合括弧（「#foo(bar)」）', () {
         final result = parser.parse('「#foo(bar)」');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 3);
-        expect(nodes[0], isA<TextNode>());
-        expect((nodes[0] as TextNode).text, '「');
-        expect(nodes[1], isA<HashtagNode>());
-        expect((nodes[1] as HashtagNode).hashtag, 'foo(bar)');
-        expect(nodes[2], isA<TextNode>());
-        expect((nodes[2] as TextNode).text, '」');
+        expect(nodes, [
+          const TextNode('「'),
+          const HashtagNode('foo(bar)'),
+          const TextNode('」'),
+        ]);
       });
 
       test('mfm.js互換: 2重ネストも有効（#tag(x(y)z) → tag(x(y)z)）', () {
@@ -572,22 +533,20 @@ void main() {
         final result = parser.parse('#tag(x(y)z) text');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 2);
-        expect(nodes[0], isA<HashtagNode>());
-        expect((nodes[0] as HashtagNode).hashtag, 'tag(x(y)z)');
-        expect(nodes[1], isA<TextNode>());
-        expect((nodes[1] as TextNode).text, ' text');
+        expect(nodes, [
+          const HashtagNode('tag(x(y)z)'),
+          const TextNode(' text'),
+        ]);
       });
 
       test('括弧が閉じていない場合は括弧で分離（#tag(value → #tag）', () {
         final result = parser.parse('#tag(value text');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 2);
-        expect(nodes[0], isA<HashtagNode>());
-        expect((nodes[0] as HashtagNode).hashtag, 'tag');
-        expect(nodes[1], isA<TextNode>());
-        expect((nodes[1] as TextNode).text, '(value text');
+        expect(nodes, [
+          const HashtagNode('tag'),
+          const TextNode('(value text'),
+        ]);
       });
 
       // mfm-js互換: keycapとハッシュタグの相互作用
@@ -598,13 +557,11 @@ void main() {
         final result = parser.parse('#️⃣abc123 #abc');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 3);
-        expect(nodes[0], isA<UnicodeEmojiNode>());
-        expect((nodes[0] as UnicodeEmojiNode).emoji, '#️⃣');
-        expect(nodes[1], isA<TextNode>());
-        expect((nodes[1] as TextNode).text, 'abc123 ');
-        expect(nodes[2], isA<HashtagNode>());
-        expect((nodes[2] as HashtagNode).hashtag, 'abc');
+        expect(nodes, [
+          const UnicodeEmojiNode('#️⃣'),
+          const TextNode('abc123 '),
+          const HashtagNode('abc'),
+        ]);
       });
 
       test('mfm.js互換: with keycap number sign 2', () {
@@ -613,13 +570,11 @@ void main() {
         final result = parser.parse('abc\n#️⃣abc');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 3);
-        expect(nodes[0], isA<TextNode>());
-        expect((nodes[0] as TextNode).text, 'abc\n');
-        expect(nodes[1], isA<UnicodeEmojiNode>());
-        expect((nodes[1] as UnicodeEmojiNode).emoji, '#️⃣');
-        expect(nodes[2], isA<TextNode>());
-        expect((nodes[2] as TextNode).text, 'abc');
+        expect(nodes, [
+          const TextNode('abc\n'),
+          const UnicodeEmojiNode('#️⃣'),
+          const TextNode('abc'),
+        ]);
       });
 
       test('mfm.js互換: ignore square bracket', () {
@@ -628,11 +583,10 @@ void main() {
         final result = parser.parse('#Foo]');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 2);
-        expect(nodes[0], isA<HashtagNode>());
-        expect((nodes[0] as HashtagNode).hashtag, 'Foo');
-        expect(nodes[1], isA<TextNode>());
-        expect((nodes[1] as TextNode).text, ']');
+        expect(nodes, [
+          const HashtagNode('Foo'),
+          const TextNode(']'),
+        ]);
       });
 
       test('mfm.js互換: with brackets "()" (space before)', () {
@@ -641,13 +595,11 @@ void main() {
         final result = parser.parse('(bar #foo)');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 3);
-        expect(nodes[0], isA<TextNode>());
-        expect((nodes[0] as TextNode).text, '(bar ');
-        expect(nodes[1], isA<HashtagNode>());
-        expect((nodes[1] as HashtagNode).hashtag, 'foo');
-        expect(nodes[2], isA<TextNode>());
-        expect((nodes[2] as TextNode).text, ')');
+        expect(nodes, [
+          const TextNode('(bar '),
+          const HashtagNode('foo'),
+          const TextNode(')'),
+        ]);
       });
 
       test('mfm.js互換: with brackets "「」" (space before)', () {
@@ -656,13 +608,11 @@ void main() {
         final result = parser.parse('「bar #foo」');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 3);
-        expect(nodes[0], isA<TextNode>());
-        expect((nodes[0] as TextNode).text, '「bar ');
-        expect(nodes[1], isA<HashtagNode>());
-        expect((nodes[1] as HashtagNode).hashtag, 'foo');
-        expect(nodes[2], isA<TextNode>());
-        expect((nodes[2] as TextNode).text, '」');
+        expect(nodes, [
+          const TextNode('「bar '),
+          const HashtagNode('foo'),
+          const TextNode('」'),
+        ]);
       });
 
       test('mfm.js互換: disallow number only (with brackets)', () {
@@ -671,9 +621,7 @@ void main() {
         final result = parser.parse('(#123)');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<TextNode>());
-        expect((nodes[0] as TextNode).text, '(#123)');
+        expect(nodes, [const TextNode('(#123)')]);
       });
     });
 
@@ -683,17 +631,27 @@ void main() {
         final result = parser.parse('@user さんが #tag について :wave: しました');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.any((n) => n is MentionNode), isTrue);
-        expect(nodes.any((n) => n is HashtagNode), isTrue);
-        expect(nodes.any((n) => n is EmojiCodeNode), isTrue);
+        expect(nodes, [
+          const MentionNode(username: 'user', acct: '@user'),
+          const TextNode(' さんが '),
+          const HashtagNode('tag'),
+          const TextNode(' について '),
+          const EmojiCodeNode('wave'),
+          const TextNode(' しました'),
+        ]);
       });
 
       test('太字、メンション、ハッシュタグの組み合わせを解析できる', () {
         final result = parser.parse('**@user** posted #important');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes[0], isA<BoldNode>());
-        expect(nodes.any((n) => n is HashtagNode), isTrue);
+        expect(nodes, [
+          const BoldNode([
+            MentionNode(username: 'user', acct: '@user'),
+          ]),
+          const TextNode(' posted '),
+          const HashtagNode('important'),
+        ]);
       });
 
       test('複雑な文章を解析できる', () {
@@ -702,10 +660,17 @@ void main() {
         );
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.any((n) => n is MentionNode), isTrue);
-        expect(nodes.any((n) => n is HashtagNode), isTrue);
-        expect(nodes.any((n) => n is BoldNode), isTrue);
-        expect(nodes.any((n) => n is EmojiCodeNode), isTrue);
+        expect(nodes, [
+          const TextNode('こんにちは '),
+          const MentionNode(username: 'user', acct: '@user'),
+          const TextNode(' さん！ '),
+          const HashtagNode('ミスキー'),
+          const TextNode(' で '),
+          const BoldNode([TextNode('楽しく')]),
+          const TextNode(' '),
+          const EmojiCodeNode('wave'),
+          const TextNode(' しましょう'),
+        ]);
       });
     });
   });

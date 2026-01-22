@@ -109,11 +109,13 @@ void main() {
           final result = fullParser.parse('https://example.com/(test');
           expect(result is Success, isTrue);
           final nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 2);
-          expect(nodes[0], isA<UrlNode>());
-          expect((nodes[0] as UrlNode).url, equals('https://example.com/'));
-          expect(nodes[1], isA<TextNode>());
-          expect((nodes[1] as TextNode).text, equals('(test'));
+          expect(
+            nodes,
+            [
+              const UrlNode(url: 'https://example.com/'),
+              const TextNode('(test'),
+            ],
+          );
         });
       });
 
@@ -132,24 +134,21 @@ void main() {
           final result = fullParser.parse('example.com');
           expect(result is Success, isTrue);
           final nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 1);
-          expect(nodes[0], isA<TextNode>());
+          expect(nodes, [const TextNode('example.com')]);
         });
 
         test('ftp:// はテキスト', () {
           final result = fullParser.parse('ftp://example.com');
           expect(result is Success, isTrue);
           final nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 1);
-          expect(nodes[0], isA<TextNode>());
+          expect(nodes, [const TextNode('ftp://example.com')]);
         });
 
         test('スキーマのみはテキスト', () {
           final result = fullParser.parse('https://');
           expect(result is Success, isTrue);
           final nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 1);
-          expect(nodes[0], isA<TextNode>());
+          expect(nodes, [const TextNode('https://')]);
         });
       });
     });
@@ -230,25 +229,21 @@ void main() {
         final result = fullParser.parse('https://example.com');
         expect(result is Success, isTrue);
         final node = getFirstUrl(result);
-        expect(node, isNotNull);
+        expect(node, const UrlNode(url: 'https://example.com'));
       });
 
       test('スキーマのみの場合はTextNodeとしてフォールバック', () {
         final result = fullParser.parse('https://');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<TextNode>());
-        expect((nodes[0] as TextNode).text, equals('https://'));
+        expect(nodes, [const TextNode('https://')]);
       });
 
       test('http://のみの場合もTextNodeとしてフォールバック', () {
         final result = fullParser.parse('http://');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<TextNode>());
-        expect((nodes[0] as TextNode).text, equals('http://'));
+        expect(nodes, [const TextNode('http://')]);
       });
     });
   });

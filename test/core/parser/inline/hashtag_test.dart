@@ -61,8 +61,7 @@ void main() {
       final result = fullParser.parse('#1234567890');
       expect(result is Success, isTrue);
       final nodes = (result as Success).value as List<MfmNode>;
-      expect(nodes.length, 1);
-      expect(nodes[0], isA<TextNode>());
+      expect(nodes, [const TextNode('#1234567890')]);
     });
   });
 
@@ -79,9 +78,7 @@ void main() {
       expect(result is Success, isTrue);
       final nodes = (result as Success).value as List<MfmNode>;
       // 英数字の直後なのでハッシュタグとして認識されない
-      expect(nodes.length, 1);
-      expect(nodes[0], isA<TextNode>());
-      expect((nodes[0] as TextNode).text, 'abc#tag');
+      expect(nodes, [const TextNode('abc#tag')]);
     });
 
     test('スペースの後のハッシュタグは有効', () {
@@ -175,14 +172,16 @@ void main() {
       final result = fullParser.parse(r'$[tada #tag(value)]');
       expect(result is Success, isTrue);
       final nodes = (result as Success).value as List<MfmNode>;
-      expect(nodes.length, 1);
-      expect(nodes[0], isA<FnNode>());
-
-      // FnNodeの中にHashtagNodeがあるはず
-      final fn = nodes[0] as FnNode;
-      expect(fn.children.any((n) => n is HashtagNode), isTrue);
-      final hashtag = fn.children.firstWhere((n) => n is HashtagNode);
-      expect((hashtag as HashtagNode).hashtag, 'tag(value)');
+      expect(
+        nodes,
+        [
+          const FnNode(
+            name: 'tada',
+            args: {},
+            children: [HashtagNode('tag(value)')],
+          ),
+        ],
+      );
     });
 
     test('深いネスト構造でnestLimitに達する場合', () {
@@ -191,14 +190,19 @@ void main() {
       final result = parserLimit2.parse(r'$[tada #tag(x(y)z)]');
       expect(result is Success, isTrue);
       final nodes = (result as Success).value as List<MfmNode>;
-      expect(nodes.length, 1);
-      expect(nodes[0], isA<FnNode>());
-
-      // fnの中でhashtag括弧のネストがlimitに達するため、2重ネストは無効
-      final fn = nodes[0] as FnNode;
-      final hashtag = fn.children.firstWhere((n) => n is HashtagNode);
-      // depth=1(fn) + depth=1(括弧) = 2 >= limit(2) なので2重ネストは無効
-      expect((hashtag as HashtagNode).hashtag, 'tag');
+      expect(
+        nodes,
+        [
+          const FnNode(
+            name: 'tada',
+            args: {},
+            children: [
+              HashtagNode('tag'),
+              TextNode('(x(y)z)'),
+            ],
+          ),
+        ],
+      );
     });
   });
 }

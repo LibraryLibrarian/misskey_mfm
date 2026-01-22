@@ -118,18 +118,14 @@ void main() {
         final result = fullParser.parse('[');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<TextNode>());
-        expect((nodes[0] as TextNode).text, equals('['));
+        expect(nodes, [const TextNode('[')]);
       });
 
       test('?[のみの場合はTextNode', () {
         final result = fullParser.parse('?[');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<TextNode>());
-        expect((nodes[0] as TextNode).text, equals('?['));
+        expect(nodes, [const TextNode('?[')]);
       });
 
       test('不完全なリンクはTextNode', () {
@@ -149,13 +145,11 @@ void main() {
         );
         expect(result is Success, isTrue);
         final nodes = result.value;
-        expect(nodes.length, equals(3));
-        expect(nodes[0], isA<TextNode>());
-        expect((nodes[0] as TextNode).text, equals('Check out '));
-        expect(nodes[1], isA<UrlNode>());
-        expect((nodes[1] as UrlNode).url, equals('https://example.com'));
-        expect(nodes[2], isA<TextNode>());
-        expect((nodes[2] as TextNode).text, equals(' for more'));
+        expect(nodes, [
+          const TextNode('Check out '),
+          const UrlNode(url: 'https://example.com'),
+          const TextNode(' for more'),
+        ]);
       });
 
       test('複数のURL', () {
@@ -205,20 +199,26 @@ void main() {
         final result = fullParser.parse('[Misskey](https://misskey.io/)');
         expect(result is Success, isTrue);
         final nodes = result.value;
-        expect(nodes.length, equals(1));
-        final linkNode = nodes[0] as LinkNode;
-        expect(linkNode.silent, isFalse);
-        expect(linkNode.url, equals('https://misskey.io/'));
+        expect(nodes, [
+          const LinkNode(
+            silent: false,
+            url: 'https://misskey.io/',
+            children: [TextNode('Misskey')],
+          ),
+        ]);
       });
 
       test('サイレントリンク', () {
         final result = fullParser.parse('?[Misskey](https://misskey.io/)');
         expect(result is Success, isTrue);
         final nodes = result.value;
-        expect(nodes.length, equals(1));
-        final linkNode = nodes[0] as LinkNode;
-        expect(linkNode.silent, isTrue);
-        expect(linkNode.url, equals('https://misskey.io/'));
+        expect(nodes, [
+          const LinkNode(
+            silent: true,
+            url: 'https://misskey.io/',
+            children: [TextNode('Misskey')],
+          ),
+        ]);
       });
 
       test('テキスト内のリンク', () {
@@ -227,29 +227,46 @@ void main() {
         );
         expect(result is Success, isTrue);
         final nodes = result.value;
-        expect(nodes.length, equals(3));
-        expect(nodes[0], isA<TextNode>());
-        expect(nodes[1], isA<LinkNode>());
-        expect(nodes[2], isA<TextNode>());
+        expect(nodes, [
+          const TextNode('Visit '),
+          const LinkNode(
+            silent: false,
+            url: 'https://misskey.io/',
+            children: [TextNode('Misskey')],
+          ),
+          const TextNode(' today!'),
+        ]);
       });
 
       test('ラベル内のインライン構文', () {
         final result = fullParser.parse('[**Bold Link**](https://example.com)');
         expect(result is Success, isTrue);
         final nodes = result.value;
-        expect(nodes.length, equals(1));
-        final linkNode = nodes[0] as LinkNode;
-        // ラベル内にBoldNodeが含まれる
-        expect(linkNode.children.any((n) => n is BoldNode), isTrue);
+        expect(nodes, [
+          const LinkNode(
+            silent: false,
+            url: 'https://example.com',
+            children: [
+              BoldNode([TextNode('Bold Link')]),
+            ],
+          ),
+        ]);
       });
 
       test('ラベル内の絵文字コード', () {
         final result = fullParser.parse('[:smile: Link](https://example.com)');
         expect(result is Success, isTrue);
         final nodes = result.value;
-        expect(nodes.length, equals(1));
-        final linkNode = nodes[0] as LinkNode;
-        expect(linkNode.children.any((n) => n is EmojiCodeNode), isTrue);
+        expect(nodes, [
+          const LinkNode(
+            silent: false,
+            url: 'https://example.com',
+            children: [
+              EmojiCodeNode('smile'),
+              TextNode(' Link'),
+            ],
+          ),
+        ]);
       });
     });
 

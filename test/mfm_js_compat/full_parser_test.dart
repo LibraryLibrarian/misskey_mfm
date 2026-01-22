@@ -14,16 +14,6 @@ void main() {
   group('FullParser', () {
     final parser = MfmParser().build();
 
-    /// ヘルパー: フルパーサーの結果から最初のLinkNodeを取得
-    LinkNode? getFirstLink(Result<List<MfmNode>> result) {
-      if (result is! Success) return null;
-      final nodes = result.value;
-      for (final node in nodes) {
-        if (node is LinkNode) return node;
-      }
-      return null;
-    }
-
     // mfm.js:69-75
     group('text', () {
       // mfm.js/test/parser.ts:70-74
@@ -31,9 +21,7 @@ void main() {
         final result = parser.parse('abc');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<TextNode>());
-        expect((nodes[0] as TextNode).text, 'abc');
+        expect(nodes, [const TextNode('abc')]);
       });
     });
 
@@ -44,11 +32,9 @@ void main() {
         final result = parser.parse('> abc');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<QuoteNode>());
-        final quote = nodes[0] as QuoteNode;
-        expect(quote.children.length, 1);
-        expect((quote.children.first as TextNode).text, 'abc');
+        expect(nodes, [
+          const QuoteNode([TextNode('abc')]),
+        ]);
       });
 
       // mfm.js/test/parser.ts:87-98
@@ -57,11 +43,9 @@ void main() {
         final result = parser.parse(input);
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<QuoteNode>());
-        final quote = nodes[0] as QuoteNode;
-        expect(quote.children.length, 1);
-        expect((quote.children.first as TextNode).text, 'これは\n複数行の\nテスト');
+        expect(nodes, [
+          const QuoteNode([TextNode('これは\n複数行の\nテスト')]),
+        ]);
       });
 
       // mfm.js/test/parser.ts:99-113
@@ -70,16 +54,12 @@ void main() {
         final result = parser.parse(input);
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<QuoteNode>());
-        final quote = nodes[0] as QuoteNode;
-        expect(quote.children.length, 1);
-        expect(quote.children[0], isA<CenterNode>());
-        final center = quote.children[0] as CenterNode;
-        expect(center.children.length, 1);
-        expect(center.children[0], isA<TextNode>());
         // mfm-js期待値: 改行なし
-        expect((center.children[0] as TextNode).text, 'a');
+        expect(nodes, [
+          const QuoteNode([
+            CenterNode([TextNode('a')]),
+          ]),
+        ]);
       });
 
       // mfm.js/test/parser.ts:114-129
@@ -88,24 +68,16 @@ void main() {
         final result = parser.parse(input);
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<QuoteNode>());
-        final quote = nodes[0] as QuoteNode;
-        expect(quote.children.length, 1);
-        expect(quote.children[0], isA<CenterNode>());
-        final center = quote.children[0] as CenterNode;
-        expect(center.children.length, 3);
-        expect(center.children[0], isA<TextNode>());
-        // mfm-js期待値: 先頭に改行なし
-        expect((center.children[0] as TextNode).text, "I'm ");
-        expect(center.children[1], isA<MentionNode>());
-        final mention = center.children[1] as MentionNode;
-        expect(mention.username, 'ai');
-        expect(mention.host, isNull);
-        expect(mention.acct, '@ai');
-        expect(center.children[2], isA<TextNode>());
-        // mfm-js期待値: 末尾に改行なし
-        expect((center.children[2] as TextNode).text, ', An bot of misskey!');
+        // mfm-js期待値: 先頭に改行なし / 末尾に改行なし
+        expect(nodes, [
+          const QuoteNode([
+            CenterNode([
+              TextNode("I'm "),
+              MentionNode(username: 'ai', acct: '@ai'),
+              TextNode(', An bot of misskey!'),
+            ]),
+          ]),
+        ]);
       });
 
       // mfm.js/test/parser.ts:131-143
@@ -114,12 +86,9 @@ void main() {
         final result = parser.parse(input);
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<QuoteNode>());
-        final quote = nodes[0] as QuoteNode;
-        expect(quote.children.length, 1);
-        expect(quote.children[0], isA<TextNode>());
-        expect((quote.children[0] as TextNode).text, 'abc\n\n123');
+        expect(nodes, [
+          const QuoteNode([TextNode('abc\n\n123')]),
+        ]);
       });
 
       // mfm.js/test/parser.ts:144-150
@@ -129,9 +98,7 @@ void main() {
         final result = parser.parse(input);
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<TextNode>());
-        expect((nodes[0] as TextNode).text, '> ');
+        expect(nodes, [const TextNode('> ')]);
       });
 
       // mfm.js/test/parser.ts:151-164
@@ -140,14 +107,11 @@ void main() {
         final result = parser.parse(input);
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 2);
-        expect(nodes[0], isA<QuoteNode>());
-        final quote = nodes[0] as QuoteNode;
-        expect(quote.children.length, 1);
-        expect((quote.children[0] as TextNode).text, 'foo\nbar');
-        expect(nodes[1], isA<TextNode>());
         // mfm-js期待値: 空行が除去されて'hoge'のみ
-        expect((nodes[1] as TextNode).text, 'hoge');
+        expect(nodes, [
+          const QuoteNode([TextNode('foo\nbar')]),
+          const TextNode('hoge'),
+        ]);
       });
 
       // mfm.js/test/parser.ts:165-182
@@ -157,17 +121,11 @@ void main() {
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
         // mfm-js期待値: 3つのノード（QuoteNode, QuoteNode, TextNode）
-        expect(nodes.length, 3);
-        expect(nodes[0], isA<QuoteNode>());
-        final quote1 = nodes[0] as QuoteNode;
-        expect(quote1.children.length, 1);
-        expect((quote1.children[0] as TextNode).text, 'foo');
-        expect(nodes[1], isA<QuoteNode>());
-        final quote2 = nodes[1] as QuoteNode;
-        expect(quote2.children.length, 1);
-        expect((quote2.children[0] as TextNode).text, 'bar');
-        expect(nodes[2], isA<TextNode>());
-        expect((nodes[2] as TextNode).text, 'hoge');
+        expect(nodes, [
+          const QuoteNode([TextNode('foo')]),
+          const QuoteNode([TextNode('bar')]),
+          const TextNode('hoge'),
+        ]);
       });
     });
 
@@ -178,11 +136,12 @@ void main() {
         final result = parser.parse('MFM 書き方 123 Search');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<SearchNode>());
-        final search = nodes[0] as SearchNode;
-        expect(search.query, 'MFM 書き方 123');
-        expect(search.content, 'MFM 書き方 123 Search');
+        expect(nodes, [
+          const SearchNode(
+            query: 'MFM 書き方 123',
+            content: 'MFM 書き方 123 Search',
+          ),
+        ]);
       });
 
       // mfm.js/test/parser.ts:194-200
@@ -190,11 +149,12 @@ void main() {
         final result = parser.parse('MFM 書き方 123 [Search]');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<SearchNode>());
-        final search = nodes[0] as SearchNode;
-        expect(search.query, 'MFM 書き方 123');
-        expect(search.content, 'MFM 書き方 123 [Search]');
+        expect(nodes, [
+          const SearchNode(
+            query: 'MFM 書き方 123',
+            content: 'MFM 書き方 123 [Search]',
+          ),
+        ]);
       });
 
       // mfm.js/test/parser.ts:215-221
@@ -202,10 +162,9 @@ void main() {
         final result = parser.parse('MFM 書き方 検索');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes[0], isA<SearchNode>());
-        final search = nodes[0] as SearchNode;
-        expect(search.query, 'MFM 書き方');
-        expect(search.content, 'MFM 書き方 検索');
+        expect(nodes, [
+          const SearchNode(query: 'MFM 書き方', content: 'MFM 書き方 検索'),
+        ]);
       });
 
       // mfm.js/test/parser.ts:201-207
@@ -213,9 +172,9 @@ void main() {
         final result = parser.parse('MFM 書き方 123 search');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes[0], isA<SearchNode>());
-        final search = nodes[0] as SearchNode;
-        expect(search.query, 'MFM 書き方 123');
+        expect(nodes, [
+          const SearchNode(query: 'MFM 書き方 123', content: 'MFM 書き方 123 search'),
+        ]);
       });
 
       // mfm.js/test/parser.ts:208-214
@@ -223,10 +182,12 @@ void main() {
         final result = parser.parse('MFM 書き方 123 [search]');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes[0], isA<SearchNode>());
-        final search = nodes[0] as SearchNode;
-        expect(search.query, 'MFM 書き方 123');
-        expect(search.content, 'MFM 書き方 123 [search]');
+        expect(nodes, [
+          const SearchNode(
+            query: 'MFM 書き方 123',
+            content: 'MFM 書き方 123 [search]',
+          ),
+        ]);
       });
 
       // mfm.js/test/parser.ts:222-228
@@ -234,10 +195,9 @@ void main() {
         final result = parser.parse('MFM 書き方 [検索]');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes[0], isA<SearchNode>());
-        final search = nodes[0] as SearchNode;
-        expect(search.query, 'MFM 書き方');
-        expect(search.content, 'MFM 書き方 [検索]');
+        expect(nodes, [
+          const SearchNode(query: 'MFM 書き方', content: 'MFM 書き方 [検索]'),
+        ]);
       });
 
       // mfm.js/test/parser.ts:230-238
@@ -245,21 +205,14 @@ void main() {
         final result = parser.parse('abc\nhoge piyo bebeyo 検索\n123');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 3);
-
-        // 前のテキスト
-        expect(nodes[0], isA<TextNode>());
-        expect((nodes[0] as TextNode).text, 'abc');
-
-        // 検索ブロック
-        expect(nodes[1], isA<SearchNode>());
-        final search = nodes[1] as SearchNode;
-        expect(search.query, 'hoge piyo bebeyo');
-        expect(search.content, 'hoge piyo bebeyo 検索');
-
-        // 後のテキスト
-        expect(nodes[2], isA<TextNode>());
-        expect((nodes[2] as TextNode).text, '123');
+        expect(nodes, [
+          const TextNode('abc'),
+          const SearchNode(
+            query: 'hoge piyo bebeyo',
+            content: 'hoge piyo bebeyo 検索',
+          ),
+          const TextNode('123'),
+        ]);
       });
     });
 
@@ -270,11 +223,9 @@ void main() {
         final result = parser.parse('```\nabc\n```');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<CodeBlockNode>());
-        final cb = nodes[0] as CodeBlockNode;
-        expect(cb.language, isNull);
-        expect(cb.code, 'abc');
+        expect(nodes, [
+          const CodeBlockNode(code: 'abc'),
+        ]);
       });
 
       // mfm.js/test/parser.ts:248-252
@@ -282,11 +233,9 @@ void main() {
         final result = parser.parse('```\na\nb\nc\n```');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<CodeBlockNode>());
-        final cb = nodes[0] as CodeBlockNode;
-        expect(cb.language, isNull);
-        expect(cb.code, 'a\nb\nc');
+        expect(nodes, [
+          const CodeBlockNode(code: 'a\nb\nc'),
+        ]);
       });
 
       // mfm.js/test/parser.ts:254-258
@@ -294,9 +243,9 @@ void main() {
         final result = parser.parse('```js\nconst a = 1;\n```');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        final cb = nodes[0] as CodeBlockNode;
-        expect(cb.language, 'js');
-        expect(cb.code, 'const a = 1;');
+        expect(nodes, [
+          const CodeBlockNode(code: 'const a = 1;', language: 'js'),
+        ]);
       });
 
       // mfm.js/test/parser.ts:260-268
@@ -304,15 +253,11 @@ void main() {
         final result = parser.parse('abc\n```\nconst abc = 1;\n```\n123');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 3);
-        expect(nodes[0], isA<TextNode>());
-        expect((nodes[0] as TextNode).text, 'abc');
-        expect(nodes[1], isA<CodeBlockNode>());
-        final cb = nodes[1] as CodeBlockNode;
-        expect(cb.language, isNull);
-        expect(cb.code, 'const abc = 1;');
-        expect(nodes[2], isA<TextNode>());
-        expect((nodes[2] as TextNode).text, '123');
+        expect(nodes, [
+          const TextNode('abc'),
+          const CodeBlockNode(code: 'const abc = 1;'),
+          const TextNode('123'),
+        ]);
       });
 
       // mfm.js/test/parser.ts:270-274
@@ -320,8 +265,9 @@ void main() {
         final result = parser.parse('```\naaa```bbb\n```');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        final cb = nodes[0] as CodeBlockNode;
-        expect(cb.code, 'aaa```bbb');
+        expect(nodes, [
+          const CodeBlockNode(code: 'aaa```bbb'),
+        ]);
       });
 
       // mfm.js/test/parser.ts:276-283
@@ -329,13 +275,10 @@ void main() {
         final result = parser.parse('```\nfoo\n```\nbar');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 2);
-        expect(nodes[0], isA<CodeBlockNode>());
-        final cb = nodes[0] as CodeBlockNode;
-        expect(cb.language, isNull);
-        expect(cb.code, 'foo');
-        expect(nodes[1], isA<TextNode>());
-        expect((nodes[1] as TextNode).text, 'bar');
+        expect(nodes, [
+          const CodeBlockNode(code: 'foo'),
+          const TextNode('bar'),
+        ]);
       });
     });
 
@@ -346,10 +289,9 @@ void main() {
         final result = parser.parse(r'\[math1\]');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<MathBlockNode>());
-        final math = nodes[0] as MathBlockNode;
-        expect(math.formula, 'math1');
+        expect(nodes, [
+          const MathBlockNode('math1'),
+        ]);
       });
 
       // mfm.js/test/parser.ts:294-302
@@ -357,8 +299,11 @@ void main() {
         final result = parser.parse('abc\n\\[math\\]\nxyz');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        // abc\n, mathBlock, \nxyz の3つ
-        expect(nodes.any((n) => n is MathBlockNode), isTrue);
+        expect(nodes, [
+          const TextNode('abc\n'),
+          const MathBlockNode('math'),
+          const TextNode('xyz'),
+        ]);
       });
 
       // mfm.js/test/parser.ts:303-309
@@ -367,9 +312,7 @@ void main() {
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
         // MathBlockとしてパースされず、プレーンテキストとして扱われる
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<TextNode>());
-        expect((nodes[0] as TextNode).text, r'\[aaa\]after');
+        expect(nodes, [const TextNode(r'\[aaa\]after')]);
       });
 
       // mfm.js/test/parser.ts:310-316
@@ -378,9 +321,7 @@ void main() {
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
         // MathBlockとしてパースされず、プレーンテキストとして扱われる
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<TextNode>());
-        expect((nodes[0] as TextNode).text, r'before\[aaa\]');
+        expect(nodes, [const TextNode(r'before\[aaa\]')]);
       });
     });
 
@@ -391,11 +332,9 @@ void main() {
         final result = parser.parse('<center>abc</center>');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<CenterNode>());
-        final center = nodes[0] as CenterNode;
-        expect(center.children.length, 1);
-        expect((center.children.first as TextNode).text, 'abc');
+        expect(nodes, [
+          const CenterNode([TextNode('abc')]),
+        ]);
       });
 
       // mfm.js/test/parser.ts:329-339
@@ -404,22 +343,11 @@ void main() {
         final result = parser.parse(input);
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 3);
-
-        // TEXT('before')
-        expect(nodes[0], isA<TextNode>());
-        expect((nodes[0] as TextNode).text, 'before');
-
-        // CENTER([TEXT('abc\n123\n\npiyo')])
-        expect(nodes[1], isA<CenterNode>());
-        final center = nodes[1] as CenterNode;
-        expect(center.children.length, 1);
-        expect(center.children[0], isA<TextNode>());
-        expect((center.children[0] as TextNode).text, 'abc\n123\n\npiyo');
-
-        // TEXT('after')
-        expect(nodes[2], isA<TextNode>());
-        expect((nodes[2] as TextNode).text, 'after');
+        expect(nodes, [
+          const TextNode('before'),
+          const CenterNode([TextNode('abc\n123\n\npiyo')]),
+          const TextNode('after'),
+        ]);
       });
     });
 
@@ -430,9 +358,9 @@ void main() {
         final result = parser.parse(':emoji:');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<EmojiCodeNode>());
-        expect((nodes[0] as EmojiCodeNode).name, 'emoji');
+        expect(nodes, [
+          const EmojiCodeNode('emoji'),
+        ]);
       });
     });
 
@@ -443,11 +371,10 @@ void main() {
         final result = parser.parse('今起きた😇');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 2);
-        expect(nodes[0], isA<TextNode>());
-        expect((nodes[0] as TextNode).text, '今起きた');
-        expect(nodes[1], isA<UnicodeEmojiNode>());
-        expect((nodes[1] as UnicodeEmojiNode).emoji, '😇');
+        expect(nodes, [
+          const TextNode('今起きた'),
+          const UnicodeEmojiNode('😇'),
+        ]);
       });
 
       // mfm.js/test/parser.ts:357-360
@@ -455,13 +382,11 @@ void main() {
         final result = parser.parse('abc#️⃣123');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 3);
-        expect(nodes[0], isA<TextNode>());
-        expect((nodes[0] as TextNode).text, 'abc');
-        expect(nodes[1], isA<UnicodeEmojiNode>());
-        expect((nodes[1] as UnicodeEmojiNode).emoji, '#️⃣');
-        expect(nodes[2], isA<TextNode>());
-        expect((nodes[2] as TextNode).text, '123');
+        expect(nodes, [
+          const TextNode('abc'),
+          const UnicodeEmojiNode('#️⃣'),
+          const TextNode('123'),
+        ]);
       });
     });
 
@@ -472,14 +397,9 @@ void main() {
         final result = parser.parse('***abc***');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<FnNode>());
-        final fn = nodes[0] as FnNode;
-        expect(fn.name, 'tada');
-        expect(fn.args, isEmpty);
-        expect(fn.children.length, 1);
-        expect(fn.children.first, isA<TextNode>());
-        expect((fn.children.first as TextNode).text, 'abc');
+        expect(nodes, [
+          const FnNode(name: 'tada', args: {}, children: [TextNode('abc')]),
+        ]);
       });
 
       // mfm.js/test/parser.ts:374-386
@@ -487,17 +407,17 @@ void main() {
         final result = parser.parse('***123**abc**123***');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<FnNode>());
-        final fn = nodes[0] as FnNode;
-        expect(fn.name, 'tada');
-        expect(fn.children.length, 3);
-        expect((fn.children[0] as TextNode).text, '123');
-        expect(fn.children[1], isA<BoldNode>());
-        final bold = fn.children[1] as BoldNode;
-        expect(bold.children.length, 1);
-        expect((bold.children.first as TextNode).text, 'abc');
-        expect((fn.children[2] as TextNode).text, '123');
+        expect(nodes, [
+          const FnNode(
+            name: 'tada',
+            args: {},
+            children: [
+              TextNode('123'),
+              BoldNode([TextNode('abc')]),
+              TextNode('123'),
+            ],
+          ),
+        ]);
       });
 
       // mfm.js/test/parser.ts:387-399
@@ -505,17 +425,17 @@ void main() {
         final result = parser.parse('***123\n**abc**\n123***');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<FnNode>());
-        final fn = nodes[0] as FnNode;
-        expect(fn.name, 'tada');
-        expect(fn.children.length, 3);
-        expect((fn.children[0] as TextNode).text, '123\n');
-        expect(fn.children[1], isA<BoldNode>());
-        final bold = fn.children[1] as BoldNode;
-        expect(bold.children.length, 1);
-        expect((bold.children.first as TextNode).text, 'abc');
-        expect((fn.children[2] as TextNode).text, '\n123');
+        expect(nodes, [
+          const FnNode(
+            name: 'tada',
+            args: {},
+            children: [
+              TextNode('123\n'),
+              BoldNode([TextNode('abc')]),
+              TextNode('\n123'),
+            ],
+          ),
+        ]);
       });
     });
 
@@ -526,11 +446,9 @@ void main() {
         final result = parser.parse('<b>abc</b>');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<BoldNode>());
-        final bold = nodes[0] as BoldNode;
-        expect(bold.children.length, 1);
-        expect((bold.children.first as TextNode).text, 'abc');
+        expect(nodes, [
+          const BoldNode([TextNode('abc')]),
+        ]);
       });
 
       // mfm.js/test/parser.ts:412-424
@@ -538,16 +456,13 @@ void main() {
         final result = parser.parse('<b>123~~abc~~123</b>');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<BoldNode>());
-        final bold = nodes[0] as BoldNode;
-        expect(bold.children.length, 3);
-        expect((bold.children[0] as TextNode).text, '123');
-        expect(bold.children[1], isA<StrikeNode>());
-        final strike = bold.children[1] as StrikeNode;
-        expect(strike.children.length, 1);
-        expect((strike.children.first as TextNode).text, 'abc');
-        expect((bold.children[2] as TextNode).text, '123');
+        expect(nodes, [
+          const BoldNode([
+            TextNode('123'),
+            StrikeNode([TextNode('abc')]),
+            TextNode('123'),
+          ]),
+        ]);
       });
 
       // mfm.js/test/parser.ts:425-437
@@ -555,15 +470,13 @@ void main() {
         final result = parser.parse('<b>123\n~~abc~~\n123</b>');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        final bold = nodes[0] as BoldNode;
-        expect(bold.children.length, 3);
-        expect((bold.children[0] as TextNode).text, '123\n');
-        expect(bold.children[1], isA<StrikeNode>());
-        final strike = bold.children[1] as StrikeNode;
-        expect(strike.children.length, 1);
-        expect((strike.children.first as TextNode).text, 'abc');
-        expect((bold.children[2] as TextNode).text, '\n123');
+        expect(nodes, [
+          const BoldNode([
+            TextNode('123\n'),
+            StrikeNode([TextNode('abc')]),
+            TextNode('\n123'),
+          ]),
+        ]);
       });
     });
 
@@ -574,12 +487,9 @@ void main() {
         final result = parser.parse('**bold**');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<BoldNode>());
-        final bold = nodes[0] as BoldNode;
-        expect(bold.children.length, 1);
-        expect(bold.children.first, isA<TextNode>());
-        expect((bold.children.first as TextNode).text, 'bold');
+        expect(nodes, [
+          const BoldNode([TextNode('bold')]),
+        ]);
       });
 
       // mfm.js/test/parser.ts:450-461
@@ -587,16 +497,13 @@ void main() {
         final result = parser.parse('**123~~abc~~123**');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<BoldNode>());
-        final bold = nodes[0] as BoldNode;
-        expect(bold.children.length, 3);
-        expect((bold.children[0] as TextNode).text, '123');
-        expect(bold.children[1], isA<StrikeNode>());
-        final strike = bold.children[1] as StrikeNode;
-        expect(strike.children.length, 1);
-        expect((strike.children.first as TextNode).text, 'abc');
-        expect((bold.children[2] as TextNode).text, '123');
+        expect(nodes, [
+          const BoldNode([
+            TextNode('123'),
+            StrikeNode([TextNode('abc')]),
+            TextNode('123'),
+          ]),
+        ]);
       });
 
       // mfm.js/test/parser.ts:463-475
@@ -604,11 +511,9 @@ void main() {
         final result = parser.parse('**line1\nline2**');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<BoldNode>());
-        final bold = nodes[0] as BoldNode;
-        expect(bold.children.length, 1);
-        expect((bold.children.first as TextNode).text, 'line1\nline2');
+        expect(nodes, [
+          const BoldNode([TextNode('line1\nline2')]),
+        ]);
       });
     });
 
@@ -619,11 +524,9 @@ void main() {
         final result = parser.parse('<small>abc</small>');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<SmallNode>());
-        final small = nodes[0] as SmallNode;
-        expect(small.children.length, 1);
-        expect((small.children.first as TextNode).text, 'abc');
+        expect(nodes, [
+          const SmallNode([TextNode('abc')]),
+        ]);
       });
 
       // mfm.js/test/parser.ts:488-499
@@ -631,16 +534,13 @@ void main() {
         final result = parser.parse('<small>abc**123**abc</small>');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<SmallNode>());
-        final small = nodes[0] as SmallNode;
-        expect(small.children.length, 3);
-        expect((small.children[0] as TextNode).text, 'abc');
-        expect(small.children[1], isA<BoldNode>());
-        final bold = small.children[1] as BoldNode;
-        expect(bold.children.length, 1);
-        expect((bold.children.first as TextNode).text, '123');
-        expect((small.children[2] as TextNode).text, 'abc');
+        expect(nodes, [
+          const SmallNode([
+            TextNode('abc'),
+            BoldNode([TextNode('123')]),
+            TextNode('abc'),
+          ]),
+        ]);
       });
 
       // mfm.js/test/parser.ts:501-513
@@ -648,16 +548,13 @@ void main() {
         final result = parser.parse('<small>abc\n**123**\nabc</small>');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<SmallNode>());
-        final small = nodes[0] as SmallNode;
-        expect(small.children.length, 3);
-        expect((small.children[0] as TextNode).text, 'abc\n');
-        expect(small.children[1], isA<BoldNode>());
-        final bold = small.children[1] as BoldNode;
-        expect(bold.children.length, 1);
-        expect((bold.children.first as TextNode).text, '123');
-        expect((small.children[2] as TextNode).text, '\nabc');
+        expect(nodes, [
+          const SmallNode([
+            TextNode('abc\n'),
+            BoldNode([TextNode('123')]),
+            TextNode('\nabc'),
+          ]),
+        ]);
       });
     });
 
@@ -668,11 +565,9 @@ void main() {
         final result = parser.parse('<i>abc</i>');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<ItalicNode>());
-        final italic = nodes[0] as ItalicNode;
-        expect(italic.children.length, 1);
-        expect((italic.children.first as TextNode).text, 'abc');
+        expect(nodes, [
+          const ItalicNode([TextNode('abc')]),
+        ]);
       });
 
       // mfm.js/test/parser.ts:526-538
@@ -680,17 +575,13 @@ void main() {
         final result = parser.parse('<i>abc**123**abc</i>');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<ItalicNode>());
-        final italic = nodes[0] as ItalicNode;
-        expect(italic.children.length, 3);
-        expect((italic.children[0] as TextNode).text, 'abc');
-        expect(italic.children[1], isA<BoldNode>());
-        expect(
-          ((italic.children[1] as BoldNode).children.first as TextNode).text,
-          '123',
-        );
-        expect((italic.children[2] as TextNode).text, 'abc');
+        expect(nodes, [
+          const ItalicNode([
+            TextNode('abc'),
+            BoldNode([TextNode('123')]),
+            TextNode('abc'),
+          ]),
+        ]);
       });
 
       // mfm.js/test/parser.ts:539-551
@@ -698,17 +589,13 @@ void main() {
         final result = parser.parse('<i>abc\n**123**\nabc</i>');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<ItalicNode>());
-        final italic = nodes[0] as ItalicNode;
-        expect(italic.children.length, 3);
-        expect((italic.children[0] as TextNode).text, 'abc\n');
-        expect(italic.children[1], isA<BoldNode>());
-        expect(
-          ((italic.children[1] as BoldNode).children.first as TextNode).text,
-          '123',
-        );
-        expect((italic.children[2] as TextNode).text, '\nabc');
+        expect(nodes, [
+          const ItalicNode([
+            TextNode('abc\n'),
+            BoldNode([TextNode('123')]),
+            TextNode('\nabc'),
+          ]),
+        ]);
       });
     });
 
@@ -719,12 +606,9 @@ void main() {
         final result = parser.parse('*abc*');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<ItalicNode>());
-        final italic = nodes[0] as ItalicNode;
-        expect(italic.children.length, 1);
-        expect(italic.children.first, isA<TextNode>());
-        expect((italic.children.first as TextNode).text, 'abc');
+        expect(nodes, [
+          const ItalicNode([TextNode('abc')]),
+        ]);
       });
 
       // mfm.js/test/parser.ts:565-575
@@ -732,14 +616,11 @@ void main() {
         final result = parser.parse('before *abc* after');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 3);
-        expect((nodes[0] as TextNode).text, 'before ');
-        expect(nodes[1], isA<ItalicNode>());
-        expect(
-          ((nodes[1] as ItalicNode).children.first as TextNode).text,
-          'abc',
-        );
-        expect((nodes[2] as TextNode).text, ' after');
+        expect(nodes, [
+          const TextNode('before '),
+          const ItalicNode([TextNode('abc')]),
+          const TextNode(' after'),
+        ]);
       });
 
       // mfm.js/test/parser.ts:577-591
@@ -751,22 +632,17 @@ void main() {
           var result = parser.parse('before*abc*after');
           expect(result is Success, isTrue);
           var nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 1);
-          expect(nodes[0], isA<TextNode>());
-          expect((nodes[0] as TextNode).text, 'before*abc*after');
+          expect(nodes, [const TextNode('before*abc*after')]);
 
           // 日本語の直後では許可される
           result = parser.parse('あいう*abc*えお');
           expect(result is Success, isTrue);
           nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 3);
-          expect((nodes[0] as TextNode).text, 'あいう');
-          expect(nodes[1], isA<ItalicNode>());
-          expect(
-            ((nodes[1] as ItalicNode).children.first as TextNode).text,
-            'abc',
-          );
-          expect((nodes[2] as TextNode).text, 'えお');
+          expect(nodes, [
+            const TextNode('あいう'),
+            const ItalicNode([TextNode('abc')]),
+            const TextNode('えお'),
+          ]);
         },
       );
     });
@@ -778,12 +654,9 @@ void main() {
         final result = parser.parse('_abc_');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<ItalicNode>());
-        final italic = nodes[0] as ItalicNode;
-        expect(italic.children.length, 1);
-        expect(italic.children.first, isA<TextNode>());
-        expect((italic.children.first as TextNode).text, 'abc');
+        expect(nodes, [
+          const ItalicNode([TextNode('abc')]),
+        ]);
       });
 
       // mfm.js/test/parser.ts:605-615
@@ -791,14 +664,11 @@ void main() {
         final result = parser.parse('before _abc_ after');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 3);
-        expect((nodes[0] as TextNode).text, 'before ');
-        expect(nodes[1], isA<ItalicNode>());
-        expect(
-          ((nodes[1] as ItalicNode).children.first as TextNode).text,
-          'abc',
-        );
-        expect((nodes[2] as TextNode).text, ' after');
+        expect(nodes, [
+          const TextNode('before '),
+          const ItalicNode([TextNode('abc')]),
+          const TextNode(' after'),
+        ]);
       });
 
       // mfm.js/test/parser.ts:617-631
@@ -810,22 +680,17 @@ void main() {
           var result = parser.parse('before_abc_after');
           expect(result is Success, isTrue);
           var nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 1);
-          expect(nodes[0], isA<TextNode>());
-          expect((nodes[0] as TextNode).text, 'before_abc_after');
+          expect(nodes, [const TextNode('before_abc_after')]);
 
           // 日本語の直後では許可される
           result = parser.parse('あいう_abc_えお');
           expect(result is Success, isTrue);
           nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 3);
-          expect((nodes[0] as TextNode).text, 'あいう');
-          expect(nodes[1], isA<ItalicNode>());
-          expect(
-            ((nodes[1] as ItalicNode).children.first as TextNode).text,
-            'abc',
-          );
-          expect((nodes[2] as TextNode).text, 'えお');
+          expect(nodes, [
+            const TextNode('あいう'),
+            const ItalicNode([TextNode('abc')]),
+            const TextNode('えお'),
+          ]);
         },
       );
     });
@@ -837,11 +702,9 @@ void main() {
         final result = parser.parse('<s>abc</s>');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<StrikeNode>());
-        final strike = nodes[0] as StrikeNode;
-        expect(strike.children.length, 1);
-        expect((strike.children.first as TextNode).text, 'abc');
+        expect(nodes, [
+          const StrikeNode([TextNode('abc')]),
+        ]);
       });
     });
 
@@ -852,12 +715,9 @@ void main() {
         final result = parser.parse('~~strike~~');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<StrikeNode>());
-        final strike = nodes[0] as StrikeNode;
-        expect(strike.children.length, 1);
-        expect(strike.children.first, isA<TextNode>());
-        expect((strike.children.first as TextNode).text, 'strike');
+        expect(nodes, [
+          const StrikeNode([TextNode('strike')]),
+        ]);
       });
     });
 
@@ -868,10 +728,10 @@ void main() {
         final result = parser.parse('AiScript: `#abc = 2`');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 2);
-        expect((nodes[0] as TextNode).text, 'AiScript: ');
-        expect(nodes[1], isA<InlineCodeNode>());
-        expect((nodes[1] as InlineCodeNode).code, '#abc = 2');
+        expect(nodes, [
+          const TextNode('AiScript: '),
+          const InlineCodeNode('#abc = 2'),
+        ]);
       });
 
       // mfm.js/test/parser.ts:661-665
@@ -879,8 +739,7 @@ void main() {
         final result = parser.parse('`foo\nbar`');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect((nodes[0] as TextNode).text, '`foo\nbar`');
+        expect(nodes, [const TextNode('`foo\nbar`')]);
       });
 
       // mfm.js/test/parser.ts:667-671
@@ -888,8 +747,7 @@ void main() {
         final result = parser.parse('`foo´bar`');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect((nodes[0] as TextNode).text, '`foo´bar`');
+        expect(nodes, [const TextNode('`foo´bar`')]);
       });
     });
 
@@ -900,10 +758,9 @@ void main() {
         final result = parser.parse(r'\(x = 2\)');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<MathInlineNode>());
-        final math = nodes[0] as MathInlineNode;
-        expect(math.formula, 'x = 2');
+        expect(nodes, [
+          const MathInlineNode('x = 2'),
+        ]);
       });
     });
 
@@ -915,12 +772,9 @@ void main() {
         final result = parser.parse(input);
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<MentionNode>());
-        final mention = nodes[0] as MentionNode;
-        expect(mention.username, 'user');
-        expect(mention.host, isNull);
-        expect(mention.acct, '@user');
+        expect(nodes, [
+          const MentionNode(username: 'user', acct: '@user'),
+        ]);
       });
 
       // mfm.js/test/parser.ts:689-693
@@ -929,16 +783,11 @@ void main() {
         final result = parser.parse(input);
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 3);
-        expect(nodes[0], isA<TextNode>());
-        expect((nodes[0] as TextNode).text, 'before ');
-        expect(nodes[1], isA<MentionNode>());
-        final mention = nodes[1] as MentionNode;
-        expect(mention.username, 'abc');
-        expect(mention.host, isNull);
-        expect(mention.acct, '@abc');
-        expect(nodes[2], isA<TextNode>());
-        expect((nodes[2] as TextNode).text, ' after');
+        expect(nodes, [
+          const TextNode('before '),
+          const MentionNode(username: 'abc', acct: '@abc'),
+          const TextNode(' after'),
+        ]);
       });
 
       // mfm.js/test/parser.ts:695-699
@@ -947,12 +796,13 @@ void main() {
         final result = parser.parse(input);
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<MentionNode>());
-        final mention = nodes[0] as MentionNode;
-        expect(mention.username, 'user');
-        expect(mention.host, 'misskey.io');
-        expect(mention.acct, '@user@misskey.io');
+        expect(nodes, [
+          const MentionNode(
+            username: 'user',
+            host: 'misskey.io',
+            acct: '@user@misskey.io',
+          ),
+        ]);
       });
 
       // mfm.js/test/parser.ts:701-705
@@ -961,16 +811,15 @@ void main() {
         final result = parser.parse(input);
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 3);
-        expect(nodes[0], isA<TextNode>());
-        expect((nodes[0] as TextNode).text, 'before ');
-        expect(nodes[1], isA<MentionNode>());
-        final mention = nodes[1] as MentionNode;
-        expect(mention.username, 'abc');
-        expect(mention.host, 'misskey.io');
-        expect(mention.acct, '@abc@misskey.io');
-        expect(nodes[2], isA<TextNode>());
-        expect((nodes[2] as TextNode).text, ' after');
+        expect(nodes, [
+          const TextNode('before '),
+          const MentionNode(
+            username: 'abc',
+            host: 'misskey.io',
+            acct: '@abc@misskey.io',
+          ),
+          const TextNode(' after'),
+        ]);
       });
 
       // mfm.js/test/parser.ts:707-711
@@ -979,16 +828,15 @@ void main() {
         final result = parser.parse(input);
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 3);
-        expect(nodes[0], isA<TextNode>());
-        expect((nodes[0] as TextNode).text, 'before\n');
-        expect(nodes[1], isA<MentionNode>());
-        final mention = nodes[1] as MentionNode;
-        expect(mention.username, 'abc');
-        expect(mention.host, 'misskey.io');
-        expect(mention.acct, '@abc@misskey.io');
-        expect(nodes[2], isA<TextNode>());
-        expect((nodes[2] as TextNode).text, '\nafter');
+        expect(nodes, [
+          const TextNode('before\n'),
+          const MentionNode(
+            username: 'abc',
+            host: 'misskey.io',
+            acct: '@abc@misskey.io',
+          ),
+          const TextNode('\nafter'),
+        ]);
       });
 
       // mfm.js/test/parser.ts:713-717
@@ -997,9 +845,7 @@ void main() {
         final result = parser.parse(input);
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<TextNode>());
-        expect((nodes[0] as TextNode).text, 'abc@example.com');
+        expect(nodes, [const TextNode('abc@example.com')]);
       });
 
       // mfm.js/test/parser.ts:719-723
@@ -1010,14 +856,10 @@ void main() {
           final result = parser.parse(input);
           expect(result is Success, isTrue);
           final nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 2);
-          expect(nodes[0], isA<TextNode>());
-          expect((nodes[0] as TextNode).text, 'あいう');
-          expect(nodes[1], isA<MentionNode>());
-          final mention = nodes[1] as MentionNode;
-          expect(mention.username, 'abc');
-          expect(mention.host, isNull);
-          expect(mention.acct, '@abc');
+          expect(nodes, [
+            const TextNode('あいう'),
+            const MentionNode(username: 'abc', acct: '@abc'),
+          ]);
         },
       );
 
@@ -1027,9 +869,7 @@ void main() {
         final result = parser.parse(input);
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<TextNode>());
-        expect((nodes[0] as TextNode).text, '@-');
+        expect(nodes, [const TextNode('@-')]);
       });
 
       // mfm.js/test/parser.ts:731-735
@@ -1038,9 +878,7 @@ void main() {
         final result = parser.parse(input);
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<TextNode>());
-        expect((nodes[0] as TextNode).text, '@abc@.');
+        expect(nodes, [const TextNode('@abc@.')]);
       });
 
       // mfm.js/test/parser.ts:737-741
@@ -1049,12 +887,9 @@ void main() {
         final result = parser.parse(input);
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<MentionNode>());
-        final mention = nodes[0] as MentionNode;
-        expect(mention.username, 'user-name');
-        expect(mention.host, isNull);
-        expect(mention.acct, '@user-name');
+        expect(nodes, [
+          const MentionNode(username: 'user-name', acct: '@user-name'),
+        ]);
       });
 
       // mfm.js/test/parser.ts:743-747
@@ -1063,12 +898,13 @@ void main() {
         final result = parser.parse(input);
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<MentionNode>());
-        final mention = nodes[0] as MentionNode;
-        expect(mention.username, 'bsky.brid.gy');
-        expect(mention.host, 'bsky.brid.gy');
-        expect(mention.acct, '@bsky.brid.gy@bsky.brid.gy');
+        expect(nodes, [
+          const MentionNode(
+            username: 'bsky.brid.gy',
+            host: 'bsky.brid.gy',
+            acct: '@bsky.brid.gy@bsky.brid.gy',
+          ),
+        ]);
       });
 
       // mfm.js/test/parser.ts:743-747
@@ -1077,12 +913,9 @@ void main() {
         final result = parser.parse(input);
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<MentionNode>());
-        final mention = nodes[0] as MentionNode;
-        expect(mention.username, 'user.name');
-        expect(mention.host, isNull);
-        expect(mention.acct, '@user.name');
+        expect(nodes, [
+          const MentionNode(username: 'user.name', acct: '@user.name'),
+        ]);
       });
 
       // mfm.js/test/parser.ts:749-753
@@ -1091,9 +924,7 @@ void main() {
         final result = parser.parse(input);
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<TextNode>());
-        expect((nodes[0] as TextNode).text, '@-user');
+        expect(nodes, [const TextNode('@-user')]);
       });
 
       // mfm.js/test/parser.ts:755-759
@@ -1102,14 +933,10 @@ void main() {
         final result = parser.parse(input);
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 2);
-        expect(nodes[0], isA<MentionNode>());
-        final mention = nodes[0] as MentionNode;
-        expect(mention.username, 'user');
-        expect(mention.host, isNull);
-        expect(mention.acct, '@user');
-        expect(nodes[1], isA<TextNode>());
-        expect((nodes[1] as TextNode).text, '-');
+        expect(nodes, [
+          const MentionNode(username: 'user', acct: '@user'),
+          const TextNode('-'),
+        ]);
       });
 
       // mfm.js/test/parser.ts:767-771
@@ -1118,14 +945,10 @@ void main() {
         final result = parser.parse(input);
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 2);
-        expect(nodes[0], isA<MentionNode>());
-        final mention = nodes[0] as MentionNode;
-        expect(mention.username, 'user');
-        expect(mention.host, isNull);
-        expect(mention.acct, '@user');
-        expect(nodes[1], isA<TextNode>());
-        expect((nodes[1] as TextNode).text, '.');
+        expect(nodes, [
+          const MentionNode(username: 'user', acct: '@user'),
+          const TextNode('.'),
+        ]);
       });
 
       // mfm.js/test/parser.ts:773-777
@@ -1134,9 +957,7 @@ void main() {
         final result = parser.parse(input);
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<TextNode>());
-        expect((nodes[0] as TextNode).text, '@abc@.aaa');
+        expect(nodes, [const TextNode('@abc@.aaa')]);
       });
 
       // mfm.js/test/parser.ts:779-783
@@ -1145,14 +966,10 @@ void main() {
         final result = parser.parse(input);
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 2);
-        expect(nodes[0], isA<MentionNode>());
-        final mention = nodes[0] as MentionNode;
-        expect(mention.username, 'abc');
-        expect(mention.host, 'aaa');
-        expect(mention.acct, '@abc@aaa');
-        expect(nodes[1], isA<TextNode>());
-        expect((nodes[1] as TextNode).text, '.');
+        expect(nodes, [
+          const MentionNode(username: 'abc', host: 'aaa', acct: '@abc@aaa'),
+          const TextNode('.'),
+        ]);
       });
 
       // mfm.js/test/parser.ts:785-789
@@ -1161,9 +978,7 @@ void main() {
         final result = parser.parse(input);
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<TextNode>());
-        expect((nodes[0] as TextNode).text, '@abc@-aaa');
+        expect(nodes, [const TextNode('@abc@-aaa')]);
       });
 
       // mfm.js/test/parser.ts:791-795
@@ -1172,14 +987,10 @@ void main() {
         final result = parser.parse(input);
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 2);
-        expect(nodes[0], isA<MentionNode>());
-        final mention = nodes[0] as MentionNode;
-        expect(mention.username, 'abc');
-        expect(mention.host, 'aaa');
-        expect(mention.acct, '@abc@aaa');
-        expect(nodes[1], isA<TextNode>());
-        expect((nodes[1] as TextNode).text, '-');
+        expect(nodes, [
+          const MentionNode(username: 'abc', host: 'aaa', acct: '@abc@aaa'),
+          const TextNode('-'),
+        ]);
       });
     });
 
@@ -1190,9 +1001,9 @@ void main() {
         final result = parser.parse('#abc');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<HashtagNode>());
-        expect((nodes[0] as HashtagNode).hashtag, 'abc');
+        expect(nodes, [
+          const HashtagNode('abc'),
+        ]);
       });
 
       // mfm.js/test/parser.ts:805-809
@@ -1200,10 +1011,11 @@ void main() {
         final result = parser.parse('before #abc after');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 3);
-        expect((nodes[0] as TextNode).text, 'before ');
-        expect((nodes[1] as HashtagNode).hashtag, 'abc');
-        expect((nodes[2] as TextNode).text, ' after');
+        expect(nodes, [
+          const TextNode('before '),
+          const HashtagNode('abc'),
+          const TextNode(' after'),
+        ]);
       });
 
       // mfm.js/test/parser.ts:811-815
@@ -1211,10 +1023,11 @@ void main() {
         final result = parser.parse('#️⃣abc123 #abc');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 3);
-        expect((nodes[0] as UnicodeEmojiNode).emoji, '#️⃣');
-        expect((nodes[1] as TextNode).text, 'abc123 ');
-        expect((nodes[2] as HashtagNode).hashtag, 'abc');
+        expect(nodes, [
+          const UnicodeEmojiNode('#️⃣'),
+          const TextNode('abc123 '),
+          const HashtagNode('abc'),
+        ]);
       });
 
       // mfm.js/test/parser.ts:817-822
@@ -1222,10 +1035,11 @@ void main() {
         final result = parser.parse('abc\n#️⃣abc');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 3);
-        expect((nodes[0] as TextNode).text, 'abc\n');
-        expect((nodes[1] as UnicodeEmojiNode).emoji, '#️⃣');
-        expect((nodes[2] as TextNode).text, 'abc');
+        expect(nodes, [
+          const TextNode('abc\n'),
+          const UnicodeEmojiNode('#️⃣'),
+          const TextNode('abc'),
+        ]);
       });
 
       // mfm.js/test/parser.ts:824-832
@@ -1236,15 +1050,15 @@ void main() {
           var result = parser.parse('abc#abc');
           expect(result is Success, isTrue);
           var nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 1);
-          expect((nodes[0] as TextNode).text, 'abc#abc');
+          expect(nodes, [const TextNode('abc#abc')]);
 
           result = parser.parse('あいう#abc');
           expect(result is Success, isTrue);
           nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 2);
-          expect((nodes[0] as TextNode).text, 'あいう');
-          expect((nodes[1] as HashtagNode).hashtag, 'abc');
+          expect(nodes, [
+            const TextNode('あいう'),
+            const HashtagNode('abc'),
+          ]);
         },
       );
 
@@ -1253,12 +1067,13 @@ void main() {
         final result = parser.parse('Foo #bar, baz #piyo.');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 5);
-        expect((nodes[0] as TextNode).text, 'Foo ');
-        expect((nodes[1] as HashtagNode).hashtag, 'bar');
-        expect((nodes[2] as TextNode).text, ', baz ');
-        expect((nodes[3] as HashtagNode).hashtag, 'piyo');
-        expect((nodes[4] as TextNode).text, '.');
+        expect(nodes, [
+          const TextNode('Foo '),
+          const HashtagNode('bar'),
+          const TextNode(', baz '),
+          const HashtagNode('piyo'),
+          const TextNode('.'),
+        ]);
       });
 
       // mfm.js/test/parser.ts:840-844
@@ -1266,9 +1081,10 @@ void main() {
         final result = parser.parse('#Foo!');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 2);
-        expect((nodes[0] as HashtagNode).hashtag, 'Foo');
-        expect((nodes[1] as TextNode).text, '!');
+        expect(nodes, [
+          const HashtagNode('Foo'),
+          const TextNode('!'),
+        ]);
       });
 
       // mfm.js/test/parser.ts:846-850
@@ -1276,9 +1092,10 @@ void main() {
         final result = parser.parse('#Foo:');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 2);
-        expect((nodes[0] as HashtagNode).hashtag, 'Foo');
-        expect((nodes[1] as TextNode).text, ':');
+        expect(nodes, [
+          const HashtagNode('Foo'),
+          const TextNode(':'),
+        ]);
       });
 
       // mfm.js/test/parser.ts:852-856
@@ -1286,9 +1103,10 @@ void main() {
         final result = parser.parse("#Foo'");
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 2);
-        expect((nodes[0] as HashtagNode).hashtag, 'Foo');
-        expect((nodes[1] as TextNode).text, "'");
+        expect(nodes, [
+          const HashtagNode('Foo'),
+          const TextNode("'"),
+        ]);
       });
 
       // mfm.js/test/parser.ts:858-862
@@ -1296,9 +1114,10 @@ void main() {
         final result = parser.parse('#Foo"');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 2);
-        expect((nodes[0] as HashtagNode).hashtag, 'Foo');
-        expect((nodes[1] as TextNode).text, '"');
+        expect(nodes, [
+          const HashtagNode('Foo'),
+          const TextNode('"'),
+        ]);
       });
 
       // mfm.js/test/parser.ts:864-868
@@ -1306,9 +1125,10 @@ void main() {
         final result = parser.parse('#Foo]');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 2);
-        expect((nodes[0] as HashtagNode).hashtag, 'Foo');
-        expect((nodes[1] as TextNode).text, ']');
+        expect(nodes, [
+          const HashtagNode('Foo'),
+          const TextNode(']'),
+        ]);
       });
 
       // mfm.js/test/parser.ts:870-874
@@ -1316,9 +1136,10 @@ void main() {
         final result = parser.parse('#foo/bar');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 2);
-        expect((nodes[0] as HashtagNode).hashtag, 'foo');
-        expect((nodes[1] as TextNode).text, '/bar');
+        expect(nodes, [
+          const HashtagNode('foo'),
+          const TextNode('/bar'),
+        ]);
       });
 
       // mfm.js/test/parser.ts:876-880
@@ -1326,9 +1147,10 @@ void main() {
         final result = parser.parse('#foo<bar>');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 2);
-        expect((nodes[0] as HashtagNode).hashtag, 'foo');
-        expect((nodes[1] as TextNode).text, '<bar>');
+        expect(nodes, [
+          const HashtagNode('foo'),
+          const TextNode('<bar>'),
+        ]);
       });
 
       // mfm.js/test/parser.ts:882-886
@@ -1336,8 +1158,9 @@ void main() {
         final result = parser.parse('#foo123');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect((nodes[0] as HashtagNode).hashtag, 'foo123');
+        expect(nodes, [
+          const HashtagNode('foo123'),
+        ]);
       });
 
       // mfm.js/test/parser.ts:888-892
@@ -1345,10 +1168,11 @@ void main() {
         final result = parser.parse('(#foo)');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 3);
-        expect((nodes[0] as TextNode).text, '(');
-        expect((nodes[1] as HashtagNode).hashtag, 'foo');
-        expect((nodes[2] as TextNode).text, ')');
+        expect(nodes, [
+          const TextNode('('),
+          const HashtagNode('foo'),
+          const TextNode(')'),
+        ]);
       });
 
       // mfm.js/test/parser.ts:894-898
@@ -1356,10 +1180,11 @@ void main() {
         final result = parser.parse('「#foo」');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 3);
-        expect((nodes[0] as TextNode).text, '「');
-        expect((nodes[1] as HashtagNode).hashtag, 'foo');
-        expect((nodes[2] as TextNode).text, '」');
+        expect(nodes, [
+          const TextNode('「'),
+          const HashtagNode('foo'),
+          const TextNode('」'),
+        ]);
       });
 
       // mfm.js/test/parser.ts:900-904
@@ -1367,10 +1192,11 @@ void main() {
         final result = parser.parse('「#foo(bar)」');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 3);
-        expect((nodes[0] as TextNode).text, '「');
-        expect((nodes[1] as HashtagNode).hashtag, 'foo(bar)');
-        expect((nodes[2] as TextNode).text, '」');
+        expect(nodes, [
+          const TextNode('「'),
+          const HashtagNode('foo(bar)'),
+          const TextNode('」'),
+        ]);
       });
 
       // mfm.js/test/parser.ts:906-910
@@ -1378,10 +1204,11 @@ void main() {
         final result = parser.parse('(bar #foo)');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 3);
-        expect((nodes[0] as TextNode).text, '(bar ');
-        expect((nodes[1] as HashtagNode).hashtag, 'foo');
-        expect((nodes[2] as TextNode).text, ')');
+        expect(nodes, [
+          const TextNode('(bar '),
+          const HashtagNode('foo'),
+          const TextNode(')'),
+        ]);
       });
 
       // mfm.js/test/parser.ts:912-916
@@ -1389,10 +1216,11 @@ void main() {
         final result = parser.parse('「bar #foo」');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 3);
-        expect((nodes[0] as TextNode).text, '「bar ');
-        expect((nodes[1] as HashtagNode).hashtag, 'foo');
-        expect((nodes[2] as TextNode).text, '」');
+        expect(nodes, [
+          const TextNode('「bar '),
+          const HashtagNode('foo'),
+          const TextNode('」'),
+        ]);
       });
 
       // mfm.js/test/parser.ts:918-922
@@ -1400,8 +1228,7 @@ void main() {
         final result = parser.parse('#123');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect((nodes[0] as TextNode).text, '#123');
+        expect(nodes, [const TextNode('#123')]);
       });
 
       // mfm.js/test/parser.ts:924-928
@@ -1409,32 +1236,21 @@ void main() {
         final result = parser.parse('(#123)');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect((nodes[0] as TextNode).text, '(#123)');
+        expect(nodes, [const TextNode('(#123)')]);
       });
     });
 
     // mfm.js:930-1064
     group('url', () {
-      // ヘルパー: フルパーサーの結果から最初のUrlNodeを取得
-      UrlNode? getFirstUrl(Result<List<MfmNode>> result) {
-        if (result is! Success) return null;
-        final nodes = result.value;
-        for (final node in nodes) {
-          if (node is UrlNode) return node;
-        }
-        return null;
-      }
-
       group('生URL（フルパーサー経由）', () {
         // mfm.js/test/parser.ts:932-938
         test('mfm-js互換テスト: basic', () {
           final result = parser.parse('https://example.com');
           expect(result is Success, isTrue);
-          final node = getFirstUrl(result);
-          expect(node, isNotNull);
-          expect(node!.url, equals('https://example.com'));
-          expect(node.brackets, isFalse);
+          final nodes = (result as Success).value as List<MfmNode>;
+          expect(nodes, [
+            const UrlNode(url: 'https://example.com'),
+          ]);
         });
 
         // mfm.js/test/parser.ts:940-948
@@ -1444,22 +1260,21 @@ void main() {
           );
           expect(result is Success, isTrue);
           final nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 3);
-          expect(nodes[0], isA<TextNode>());
-          expect((nodes[0] as TextNode).text, 'official instance: ');
-          expect(nodes[1], isA<UrlNode>());
-          expect((nodes[1] as UrlNode).url, 'https://misskey.io/@ai');
-          expect(nodes[2], isA<TextNode>());
-          expect((nodes[2] as TextNode).text, '.');
+          expect(nodes, [
+            const TextNode('official instance: '),
+            const UrlNode(url: 'https://misskey.io/@ai'),
+            const TextNode('.'),
+          ]);
         });
 
         // mfm.js/test/parser.ts:976-982
         test('mfm-js互換テスト: with comma', () {
           final result = parser.parse('https://example.com/foo?bar=a,b');
           expect(result is Success, isTrue);
-          final node = getFirstUrl(result);
-          expect(node, isNotNull);
-          expect(node!.url, equals('https://example.com/foo?bar=a,b'));
+          final nodes = (result as Success).value as List<MfmNode>;
+          expect(nodes, [
+            const UrlNode(url: 'https://example.com/foo?bar=a,b'),
+          ]);
         });
 
         group('括弧のネスト処理', () {
@@ -1467,9 +1282,10 @@ void main() {
           test('mfm-js互換テスト: with brackets', () {
             final result = parser.parse('https://example.com/foo(bar)');
             expect(result is Success, isTrue);
-            final node = getFirstUrl(result);
-            expect(node, isNotNull);
-            expect(node!.url, equals('https://example.com/foo(bar)'));
+            final nodes = (result as Success).value as List<MfmNode>;
+            expect(nodes, [
+              const UrlNode(url: 'https://example.com/foo(bar)'),
+            ]);
           });
         });
 
@@ -1479,27 +1295,30 @@ void main() {
             final result = parser.parse('https://example.com.');
             expect(result is Success, isTrue);
             final nodes = (result as Success).value as List<MfmNode>;
-            expect(nodes.length, 2);
-            expect(nodes[0], isA<UrlNode>());
-            expect((nodes[0] as UrlNode).url, equals('https://example.com'));
-            expect(nodes[1], isA<TextNode>());
-            expect((nodes[1] as TextNode).text, equals('.'));
+            expect(nodes, [
+              const UrlNode(url: 'https://example.com'),
+              const TextNode('.'),
+            ]);
           });
 
           test('mfm-js互換テスト: 末尾のカンマを除去', () {
             final result = parser.parse('https://example.com,');
             expect(result is Success, isTrue);
             final nodes = (result as Success).value as List<MfmNode>;
-            expect(nodes.length, 2);
-            expect(nodes[0], isA<UrlNode>());
-            expect((nodes[0] as UrlNode).url, equals('https://example.com'));
+            expect(nodes, [
+              const UrlNode(url: 'https://example.com'),
+              const TextNode(','),
+            ]);
           });
 
           test('mfm-js互換テスト: 末尾の複数ピリオド・カンマを除去', () {
             final result = parser.parse('https://example.com.,.');
             expect(result is Success, isTrue);
             final nodes = (result as Success).value as List<MfmNode>;
-            expect((nodes[0] as UrlNode).url, equals('https://example.com'));
+            expect(nodes, [
+              const UrlNode(url: 'https://example.com'),
+              const TextNode('.,.'),
+            ]);
           });
         });
       });
@@ -1512,9 +1331,7 @@ void main() {
             final result = parser.parse('https://.');
             expect(result is Success, isTrue);
             final nodes = result.value;
-            expect(nodes.length, equals(1));
-            expect(nodes[0], isA<TextNode>());
-            expect((nodes[0] as TextNode).text, equals('https://.'));
+            expect(nodes, [const TextNode('https://.')]);
           });
         });
 
@@ -1524,16 +1341,11 @@ void main() {
             final result = parser.parse('(https://example.com/foo)');
             expect(result is Success, isTrue);
             final nodes = result.value;
-            expect(nodes.length, equals(3));
-            expect(nodes[0], isA<TextNode>());
-            expect((nodes[0] as TextNode).text, equals('('));
-            expect(nodes[1], isA<UrlNode>());
-            expect(
-              (nodes[1] as UrlNode).url,
-              equals('https://example.com/foo'),
-            );
-            expect(nodes[2], isA<TextNode>());
-            expect((nodes[2] as TextNode).text, equals(')'));
+            expect(nodes, [
+              const TextNode('('),
+              const UrlNode(url: 'https://example.com/foo'),
+              const TextNode(')'),
+            ]);
           });
 
           test('mfm-js互換テスト: ignore parent brackets (2)', () {
@@ -1541,16 +1353,11 @@ void main() {
             final result = parser.parse('(foo https://example.com/foo)');
             expect(result is Success, isTrue);
             final nodes = result.value;
-            expect(nodes.length, equals(3));
-            expect(nodes[0], isA<TextNode>());
-            expect((nodes[0] as TextNode).text, equals('(foo '));
-            expect(nodes[1], isA<UrlNode>());
-            expect(
-              (nodes[1] as UrlNode).url,
-              equals('https://example.com/foo'),
-            );
-            expect(nodes[2], isA<TextNode>());
-            expect((nodes[2] as TextNode).text, equals(')'));
+            expect(nodes, [
+              const TextNode('(foo '),
+              const UrlNode(url: 'https://example.com/foo'),
+              const TextNode(')'),
+            ]);
           });
 
           test(
@@ -1560,16 +1367,11 @@ void main() {
               final result = parser.parse('(https://example.com/foo(bar))');
               expect(result is Success, isTrue);
               final nodes = result.value;
-              expect(nodes.length, equals(3));
-              expect(nodes[0], isA<TextNode>());
-              expect((nodes[0] as TextNode).text, equals('('));
-              expect(nodes[1], isA<UrlNode>());
-              expect(
-                (nodes[1] as UrlNode).url,
-                equals('https://example.com/foo(bar)'),
-              );
-              expect(nodes[2], isA<TextNode>());
-              expect((nodes[2] as TextNode).text, equals(')'));
+              expect(nodes, [
+                const TextNode('('),
+                const UrlNode(url: 'https://example.com/foo(bar)'),
+                const TextNode(')'),
+              ]);
             },
           );
 
@@ -1578,16 +1380,11 @@ void main() {
             final result = parser.parse('foo [https://example.com/foo] bar');
             expect(result is Success, isTrue);
             final nodes = result.value;
-            expect(nodes.length, equals(3));
-            expect(nodes[0], isA<TextNode>());
-            expect((nodes[0] as TextNode).text, equals('foo ['));
-            expect(nodes[1], isA<UrlNode>());
-            expect(
-              (nodes[1] as UrlNode).url,
-              equals('https://example.com/foo'),
-            );
-            expect(nodes[2], isA<TextNode>());
-            expect((nodes[2] as TextNode).text, equals('] bar'));
+            expect(nodes, [
+              const TextNode('foo ['),
+              const UrlNode(url: 'https://example.com/foo'),
+              const TextNode('] bar'),
+            ]);
           });
         });
 
@@ -1600,12 +1397,7 @@ void main() {
               final result = parser.parse('https://大石泉すき.example.com');
               expect(result is Success, isTrue);
               final nodes = result.value;
-              expect(nodes.length, equals(1));
-              expect(nodes[0], isA<TextNode>());
-              expect(
-                (nodes[0] as TextNode).text,
-                equals('https://大石泉すき.example.com'),
-              );
+              expect(nodes, [const TextNode('https://大石泉すき.example.com')]);
             },
           );
 
@@ -1617,11 +1409,12 @@ void main() {
               final result = parser.parse('<https://大石泉すき.example.com>');
               expect(result is Success, isTrue);
               final nodes = result.value;
-              expect(nodes.length, equals(1));
-              expect(nodes[0], isA<UrlNode>());
-              final urlNode = nodes[0] as UrlNode;
-              expect(urlNode.url, equals('https://大石泉すき.example.com'));
-              expect(urlNode.brackets, isTrue);
+              expect(nodes, [
+                const UrlNode(
+                  url: 'https://大石泉すき.example.com',
+                  brackets: true,
+                ),
+              ]);
             },
           );
 
@@ -1630,9 +1423,7 @@ void main() {
             final result = parser.parse('javascript:foo');
             expect(result is Success, isTrue);
             final nodes = result.value;
-            expect(nodes.length, equals(1));
-            expect(nodes[0], isA<TextNode>());
-            expect((nodes[0] as TextNode).text, equals('javascript:foo'));
+            expect(nodes, [const TextNode('javascript:foo')]);
           });
         });
       });
@@ -1645,12 +1436,14 @@ void main() {
         test('mfm-js互換テスト: basic', () {
           final result = parser.parse('[Example](https://example.com)');
           expect(result is Success, isTrue);
-          final node = getFirstLink(result);
-          expect(node, isNotNull);
-          expect(node!.silent, isFalse);
-          expect(node.url, equals('https://example.com'));
-          expect(node.children.length, equals(1));
-          expect((node.children[0] as TextNode).text, equals('Example'));
+          final nodes = (result as Success).value as List<MfmNode>;
+          expect(nodes, [
+            const LinkNode(
+              silent: false,
+              url: 'https://example.com',
+              children: [TextNode('Example')],
+            ),
+          ]);
         });
 
         // mfm.js/test/parser.ts:1089-1098
@@ -1660,19 +1453,14 @@ void main() {
           );
           expect(result is Success, isTrue);
           final nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 2);
-          expect(nodes[0], isA<LinkNode>());
-          final linkNode = nodes[0] as LinkNode;
-          expect(linkNode.silent, isFalse);
-          expect(linkNode.url, equals('https://misskey.io/@ai'));
-          expect(linkNode.children.length, equals(1));
-          expect(linkNode.children[0], isA<TextNode>());
-          expect(
-            (linkNode.children[0] as TextNode).text,
-            equals('official instance'),
-          );
-          expect(nodes[1], isA<TextNode>());
-          expect((nodes[1] as TextNode).text, equals('.'));
+          expect(nodes, [
+            const LinkNode(
+              silent: false,
+              url: 'https://misskey.io/@ai',
+              children: [TextNode('official instance')],
+            ),
+            const TextNode('.'),
+          ]);
         });
       });
 
@@ -1681,10 +1469,14 @@ void main() {
         test('mfm-js互換テスト: silent flag', () {
           final result = parser.parse('?[Example](https://example.com)');
           expect(result is Success, isTrue);
-          final node = getFirstLink(result);
-          expect(node, isNotNull);
-          expect(node!.silent, isTrue);
-          expect(node.url, equals('https://example.com'));
+          final nodes = (result as Success).value as List<MfmNode>;
+          expect(nodes, [
+            const LinkNode(
+              silent: true,
+              url: 'https://example.com',
+              children: [TextNode('Example')],
+            ),
+          ]);
         });
       });
 
@@ -1695,12 +1487,7 @@ void main() {
             final result = parser.parse('[click here](javascript:foo)');
             expect(result is Success, isTrue);
             final nodes = result.value;
-            expect(nodes.length, equals(1));
-            expect(nodes[0], isA<TextNode>());
-            expect(
-              (nodes[0] as TextNode).text,
-              equals('[click here](javascript:foo)'),
-            );
+            expect(nodes, [const TextNode('[click here](javascript:foo)')]);
           });
         });
 
@@ -1712,21 +1499,15 @@ void main() {
             );
             expect(result is Success, isTrue);
             final nodes = result.value;
-            expect(nodes.length, equals(3));
-            expect(nodes[0], isA<TextNode>());
-            expect((nodes[0] as TextNode).text, equals('official instance: '));
-            expect(nodes[1], isA<LinkNode>());
-            final linkNode = nodes[1] as LinkNode;
-            expect(linkNode.silent, isFalse);
-            expect(linkNode.url, equals('https://misskey.io/@ai'));
-            expect(linkNode.children.length, equals(1));
-            expect(linkNode.children[0], isA<TextNode>());
-            expect(
-              (linkNode.children[0] as TextNode).text,
-              equals('https://misskey.io/@ai'),
-            );
-            expect(nodes[2], isA<TextNode>());
-            expect((nodes[2] as TextNode).text, equals('.'));
+            expect(nodes, [
+              const TextNode('official instance: '),
+              const LinkNode(
+                silent: false,
+                url: 'https://misskey.io/@ai',
+                children: [TextNode('https://misskey.io/@ai')],
+              ),
+              const TextNode('.'),
+            ]);
           });
 
           test('mfm-js互換テスト: nested', () {
@@ -1735,29 +1516,18 @@ void main() {
             );
             expect(result is Success, isTrue);
             final nodes = result.value;
-            expect(nodes.length, equals(3));
-            expect(nodes[0], isA<TextNode>());
-            expect((nodes[0] as TextNode).text, equals('official instance: '));
-            expect(nodes[1], isA<LinkNode>());
-            final linkNode = nodes[1] as LinkNode;
-            expect(linkNode.silent, isFalse);
-            expect(linkNode.url, equals('https://misskey.io/@ai'));
-            expect(linkNode.children.length, equals(2));
-            expect(linkNode.children[0], isA<TextNode>());
-            expect(
-              (linkNode.children[0] as TextNode).text,
-              equals('https://misskey.io/@ai'),
-            );
-            expect(linkNode.children[1], isA<BoldNode>());
-            final boldNode = linkNode.children[1] as BoldNode;
-            expect(boldNode.children.length, equals(1));
-            expect(boldNode.children[0], isA<TextNode>());
-            expect(
-              (boldNode.children[0] as TextNode).text,
-              equals('https://misskey.io/@ai'),
-            );
-            expect(nodes[2], isA<TextNode>());
-            expect((nodes[2] as TextNode).text, equals('.'));
+            expect(nodes, [
+              const TextNode('official instance: '),
+              const LinkNode(
+                silent: false,
+                url: 'https://misskey.io/@ai',
+                children: [
+                  TextNode('https://misskey.io/@ai'),
+                  BoldNode([TextNode('https://misskey.io/@ai')]),
+                ],
+              ),
+              const TextNode('.'),
+            ]);
           });
         });
 
@@ -1769,25 +1539,17 @@ void main() {
             );
             expect(result is Success, isTrue);
             final nodes = result.value;
-            expect(nodes.length, equals(5));
-            expect(nodes[0], isA<TextNode>());
-            expect((nodes[0] as TextNode).text, equals('official instance: '));
-            expect(nodes[1], isA<LinkNode>());
-            final linkNode = nodes[1] as LinkNode;
-            expect(linkNode.silent, isFalse);
-            expect(linkNode.url, equals('https://misskey.io/@ai'));
-            expect(linkNode.children.length, equals(1));
-            expect(linkNode.children[0], isA<TextNode>());
-            expect(
-              (linkNode.children[0] as TextNode).text,
-              equals('[https://misskey.io/@ai'),
-            );
-            expect(nodes[2], isA<TextNode>());
-            expect((nodes[2] as TextNode).text, equals(']('));
-            expect(nodes[3], isA<UrlNode>());
-            expect((nodes[3] as UrlNode).url, equals('https://misskey.io/@ai'));
-            expect(nodes[4], isA<TextNode>());
-            expect((nodes[4] as TextNode).text, equals(').'));
+            expect(nodes, [
+              const TextNode('official instance: '),
+              const LinkNode(
+                silent: false,
+                url: 'https://misskey.io/@ai',
+                children: [TextNode('[https://misskey.io/@ai')],
+              ),
+              const TextNode(']('),
+              const UrlNode(url: 'https://misskey.io/@ai'),
+              const TextNode(').'),
+            ]);
           });
 
           test('mfm-js互換テスト: nested', () {
@@ -1796,24 +1558,21 @@ void main() {
             );
             expect(result is Success, isTrue);
             final nodes = result.value;
-            expect(nodes.length, equals(3));
-            expect(nodes[0], isA<TextNode>());
-            expect((nodes[0] as TextNode).text, equals('official instance: '));
-            expect(nodes[1], isA<LinkNode>());
-            final linkNode = nodes[1] as LinkNode;
-            expect(linkNode.silent, isFalse);
-            expect(linkNode.url, equals('https://misskey.io/@ai'));
-            expect(linkNode.children.length, equals(1));
-            expect(linkNode.children[0], isA<BoldNode>());
-            final boldNode = linkNode.children[0] as BoldNode;
-            expect(boldNode.children.length, equals(1));
-            expect(boldNode.children[0], isA<TextNode>());
-            expect(
-              (boldNode.children[0] as TextNode).text,
-              equals('[https://misskey.io/@ai](https://misskey.io/@ai)'),
-            );
-            expect(nodes[2], isA<TextNode>());
-            expect((nodes[2] as TextNode).text, equals('.'));
+            expect(nodes, [
+              const TextNode('official instance: '),
+              const LinkNode(
+                silent: false,
+                url: 'https://misskey.io/@ai',
+                children: [
+                  BoldNode([
+                    TextNode(
+                      '[https://misskey.io/@ai](https://misskey.io/@ai)',
+                    ),
+                  ]),
+                ],
+              ),
+              const TextNode('.'),
+            ]);
           });
         });
 
@@ -1823,14 +1582,13 @@ void main() {
             final result = parser.parse('[@example](https://example.com)');
             expect(result is Success, isTrue);
             final nodes = result.value;
-            expect(nodes.length, equals(1));
-            expect(nodes[0], isA<LinkNode>());
-            final linkNode = nodes[0] as LinkNode;
-            expect(linkNode.silent, isFalse);
-            expect(linkNode.url, equals('https://example.com'));
-            expect(linkNode.children.length, equals(1));
-            expect(linkNode.children[0], isA<TextNode>());
-            expect((linkNode.children[0] as TextNode).text, equals('@example'));
+            expect(nodes, [
+              const LinkNode(
+                silent: false,
+                url: 'https://example.com',
+                children: [TextNode('@example')],
+              ),
+            ]);
           });
 
           test('mfm-js互換テスト: nested', () {
@@ -1839,19 +1597,16 @@ void main() {
             );
             expect(result is Success, isTrue);
             final nodes = result.value;
-            expect(nodes.length, equals(1));
-            expect(nodes[0], isA<LinkNode>());
-            final linkNode = nodes[0] as LinkNode;
-            expect(linkNode.silent, isFalse);
-            expect(linkNode.url, equals('https://example.com'));
-            expect(linkNode.children.length, equals(2));
-            expect(linkNode.children[0], isA<TextNode>());
-            expect((linkNode.children[0] as TextNode).text, equals('@example'));
-            expect(linkNode.children[1], isA<BoldNode>());
-            final boldNode = linkNode.children[1] as BoldNode;
-            expect(boldNode.children.length, equals(1));
-            expect(boldNode.children[0], isA<TextNode>());
-            expect((boldNode.children[0] as TextNode).text, equals('@example'));
+            expect(nodes, [
+              const LinkNode(
+                silent: false,
+                url: 'https://example.com',
+                children: [
+                  TextNode('@example'),
+                  BoldNode([TextNode('@example')]),
+                ],
+              ),
+            ]);
           });
         });
 
@@ -1861,14 +1616,13 @@ void main() {
             final result = parser.parse('[foo](https://example.com/foo(bar))');
             expect(result is Success, isTrue);
             final nodes = result.value;
-            expect(nodes.length, equals(1));
-            expect(nodes[0], isA<LinkNode>());
-            final linkNode = nodes[0] as LinkNode;
-            expect(linkNode.silent, isFalse);
-            expect(linkNode.url, equals('https://example.com/foo(bar)'));
-            expect(linkNode.children.length, equals(1));
-            expect(linkNode.children[0], isA<TextNode>());
-            expect((linkNode.children[0] as TextNode).text, equals('foo'));
+            expect(nodes, [
+              const LinkNode(
+                silent: false,
+                url: 'https://example.com/foo(bar)',
+                children: [TextNode('foo')],
+              ),
+            ]);
           });
 
           test('mfm-js互換テスト: with parent brackets', () {
@@ -1877,18 +1631,15 @@ void main() {
             );
             expect(result is Success, isTrue);
             final nodes = result.value;
-            expect(nodes.length, equals(3));
-            expect(nodes[0], isA<TextNode>());
-            expect((nodes[0] as TextNode).text, equals('('));
-            expect(nodes[1], isA<LinkNode>());
-            final linkNode = nodes[1] as LinkNode;
-            expect(linkNode.silent, isFalse);
-            expect(linkNode.url, equals('https://example.com/foo(bar)'));
-            expect(linkNode.children.length, equals(1));
-            expect(linkNode.children[0], isA<TextNode>());
-            expect((linkNode.children[0] as TextNode).text, equals('foo'));
-            expect(nodes[2], isA<TextNode>());
-            expect((nodes[2] as TextNode).text, equals(')'));
+            expect(nodes, [
+              const TextNode('('),
+              const LinkNode(
+                silent: false,
+                url: 'https://example.com/foo(bar)',
+                children: [TextNode('foo')],
+              ),
+              const TextNode(')'),
+            ]);
           });
 
           test('mfm-js互換テスト: with brackets before', () {
@@ -1897,25 +1648,21 @@ void main() {
             );
             expect(result is Success, isTrue);
             final nodes = result.value;
-            expect(nodes.length, equals(2));
-            expect(nodes[0], isA<TextNode>());
-            expect((nodes[0] as TextNode).text, equals('[test] foo '));
-            expect(nodes[1], isA<LinkNode>());
-            final linkNode = nodes[1] as LinkNode;
-            expect(linkNode.silent, isFalse);
-            expect(linkNode.url, equals('https://example.com'));
-            expect(linkNode.children.length, equals(1));
-            expect(linkNode.children[0], isA<TextNode>());
-            expect((linkNode.children[0] as TextNode).text, equals('bar'));
+            expect(nodes, [
+              const TextNode('[test] foo '),
+              const LinkNode(
+                silent: false,
+                url: 'https://example.com',
+                children: [TextNode('bar')],
+              ),
+            ]);
           });
 
           test('mfm-js互換テスト: bad url in url part', () {
             final result = parser.parse('[test](http://..)');
             expect(result is Success, isTrue);
             final nodes = result.value;
-            expect(nodes.length, equals(1));
-            expect(nodes[0], isA<TextNode>());
-            expect((nodes[0] as TextNode).text, equals('[test](http://..)'));
+            expect(nodes, [const TextNode('[test](http://..)')]);
           });
         });
       });
@@ -1928,14 +1675,9 @@ void main() {
         final result = parser.parse(r'$[shake text]');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 1);
-        expect(nodes[0], isA<FnNode>());
-        final fn = nodes[0] as FnNode;
-        expect(fn.name, 'shake');
-        expect(fn.args, isEmpty);
-        expect(fn.children.length, 1);
-        expect(fn.children.first, isA<TextNode>());
-        expect((fn.children.first as TextNode).text, 'text');
+        expect(nodes, [
+          const FnNode(name: 'shake', args: {}, children: [TextNode('text')]),
+        ]);
       });
 
       // mfm.js/test/parser.ts:1241-1249
@@ -1943,10 +1685,13 @@ void main() {
         final result = parser.parse(r'$[flip.h content]');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes[0], isA<FnNode>());
-        final fn = nodes[0] as FnNode;
-        expect(fn.name, 'flip');
-        expect(fn.args['h'], isTrue);
+        expect(nodes, [
+          const FnNode(
+            name: 'flip',
+            args: {'h': true},
+            children: [TextNode('content')],
+          ),
+        ]);
       });
 
       // mfm.js/test/parser.ts:1251-1259
@@ -1954,11 +1699,13 @@ void main() {
         final result = parser.parse(r'$[position.x=1.5,y=-2 text]');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes[0], isA<FnNode>());
-        final fn = nodes[0] as FnNode;
-        expect(fn.name, 'position');
-        expect(fn.args['x'], '1.5');
-        expect(fn.args['y'], '-2');
+        expect(nodes, [
+          const FnNode(
+            name: 'position',
+            args: {'x': '1.5', 'y': '-2'},
+            children: [TextNode('text')],
+          ),
+        ]);
       });
 
       // mfm.js/test/parser.ts:1261-1267
@@ -1967,9 +1714,7 @@ void main() {
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
         // fn名が無効（日本語文字）のためfnとして認識されず、テキストとして扱われる
-        expect(nodes.length, 1);
-        expect(nodes.first, isA<TextNode>());
-        expect((nodes.first as TextNode).text, r'$[関数 text]');
+        expect(nodes, [const TextNode(r'$[関数 text]')]);
       });
 
       // mfm.js/test/parser.ts:1269-1279
@@ -1977,13 +1722,19 @@ void main() {
         final result = parser.parse(r'$[spin $[shake text]]');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes[0], isA<FnNode>());
-        final outerFn = nodes[0] as FnNode;
-        expect(outerFn.name, 'spin');
-        expect(outerFn.children.length, 1);
-        expect(outerFn.children.first, isA<FnNode>());
-        final innerFn = outerFn.children.first as FnNode;
-        expect(innerFn.name, 'shake');
+        expect(nodes, [
+          const FnNode(
+            name: 'spin',
+            args: {},
+            children: [
+              FnNode(
+                name: 'shake',
+                args: {},
+                children: [TextNode('text')],
+              ),
+            ],
+          ),
+        ]);
       });
     });
 
@@ -1996,13 +1747,11 @@ void main() {
         );
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 3);
-        expect((nodes[0] as TextNode).text, 'a\n');
-        expect(nodes[1], isA<PlainNode>());
-        final plain = nodes[1] as PlainNode;
-        expect(plain.children.length, 1);
-        expect((plain.children.first as TextNode).text, '**Hello**\nworld');
-        expect((nodes[2] as TextNode).text, '\nb');
+        expect(nodes, [
+          const TextNode('a\n'),
+          const PlainNode([TextNode('**Hello**\nworld')]),
+          const TextNode('\nb'),
+        ]);
       });
 
       // mfm.js/test/parser.ts:1293-1301
@@ -2010,13 +1759,11 @@ void main() {
         final result = parser.parse('a\n<plain>**Hello** world</plain>\nb');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-        expect(nodes.length, 3);
-        expect((nodes[0] as TextNode).text, 'a\n');
-        expect(nodes[1], isA<PlainNode>());
-        final plain = nodes[1] as PlainNode;
-        expect(plain.children.length, 1);
-        expect((plain.children.first as TextNode).text, '**Hello** world');
-        expect((nodes[2] as TextNode).text, '\nb');
+        expect(nodes, [
+          const TextNode('a\n'),
+          const PlainNode([TextNode('**Hello** world')]),
+          const TextNode('\nb'),
+        ]);
       });
     });
 
@@ -2030,15 +1777,11 @@ void main() {
           final result = parser.parse('>>> abc');
           expect(result is Success, isTrue);
           final nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 1);
-          expect(nodes[0], isA<QuoteNode>());
-          final quote1 = nodes[0] as QuoteNode;
-          expect(quote1.children.length, 1);
-          expect(quote1.children[0], isA<QuoteNode>());
-          final quote2 = quote1.children[0] as QuoteNode;
-          expect(quote2.children.length, 1);
-          expect(quote2.children[0], isA<TextNode>());
-          expect((quote2.children[0] as TextNode).text, '> abc');
+          expect(nodes, [
+            const QuoteNode([
+              QuoteNode([TextNode('> abc')]),
+            ]),
+          ]);
         });
 
         // mfm.js/test/parser.ts:1318-1327
@@ -2048,15 +1791,11 @@ void main() {
           final result = parser.parse('>> **abc**');
           expect(result is Success, isTrue);
           final nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 1);
-          expect(nodes[0], isA<QuoteNode>());
-          final quote1 = nodes[0] as QuoteNode;
-          expect(quote1.children.length, 1);
-          expect(quote1.children[0], isA<QuoteNode>());
-          final quote2 = quote1.children[0] as QuoteNode;
-          expect(quote2.children.length, 1);
-          expect(quote2.children[0], isA<TextNode>());
-          expect((quote2.children[0] as TextNode).text, '**abc**');
+          expect(nodes, [
+            const QuoteNode([
+              QuoteNode([TextNode('**abc**')]),
+            ]),
+          ]);
         });
       });
 
@@ -2068,15 +1807,11 @@ void main() {
           final result = parser.parse('<b><b>***abc***</b></b>');
           expect(result is Success, isTrue);
           final nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 1);
-          expect(nodes[0], isA<BoldNode>());
-          final bold1 = nodes[0] as BoldNode;
-          expect(bold1.children.length, 1);
-          expect(bold1.children[0], isA<BoldNode>());
-          final bold2 = bold1.children[0] as BoldNode;
-          expect(bold2.children.length, 1);
-          expect(bold2.children[0], isA<TextNode>());
-          expect((bold2.children[0] as TextNode).text, '***abc***');
+          expect(nodes, [
+            const BoldNode([
+              BoldNode([TextNode('***abc***')]),
+            ]),
+          ]);
         });
       });
 
@@ -2088,15 +1823,11 @@ void main() {
           final result = parser.parse('<i><i>**abc**</i></i>');
           expect(result is Success, isTrue);
           final nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 1);
-          expect(nodes[0], isA<ItalicNode>());
-          final italic1 = nodes[0] as ItalicNode;
-          expect(italic1.children.length, 1);
-          expect(italic1.children[0], isA<ItalicNode>());
-          final italic2 = italic1.children[0] as ItalicNode;
-          expect(italic2.children.length, 1);
-          expect(italic2.children[0], isA<TextNode>());
-          expect((italic2.children[0] as TextNode).text, '**abc**');
+          expect(nodes, [
+            const ItalicNode([
+              ItalicNode([TextNode('**abc**')]),
+            ]),
+          ]);
         });
 
         // mfm.js/test/parser.ts:1356-1365
@@ -2106,15 +1837,11 @@ void main() {
           final result = parser.parse('<i><i><b>abc</b></i></i>');
           expect(result is Success, isTrue);
           final nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 1);
-          expect(nodes[0], isA<ItalicNode>());
-          final italic1 = nodes[0] as ItalicNode;
-          expect(italic1.children.length, 1);
-          expect(italic1.children[0], isA<ItalicNode>());
-          final italic2 = italic1.children[0] as ItalicNode;
-          expect(italic2.children.length, 1);
-          expect(italic2.children[0], isA<TextNode>());
-          expect((italic2.children[0] as TextNode).text, '<b>abc</b>');
+          expect(nodes, [
+            const ItalicNode([
+              ItalicNode([TextNode('<b>abc</b>')]),
+            ]),
+          ]);
         });
       });
 
@@ -2126,15 +1853,11 @@ void main() {
           final result = parser.parse('<i><i><small>abc</small></i></i>');
           expect(result is Success, isTrue);
           final nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 1);
-          expect(nodes[0], isA<ItalicNode>());
-          final italic1 = nodes[0] as ItalicNode;
-          expect(italic1.children.length, 1);
-          expect(italic1.children[0], isA<ItalicNode>());
-          final italic2 = italic1.children[0] as ItalicNode;
-          expect(italic2.children.length, 1);
-          expect(italic2.children[0], isA<TextNode>());
-          expect((italic2.children[0] as TextNode).text, '<small>abc</small>');
+          expect(nodes, [
+            const ItalicNode([
+              ItalicNode([TextNode('<small>abc</small>')]),
+            ]),
+          ]);
         });
       });
 
@@ -2146,15 +1869,11 @@ void main() {
           final result = parser.parse('<b><b><i>abc</i></b></b>');
           expect(result is Success, isTrue);
           final nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 1);
-          expect(nodes[0], isA<BoldNode>());
-          final bold1 = nodes[0] as BoldNode;
-          expect(bold1.children.length, 1);
-          expect(bold1.children[0], isA<BoldNode>());
-          final bold2 = bold1.children[0] as BoldNode;
-          expect(bold2.children.length, 1);
-          expect(bold2.children[0], isA<TextNode>());
-          expect((bold2.children[0] as TextNode).text, '<i>abc</i>');
+          expect(nodes, [
+            const BoldNode([
+              BoldNode([TextNode('<i>abc</i>')]),
+            ]),
+          ]);
         });
       });
 
@@ -2166,15 +1885,11 @@ void main() {
           final result = parser.parse('<b><b>~~abc~~</b></b>');
           expect(result is Success, isTrue);
           final nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 1);
-          expect(nodes[0], isA<BoldNode>());
-          final bold1 = nodes[0] as BoldNode;
-          expect(bold1.children.length, 1);
-          expect(bold1.children[0], isA<BoldNode>());
-          final bold2 = bold1.children[0] as BoldNode;
-          expect(bold2.children.length, 1);
-          expect(bold2.children[0], isA<TextNode>());
-          expect((bold2.children[0] as TextNode).text, '~~abc~~');
+          expect(nodes, [
+            const BoldNode([
+              BoldNode([TextNode('~~abc~~')]),
+            ]),
+          ]);
         });
 
         // mfm.js/test/parser.ts:1406-1415
@@ -2184,15 +1899,11 @@ void main() {
           final result = parser.parse('<b><b><s>abc</s></b></b>');
           expect(result is Success, isTrue);
           final nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 1);
-          expect(nodes[0], isA<BoldNode>());
-          final bold1 = nodes[0] as BoldNode;
-          expect(bold1.children.length, 1);
-          expect(bold1.children[0], isA<BoldNode>());
-          final bold2 = bold1.children[0] as BoldNode;
-          expect(bold2.children.length, 1);
-          expect(bold2.children[0], isA<TextNode>());
-          expect((bold2.children[0] as TextNode).text, '<s>abc</s>');
+          expect(nodes, [
+            const BoldNode([
+              BoldNode([TextNode('<s>abc</s>')]),
+            ]),
+          ]);
         });
       });
 
@@ -2204,25 +1915,20 @@ void main() {
           var result = parser.parse('<b>#abc(xyz)</b>');
           expect(result is Success, isTrue);
           var nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 1);
-          expect(nodes[0], isA<BoldNode>());
-          final bold = nodes[0] as BoldNode;
-          expect(bold.children.length, 1);
-          expect(bold.children[0], isA<HashtagNode>());
-          expect((bold.children[0] as HashtagNode).hashtag, 'abc(xyz)');
+          expect(nodes, [
+            const BoldNode([HashtagNode('abc(xyz)')]),
+          ]);
 
           // <b>#abc(x(y)z)</b> → 二重ネスト括弧はハッシュタグとして認識されない
           result = parser.parse('<b>#abc(x(y)z)</b>');
           expect(result is Success, isTrue);
           nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 1);
-          expect(nodes[0], isA<BoldNode>());
-          final bold2 = nodes[0] as BoldNode;
-          expect(bold2.children.length, 2);
-          expect(bold2.children[0], isA<HashtagNode>());
-          expect((bold2.children[0] as HashtagNode).hashtag, 'abc');
-          expect(bold2.children[1], isA<TextNode>());
-          expect((bold2.children[1] as TextNode).text, '(x(y)z)');
+          expect(nodes, [
+            const BoldNode([
+              HashtagNode('abc'),
+              TextNode('(x(y)z)'),
+            ]),
+          ]);
         });
 
         test('mfm-js互換テスト: outside "()"', () {
@@ -2231,13 +1937,11 @@ void main() {
           final result = parser.parse('(#abc)');
           expect(result is Success, isTrue);
           final nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 3);
-          expect(nodes[0], isA<TextNode>());
-          expect((nodes[0] as TextNode).text, '(');
-          expect(nodes[1], isA<HashtagNode>());
-          expect((nodes[1] as HashtagNode).hashtag, 'abc');
-          expect(nodes[2], isA<TextNode>());
-          expect((nodes[2] as TextNode).text, ')');
+          expect(nodes, [
+            const TextNode('('),
+            const HashtagNode('abc'),
+            const TextNode(')'),
+          ]);
         });
 
         test('mfm-js互換テスト: outside "[]"', () {
@@ -2246,13 +1950,11 @@ void main() {
           final result = parser.parse('[#abc]');
           expect(result is Success, isTrue);
           final nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 3);
-          expect(nodes[0], isA<TextNode>());
-          expect((nodes[0] as TextNode).text, '[');
-          expect(nodes[1], isA<HashtagNode>());
-          expect((nodes[1] as HashtagNode).hashtag, 'abc');
-          expect(nodes[2], isA<TextNode>());
-          expect((nodes[2] as TextNode).text, ']');
+          expect(nodes, [
+            const TextNode('['),
+            const HashtagNode('abc'),
+            const TextNode(']'),
+          ]);
         });
 
         test('mfm-js互換テスト: outside "「」"', () {
@@ -2261,13 +1963,11 @@ void main() {
           final result = parser.parse('「#abc」');
           expect(result is Success, isTrue);
           final nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 3);
-          expect(nodes[0], isA<TextNode>());
-          expect((nodes[0] as TextNode).text, '「');
-          expect(nodes[1], isA<HashtagNode>());
-          expect((nodes[1] as HashtagNode).hashtag, 'abc');
-          expect(nodes[2], isA<TextNode>());
-          expect((nodes[2] as TextNode).text, '」');
+          expect(nodes, [
+            const TextNode('「'),
+            const HashtagNode('abc'),
+            const TextNode('」'),
+          ]);
         });
 
         test('mfm-js互換テスト: outside "（）"', () {
@@ -2276,13 +1976,11 @@ void main() {
           final result = parser.parse('（#abc）');
           expect(result is Success, isTrue);
           final nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 3);
-          expect(nodes[0], isA<TextNode>());
-          expect((nodes[0] as TextNode).text, '（');
-          expect(nodes[1], isA<HashtagNode>());
-          expect((nodes[1] as HashtagNode).hashtag, 'abc');
-          expect(nodes[2], isA<TextNode>());
-          expect((nodes[2] as TextNode).text, '）');
+          expect(nodes, [
+            const TextNode('（'),
+            const HashtagNode('abc'),
+            const TextNode('）'),
+          ]);
         });
       });
 
@@ -2295,28 +1993,22 @@ void main() {
           var result = parser.parse('<b>https://example.com/abc(xyz)</b>');
           expect(result is Success, isTrue);
           var nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 1);
-          expect(nodes[0], isA<BoldNode>());
-          var bold = nodes[0] as BoldNode;
-          expect(bold.children.length, 1);
-          expect(bold.children[0], isA<UrlNode>());
-          expect(
-            (bold.children[0] as UrlNode).url,
-            'https://example.com/abc(xyz)',
-          );
+          expect(nodes, [
+            const BoldNode([
+              UrlNode(url: 'https://example.com/abc(xyz)'),
+            ]),
+          ]);
 
           // <b>https://example.com/abc(x(y)z)</b> → 二重ネスト括弧はURLに含まれない
           result = parser.parse('<b>https://example.com/abc(x(y)z)</b>');
           expect(result is Success, isTrue);
           nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 1);
-          expect(nodes[0], isA<BoldNode>());
-          bold = nodes[0] as BoldNode;
-          expect(bold.children.length, 2);
-          expect(bold.children[0], isA<UrlNode>());
-          expect((bold.children[0] as UrlNode).url, 'https://example.com/abc');
-          expect(bold.children[1], isA<TextNode>());
-          expect((bold.children[1] as TextNode).text, '(x(y)z)');
+          expect(nodes, [
+            const BoldNode([
+              UrlNode(url: 'https://example.com/abc'),
+              TextNode('(x(y)z)'),
+            ]),
+          ]);
         });
       });
 
@@ -2328,15 +2020,11 @@ void main() {
           final result = parser.parse(r'<b><b>$[a b]</b></b>');
           expect(result is Success, isTrue);
           final nodes = (result as Success).value as List<MfmNode>;
-          expect(nodes.length, 1);
-          expect(nodes[0], isA<BoldNode>());
-          final bold1 = nodes[0] as BoldNode;
-          expect(bold1.children.length, 1);
-          expect(bold1.children[0], isA<BoldNode>());
-          final bold2 = bold1.children[0] as BoldNode;
-          expect(bold2.children.length, 1);
-          expect(bold2.children[0], isA<TextNode>());
-          expect((bold2.children[0] as TextNode).text, r'$[a b]');
+          expect(nodes, [
+            const BoldNode([
+              BoldNode([TextNode(r'$[a b]')]),
+            ]),
+          ]);
         });
       });
     });
@@ -2358,60 +2046,25 @@ after''';
         final result = parser.parse(input);
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
-
-        // 期待構造: TEXT('before'), CENTER([...]), TEXT('after')
-        expect(nodes.length, 3);
-
-        // 最初のノード: TEXT('before')
-        expect(nodes[0], isA<TextNode>());
-        expect((nodes[0] as TextNode).text, 'before');
-
-        // 中間のノード: CENTER
-        expect(nodes[1], isA<CenterNode>());
-        final centerNode = nodes[1] as CenterNode;
-
-        // CENTERの子要素を検証
-        final centerChildren = centerNode.children;
-
-        // TEXT('Hello ')
-        expect(centerChildren[0], isA<TextNode>());
-        expect((centerChildren[0] as TextNode).text, 'Hello ');
-
-        // FN('tada', {}, [TEXT('everynyan! '), UNI_EMOJI('🎉')])
-        expect(centerChildren[1], isA<FnNode>());
-        final fnNode = centerChildren[1] as FnNode;
-        expect(fnNode.name, 'tada');
-        expect(fnNode.args, isEmpty);
-        expect(fnNode.children.length, 2);
-        expect(fnNode.children[0], isA<TextNode>());
-        expect((fnNode.children[0] as TextNode).text, 'everynyan! ');
-        expect(fnNode.children[1], isA<UnicodeEmojiNode>());
-        expect((fnNode.children[1] as UnicodeEmojiNode).emoji, '🎉');
-
-        // TEXT('\n\nI\'m ')
-        expect(centerChildren[2], isA<TextNode>());
-        expect((centerChildren[2] as TextNode).text, "\n\nI'm ");
-
-        // MENTION('ai', null, '@ai')
-        expect(centerChildren[3], isA<MentionNode>());
-        final mentionNode = centerChildren[3] as MentionNode;
-        expect(mentionNode.username, 'ai');
-        expect(mentionNode.host, isNull);
-
-        // TEXT(', A bot of misskey!\n\n')
-        expect(centerChildren[4], isA<TextNode>());
-        expect((centerChildren[4] as TextNode).text, ', A bot of misskey!\n\n');
-
-        // N_URL('https://github.com/syuilo/ai')
-        expect(centerChildren[5], isA<UrlNode>());
-        expect(
-          (centerChildren[5] as UrlNode).url,
-          'https://github.com/syuilo/ai',
-        );
-
-        // 最後のノード: TEXT('after')
-        expect(nodes[2], isA<TextNode>());
-        expect((nodes[2] as TextNode).text, 'after');
+        expect(nodes, [
+          const TextNode('before'),
+          const CenterNode([
+            TextNode('Hello '),
+            FnNode(
+              name: 'tada',
+              args: {},
+              children: [
+                TextNode('everynyan! '),
+                UnicodeEmojiNode('🎉'),
+              ],
+            ),
+            TextNode("\n\nI'm "),
+            MentionNode(username: 'ai', acct: '@ai'),
+            TextNode(', A bot of misskey!\n\n'),
+            UrlNode(url: 'https://github.com/syuilo/ai'),
+          ]),
+          const TextNode('after'),
+        ]);
       });
     });
   });

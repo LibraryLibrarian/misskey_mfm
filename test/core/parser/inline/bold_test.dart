@@ -12,47 +12,36 @@ void main() {
       final result = parser.parse('**a **b** c**');
       expect(result is Success, isTrue);
       final node = (result as Success).value as MfmNode;
-      expect(node, isA<BoldNode>());
-      final bold = node as BoldNode;
-      expect(bold.children.length, 1);
-      expect(bold.children.first, isA<TextNode>());
-      expect((bold.children.first as TextNode).text, 'a ');
+      expect(node, const BoldNode([TextNode('a ')]));
     });
 
     test('閉じタグがない場合はテキストとして扱う', () {
       final result = parser.parse('**abc');
       expect(result is Success, isTrue);
       final node = (result as Success).value as MfmNode;
-      expect(node, isA<TextNode>());
       // **で始まるが閉じタグがない場合は、**以降の内容も含めてテキストとして返される
-      expect((node as TextNode).text, '**abc');
+      expect(node, const TextNode('**abc'));
     });
 
     test('空の太字タグを解析できる', () {
       final result = parser.parse('****');
       expect(result is Success, isTrue);
       final node = (result as Success).value as MfmNode;
-      expect(node, isA<BoldNode>());
-      final bold = node as BoldNode;
-      expect(bold.children.length, 0);
+      expect(node, const BoldNode([]));
     });
 
     test('複数の太字タグを連続で解析できる', () {
       final result = parser.parse('**bold1****bold2**');
       expect(result is Success, isTrue);
       final node = (result as Success).value as MfmNode;
-      expect(node, isA<BoldNode>());
-      final bold = node as BoldNode;
-      expect(bold.children.length, 1);
-      expect((bold.children.first as TextNode).text, 'bold1');
+      expect(node, const BoldNode([TextNode('bold1')]));
     });
 
     test('単独の**はテキストとして扱う', () {
       final result = parser.parse('**');
       expect(result is Success, isTrue);
       final node = (result as Success).value as MfmNode;
-      expect(node, isA<TextNode>());
-      expect((node as TextNode).text, '**');
+      expect(node, const TextNode('**'));
     });
 
     test('閉じタグがない場合の詳細テスト', () {
@@ -67,8 +56,7 @@ void main() {
         final result = parser.parse(input);
         expect(result is Success, isTrue);
         final node = (result as Success).value as MfmNode;
-        expect(node, isA<TextNode>());
-        expect((node as TextNode).text, expected);
+        expect(node, TextNode(expected));
       }
     });
 
@@ -85,10 +73,9 @@ void main() {
       final result = m.parse('<b>abc*123*abc</b>');
       expect(result is Success, isTrue);
       final nodes = (result as Success).value as List<MfmNode>;
-      expect(nodes.length, 1);
-      final bold = nodes[0] as BoldNode;
-      expect(bold.children.length, 1);
-      expect((bold.children.first as TextNode).text, 'abc*123*abc');
+      expect(nodes, [
+        const BoldNode([TextNode('abc*123*abc')]),
+      ]);
     });
   });
 
@@ -99,41 +86,28 @@ void main() {
       final result = parser.parse('__bold__');
       expect(result is Success, isTrue);
       final node = (result as Success).value as MfmNode;
-      expect(node, isA<BoldNode>());
-      final bold = node as BoldNode;
-      expect(bold.children.length, 1);
-      expect(bold.children.first, isA<TextNode>());
-      expect((bold.children.first as TextNode).text, 'bold');
+      expect(node, const BoldNode([TextNode('bold')]));
     });
 
     test('英数字とスペースを含むboldUnder構文を解析できる', () {
       final result = parser.parse('__hello world 123__');
       expect(result is Success, isTrue);
       final node = (result as Success).value as MfmNode;
-      expect(node, isA<BoldNode>());
-      final bold = node as BoldNode;
-      expect(bold.children.length, 1);
-      expect((bold.children.first as TextNode).text, 'hello world 123');
+      expect(node, const BoldNode([TextNode('hello world 123')]));
     });
 
     test('タブ文字を含むboldUnder構文を解析できる', () {
       final result = parser.parse('__hello\tworld__');
       expect(result is Success, isTrue);
       final node = (result as Success).value as MfmNode;
-      expect(node, isA<BoldNode>());
-      final bold = node as BoldNode;
-      expect(bold.children.length, 1);
-      expect((bold.children.first as TextNode).text, 'hello\tworld');
+      expect(node, const BoldNode([TextNode('hello\tworld')]));
     });
 
     test('全角スペースを含むboldUnder構文を解析できる', () {
       final result = parser.parse('__hello\u3000world__');
       expect(result is Success, isTrue);
       final node = (result as Success).value as MfmNode;
-      expect(node, isA<BoldNode>());
-      final bold = node as BoldNode;
-      expect(bold.children.length, 1);
-      expect((bold.children.first as TextNode).text, 'hello\u3000world');
+      expect(node, const BoldNode([TextNode('hello\u3000world')]));
     });
 
     test('閉じタグがない場合は解析失敗', () {
@@ -167,23 +141,20 @@ void main() {
       final result = mfmParser.parse('__abc__');
       expect(result is Success, isTrue);
       final nodes = (result as Success).value as List<MfmNode>;
-      expect(nodes.length, 1);
-      expect(nodes[0], isA<BoldNode>());
-      final bold = nodes[0] as BoldNode;
-      expect(bold.children.length, 1);
-      expect((bold.children.first as TextNode).text, 'abc');
+      expect(nodes, [
+        const BoldNode([TextNode('abc')]),
+      ]);
     });
 
     test('テキストの前後にboldUnder構文がある場合', () {
       final result = mfmParser.parse('before __abc__ after');
       expect(result is Success, isTrue);
       final nodes = (result as Success).value as List<MfmNode>;
-      expect(nodes.length, 3);
-      expect((nodes[0] as TextNode).text, 'before ');
-      expect(nodes[1], isA<BoldNode>());
-      final bold = nodes[1] as BoldNode;
-      expect((bold.children.first as TextNode).text, 'abc');
-      expect((nodes[2] as TextNode).text, ' after');
+      expect(nodes, [
+        const TextNode('before '),
+        const BoldNode([TextNode('abc')]),
+        const TextNode(' after'),
+      ]);
     });
 
     test('boldUnderとitalicUnderが正しく区別される', () {
@@ -191,13 +162,17 @@ void main() {
       final boldResult = mfmParser.parse('__abc__');
       expect(boldResult is Success, isTrue);
       final boldNodes = (boldResult as Success).value as List<MfmNode>;
-      expect(boldNodes[0], isA<BoldNode>());
+      expect(boldNodes, [
+        const BoldNode([TextNode('abc')]),
+      ]);
 
       // _ は italic として解析されるべき
       final italicResult = mfmParser.parse('_abc_');
       expect(italicResult is Success, isTrue);
       final italicNodes = (italicResult as Success).value as List<MfmNode>;
-      expect(italicNodes[0], isA<ItalicNode>());
+      expect(italicNodes, [
+        const ItalicNode([TextNode('abc')]),
+      ]);
     });
 
     test('boldUnderは再帰パースを行わない', () {
@@ -206,11 +181,9 @@ void main() {
       final result = mfmParser.parse('__abc def__');
       expect(result is Success, isTrue);
       final nodes = (result as Success).value as List<MfmNode>;
-      expect(nodes.length, 1);
-      expect(nodes[0], isA<BoldNode>());
-      final bold = nodes[0] as BoldNode;
-      expect(bold.children.length, 1);
-      expect((bold.children.first as TextNode).text, 'abc def');
+      expect(nodes, [
+        const BoldNode([TextNode('abc def')]),
+      ]);
     });
   });
 }
