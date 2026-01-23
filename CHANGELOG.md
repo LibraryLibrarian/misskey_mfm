@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-01-23
+
+### Changed
+- **BREAKING**: Minimum Dart SDK version raised to `^3.8.0` (from `^3.0.0`)
+- **BREAKING**: All AST classes migrated to freezed sealed class union pattern
+- **BREAKING**: Added `freezed_annotation: ^3.1.0` as a runtime dependency
+
+### Added
+- Value equality (`==` and `hashCode`) for all MfmNode types
+- `copyWith()` method for immutable updates on all nodes
+- Enhanced `toString()` output for debugging
+- Dart 3 pattern matching support with exhaustiveness checking
+
+### Removed
+- `custom_lint` dev dependency (incompatible with newer analyzer version)
+
 ## [1.0.0] - 2026-01-21
 
 ### Added

@@ -16,6 +16,7 @@ A MFM (Markup language For Misskey) parser implementation for Dart and Flutter, 
 - Simple parser for lightweight use cases (user names, basic content)
 - Full parser for complete MFM documents
 - Configurable nest depth limit (same feature as [mfm.js](https://github.com/misskey-dev/mfm.js))
+- Immutable AST nodes with value equality, `copyWith()`, and pattern matching support
 
 ## Getting started
 
@@ -111,6 +112,7 @@ dart,flutter用のMFM（Markup language For Misskey）パーサー実装。
 - 軽量なユースケース向けのシンプルパーサー（ユーザー名表示など）
 - 完全なMFMドキュメント用のフルパーサー
 - ネスト深度制限の設定が可能（[mfm.js](https://github.com/misskey-dev/mfm.js)と同じ機能）
+- 値の等価性、`copyWith()`、パターンマッチングをサポートするイミュータブルなASTノード
 
 ## インストール
 

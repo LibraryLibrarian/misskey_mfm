@@ -339,6 +339,93 @@ Text: "
 
 ---
 
+## Working with AST Nodes
+
+### Value Equality
+
+All AST nodes support value-based equality comparison, making it easy to test and compare nodes:
+
+```dart
+import 'package:misskey_mfm_parser/misskey_mfm_parser.dart';
+
+void main() {
+  final node1 = TextNode('Hello');
+  final node2 = TextNode('Hello');
+  final node3 = TextNode('World');
+
+  print(node1 == node2); // true (same content)
+  print(node1 == node3); // false (different content)
+
+  // Works with complex nodes too
+  final bold1 = BoldNode([TextNode('test')]);
+  final bold2 = BoldNode([TextNode('test')]);
+  print(bold1 == bold2); // true
+}
+```
+
+### Immutable Updates with copyWith()
+
+You can create modified copies of nodes using the `copyWith()` method:
+
+```dart
+import 'package:misskey_mfm_parser/misskey_mfm_parser.dart';
+
+void main() {
+  final mention = MentionNode(
+    username: 'alice',
+    host: 'example.com',
+    acct: 'alice@example.com',
+  );
+
+  // Create a modified copy
+  final localMention = mention.copyWith(
+    host: null,
+    acct: 'alice',
+  );
+
+  print(mention.host);      // example.com
+  print(localMention.host); // null
+  print(localMention.acct); // alice
+
+  // Works with lists too
+  final link = LinkNode(
+    url: 'https://example.com',
+    silent: false,
+    children: [TextNode('Click here')],
+  );
+
+  final silentLink = link.copyWith(silent: true);
+  print(silentLink.silent); // true
+  print(silentLink.url);    // https://example.com (unchanged)
+}
+```
+
+### Debug Output with toString()
+
+All nodes provide readable `toString()` output for debugging:
+
+```dart
+import 'package:misskey_mfm_parser/misskey_mfm_parser.dart';
+
+void main() {
+  final nodes = [
+    TextNode('Hello'),
+    BoldNode([TextNode('world')]),
+    EmojiCodeNode('wave'),
+  ];
+
+  for (final node in nodes) {
+    print(node); 
+  }
+  // Output:
+  // TextNode(text: Hello)
+  // BoldNode(children: [TextNode(text: world)])
+  // EmojiCodeNode(name: wave)
+}
+```
+
+---
+
 ## Node Types Reference
 
 | Node Type | Has Children | Description |
@@ -677,6 +764,93 @@ String _formatArgs(Map<String, dynamic> args) {
   });
   
   return '.${parts.join(",")}';
+}
+```
+
+---
+
+## ASTノードの操作
+
+### 値の等価性
+
+ASTノードは値ベースの等価性比較をサポート。ノードのテスト、比較が可能：
+
+```dart
+import 'package:misskey_mfm_parser/misskey_mfm_parser.dart';
+
+void main() {
+  final node1 = TextNode('こんにちは');
+  final node2 = TextNode('こんにちは');
+  final node3 = TextNode('さようなら');
+
+  print(node1 == node2); // true（内容が同じ）
+  print(node1 == node3); // false（内容が異なる）
+
+  // 複雑なノードでも動作します
+  final bold1 = BoldNode([TextNode('テスト')]);
+  final bold2 = BoldNode([TextNode('テスト')]);
+  print(bold1 == bold2); // true
+}
+```
+
+### copyWith() によるイミュータブルな更新
+
+`copyWith()`メソッドを使用してノードの変更されたコピーを作成可能：
+
+```dart
+import 'package:misskey_mfm_parser/misskey_mfm_parser.dart';
+
+void main() {
+  final mention = MentionNode(
+    username: 'alice',
+    host: 'example.com',
+    acct: 'alice@example.com',
+  );
+
+  // 変更されたコピーを作成
+  final localMention = mention.copyWith(
+    host: null,
+    acct: 'alice',
+  );
+
+  print(mention.host);      // example.com
+  print(localMention.host); // null
+  print(localMention.acct); // alice
+
+  // リストを持つノードでも動作します
+  final link = LinkNode(
+    url: 'https://example.com',
+    silent: false,
+    children: [TextNode('ここをクリック')],
+  );
+
+  final silentLink = link.copyWith(silent: true);
+  print(silentLink.silent); // true
+  print(silentLink.url);    // https://example.com（変更なし）
+}
+```
+
+### toString() によるデバッグ出力
+
+ノードは`toString()`出力を提供：
+
+```dart
+import 'package:misskey_mfm_parser/misskey_mfm_parser.dart';
+
+void main() {
+  final nodes = [
+    TextNode('こんにちは'),
+    BoldNode([TextNode('世界')]),
+    EmojiCodeNode('wave'),
+  ];
+
+  for (final node in nodes) {
+    print(node);
+  }
+  // 出力:
+  // TextNode(text: こんにちは)
+  // BoldNode(children: [TextNode(text: 世界)])
+  // EmojiCodeNode(name: wave)
 }
 ```
 
