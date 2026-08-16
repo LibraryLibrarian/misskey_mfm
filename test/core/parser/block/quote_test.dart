@@ -123,4 +123,79 @@ void main() {
       );
     });
   });
+
+  group('QuoteParser（mfm.js互換性）', () {
+    test('`>` の直後のタブを1文字だけ取り除く', () {
+      final result = MfmParser().build().parse('>\tfoo');
+
+      expect(result, isA<Success<List<MfmNode>>>());
+      expect(
+        (result as Success<List<MfmNode>>).value,
+        const [
+          QuoteNode([TextNode('foo')]),
+        ],
+      );
+    });
+
+    test('`>` の直後の全角スペースを1文字だけ取り除く', () {
+      final result = MfmParser().build().parse('>　foo');
+
+      expect(result, isA<Success<List<MfmNode>>>());
+      expect(
+        (result as Success<List<MfmNode>>).value,
+        const [
+          QuoteNode([TextNode('foo')]),
+        ],
+      );
+    });
+
+    test('内容が空の引用が複数行ある場合はquoteとして解析する', () {
+      final result = MfmParser().build().parse('>\n>\n>');
+
+      expect(result, isA<Success<List<MfmNode>>>());
+      expect(
+        (result as Success<List<MfmNode>>).value,
+        const [
+          QuoteNode([TextNode('\n\n')]),
+        ],
+      );
+    });
+
+    for (final input in ['>', '> ']) {
+      test('内容が空の引用1行だけはquoteとして解析しない: `$input`', () {
+        final result = MfmParser().build().parse(input);
+
+        expect(result, isA<Success<List<MfmNode>>>());
+        expect(
+          (result as Success<List<MfmNode>>).value,
+          [TextNode(input)],
+        );
+      });
+    }
+
+    test('内容がある複数行引用は引き続きquoteとして解析する', () {
+      final result = MfmParser().build().parse('> first\n> second');
+
+      expect(result, isA<Success<List<MfmNode>>>());
+      expect(
+        (result as Success<List<MfmNode>>).value,
+        const [
+          QuoteNode([TextNode('first\nsecond')]),
+        ],
+      );
+    });
+
+    test('行の途中の `>` はquoteとして解析しない', () {
+      final result = MfmParser().build().parse('**bold**> quote');
+
+      expect(result, isA<Success<List<MfmNode>>>());
+      expect(
+        (result as Success<List<MfmNode>>).value,
+        const [
+          BoldNode([TextNode('bold')]),
+          TextNode('> quote'),
+        ],
+      );
+    });
+  });
 }
