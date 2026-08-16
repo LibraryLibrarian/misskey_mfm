@@ -57,6 +57,19 @@ void main() {
       expect(hashtag!.hashtag, 'tag-name');
     });
 
+    test('CRLFの前でハッシュタグを終了する', () {
+      final result = fullParser.parse('#tag\r\nnext');
+      expect(result is Success, isTrue);
+      final nodes = (result as Success).value as List<MfmNode>;
+      expect(
+        nodes,
+        [
+          const HashtagNode('tag'),
+          const TextNode('\r\nnext'),
+        ],
+      );
+    });
+
     test('数字のみの長いタグも無効（#1234567890 → テキスト）', () {
       final result = fullParser.parse('#1234567890');
       expect(result is Success, isTrue);
