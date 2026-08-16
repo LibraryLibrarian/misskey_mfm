@@ -26,7 +26,7 @@ void main() {
       );
     });
 
-    test('引用内のitalic: "> *斜体*"', () {
+    test('引用内のASCII英数字以外を含むitalicはテキストとして扱う', () {
       final m = MfmParser().build();
       final result = m.parse('> *斜体*');
       expect(result is Success, isTrue);
@@ -36,18 +36,14 @@ void main() {
         [
           const QuoteNode(
             [
-              ItalicNode(
-                [
-                  TextNode('斜体'),
-                ],
-              ),
+              TextNode('*斜体*'),
             ],
           ),
         ],
       );
     });
 
-    test('引用内の複合: "> **太字**と*斜体*"', () {
+    test('引用内の複合: ASCII英数字以外を含むitalicはテキストになる', () {
       final m = MfmParser().build();
       final result = m.parse('> **太字**と*斜体*');
       expect(result is Success, isTrue);
@@ -62,12 +58,7 @@ void main() {
                   TextNode('太字'),
                 ],
               ),
-              TextNode('と'),
-              ItalicNode(
-                [
-                  TextNode('斜体'),
-                ],
-              ),
+              TextNode('と*斜体*'),
             ],
           ),
         ],
@@ -91,7 +82,7 @@ void main() {
       );
     });
 
-    test('複数行引用内のインライン: "> **1行目**\\n> *2行目*"', () {
+    test('複数行引用内のASCII英数字以外を含むitalicはテキストになる', () {
       final m = MfmParser().build();
       final result = m.parse('> **1行目**\n> *2行目*');
       expect(result is Success, isTrue);
@@ -106,12 +97,7 @@ void main() {
                   TextNode('1行目'),
                 ],
               ),
-              TextNode('\n'),
-              ItalicNode(
-                [
-                  TextNode('2行目'),
-                ],
-              ),
+              TextNode('\n*2行目*'),
             ],
           ),
         ],

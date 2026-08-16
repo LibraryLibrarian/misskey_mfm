@@ -59,10 +59,7 @@ class MfmParser {
     final boldTag = BoldParser().buildTagWithInner(inline, state: nestState);
     // __ は _ より先にチェックする必要がある
     final boldUnder = BoldParser().buildUnder();
-    final italicAsterisk = ItalicParser().buildWithInner(
-      inline,
-      state: nestState,
-    );
+    final italicAsterisk = ItalicParser().buildAsta();
     final italicTag = ItalicParser().buildTagWithInner(
       inline,
       state: nestState,
@@ -142,10 +139,7 @@ class MfmParser {
       labelInline,
       state: nestState,
     );
-    final labelItalicAsterisk = ItalicParser().buildWithInner(
-      labelInline,
-      state: nestState,
-    );
+    final labelItalicAsterisk = ItalicParser().buildAsta();
     final labelItalicTag = ItalicParser().buildTagWithInner(
       labelInline,
       state: nestState,
