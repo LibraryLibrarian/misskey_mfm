@@ -21,6 +21,70 @@ void main() {
       );
     });
 
+    group('mfm-js互換: 終了フェンスと言語指定', () {
+      test('本文中の4連バッククォートを終了フェンスとして扱わない', () {
+        final m = MfmParser().build();
+        final result = m.parse('```js\nfoo\n````\nbar\n```\n');
+        expect(result is Success, isTrue);
+        final nodes = (result as Success).value as List<MfmNode>;
+        expect(
+          nodes,
+          [
+            const CodeBlockNode(
+              code: 'foo\n````\nbar',
+              language: 'js',
+            ),
+          ],
+        );
+      });
+
+      test('言語指定の前後の空白を除去する', () {
+        final m = MfmParser().build();
+        final result = m.parse('```  js  \nfoo\n```');
+        expect(result is Success, isTrue);
+        final nodes = (result as Success).value as List<MfmNode>;
+        expect(
+          nodes,
+          [
+            const CodeBlockNode(
+              code: 'foo',
+              language: 'js',
+            ),
+          ],
+        );
+      });
+
+      test('空白のみの言語指定をnullとして扱う', () {
+        final m = MfmParser().build();
+        final result = m.parse('```   \nfoo\n```');
+        expect(result is Success, isTrue);
+        final nodes = (result as Success).value as List<MfmNode>;
+        expect(
+          nodes,
+          [
+            const CodeBlockNode(
+              code: 'foo',
+            ),
+          ],
+        );
+      });
+
+      test('単純なコードブロックを引き続き解析できる', () {
+        final m = MfmParser().build();
+        final result = m.parse('```\nfoo\n```');
+        expect(result is Success, isTrue);
+        final nodes = (result as Success).value as List<MfmNode>;
+        expect(
+          nodes,
+          [
+            const CodeBlockNode(
+              code: 'foo',
+            ),
+          ],
+        );
+      });
+    });
+
     group('mfm-js互換: 行頭・行末チェック', () {
       test('行の途中から始まるコードブロックは認識されない', () {
         final m = MfmParser().build();

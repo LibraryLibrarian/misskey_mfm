@@ -26,7 +26,7 @@ void main() {
       );
     });
 
-    test('引用内のitalic: "> *斜体*"', () {
+    test('引用内のASCII英数字以外を含むitalicはテキストとして扱う', () {
       final m = MfmParser().build();
       final result = m.parse('> *斜体*');
       expect(result is Success, isTrue);
@@ -36,18 +36,14 @@ void main() {
         [
           const QuoteNode(
             [
-              ItalicNode(
-                [
-                  TextNode('斜体'),
-                ],
-              ),
+              TextNode('*斜体*'),
             ],
           ),
         ],
       );
     });
 
-    test('引用内の複合: "> **太字**と*斜体*"', () {
+    test('引用内の複合: ASCII英数字以外を含むitalicはテキストになる', () {
       final m = MfmParser().build();
       final result = m.parse('> **太字**と*斜体*');
       expect(result is Success, isTrue);
@@ -62,12 +58,7 @@ void main() {
                   TextNode('太字'),
                 ],
               ),
-              TextNode('と'),
-              ItalicNode(
-                [
-                  TextNode('斜体'),
-                ],
-              ),
+              TextNode('と*斜体*'),
             ],
           ),
         ],
@@ -91,7 +82,7 @@ void main() {
       );
     });
 
-    test('複数行引用内のインライン: "> **1行目**\\n> *2行目*"', () {
+    test('複数行引用内のASCII英数字以外を含むitalicはテキストになる', () {
       final m = MfmParser().build();
       final result = m.parse('> **1行目**\n> *2行目*');
       expect(result is Success, isTrue);
@@ -106,12 +97,7 @@ void main() {
                   TextNode('1行目'),
                 ],
               ),
-              TextNode('\n'),
-              ItalicNode(
-                [
-                  TextNode('2行目'),
-                ],
-              ),
+              TextNode('\n*2行目*'),
             ],
           ),
         ],
@@ -133,6 +119,81 @@ void main() {
               TextNode('abc'),
             ],
           ),
+        ],
+      );
+    });
+  });
+
+  group('QuoteParser（mfm.js互換性）', () {
+    test('`>` の直後のタブを1文字だけ取り除く', () {
+      final result = MfmParser().build().parse('>\tfoo');
+
+      expect(result, isA<Success<List<MfmNode>>>());
+      expect(
+        (result as Success<List<MfmNode>>).value,
+        const [
+          QuoteNode([TextNode('foo')]),
+        ],
+      );
+    });
+
+    test('`>` の直後の全角スペースを1文字だけ取り除く', () {
+      final result = MfmParser().build().parse('>　foo');
+
+      expect(result, isA<Success<List<MfmNode>>>());
+      expect(
+        (result as Success<List<MfmNode>>).value,
+        const [
+          QuoteNode([TextNode('foo')]),
+        ],
+      );
+    });
+
+    test('内容が空の引用が複数行ある場合はquoteとして解析する', () {
+      final result = MfmParser().build().parse('>\n>\n>');
+
+      expect(result, isA<Success<List<MfmNode>>>());
+      expect(
+        (result as Success<List<MfmNode>>).value,
+        const [
+          QuoteNode([TextNode('\n\n')]),
+        ],
+      );
+    });
+
+    for (final input in ['>', '> ']) {
+      test('内容が空の引用1行だけはquoteとして解析しない: `$input`', () {
+        final result = MfmParser().build().parse(input);
+
+        expect(result, isA<Success<List<MfmNode>>>());
+        expect(
+          (result as Success<List<MfmNode>>).value,
+          [TextNode(input)],
+        );
+      });
+    }
+
+    test('内容がある複数行引用は引き続きquoteとして解析する', () {
+      final result = MfmParser().build().parse('> first\n> second');
+
+      expect(result, isA<Success<List<MfmNode>>>());
+      expect(
+        (result as Success<List<MfmNode>>).value,
+        const [
+          QuoteNode([TextNode('first\nsecond')]),
+        ],
+      );
+    });
+
+    test('行の途中の `>` はquoteとして解析しない', () {
+      final result = MfmParser().build().parse('**bold**> quote');
+
+      expect(result, isA<Success<List<MfmNode>>>());
+      expect(
+        (result as Success<List<MfmNode>>).value,
+        const [
+          BoldNode([TextNode('bold')]),
+          TextNode('> quote'),
         ],
       );
     });

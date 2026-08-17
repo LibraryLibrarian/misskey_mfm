@@ -93,15 +93,11 @@ void main() {
       expect(nodes, [const TextNode('plain text without formatting')]);
     });
 
-    test('不完全な斜体構文を解析できる', () {
+    test('ASCII英数字以外を含む斜体構文はテキストとして扱う', () {
       final result = parser.parse('*これは斜体**');
       expect(result is Success, isTrue);
       final nodes = (result as Success).value as List<MfmNode>;
-      // 斜体+余剰'*'テキストの2ノードになる
-      expect(nodes, [
-        const ItalicNode([TextNode('これは斜体')]),
-        const TextNode('*'),
-      ]);
+      expect(nodes, [const TextNode('*これは斜体**')]);
     });
 
     test('不完全な太字構文を解析できる', () {
@@ -112,15 +108,13 @@ void main() {
       expect(nodes, [const TextNode('**これは太字*')]);
     });
 
-    test('複雑な不完全な構文を解析できる', () {
+    test('ASCII英数字以外を含む斜体と太字を解析できる', () {
       final result = parser.parse('*斜体**太字**');
       expect(result is Success, isTrue);
       final nodes = (result as Success).value as List<MfmNode>;
-      // 斜体('斜体') + 斜体('太字') + 余剰'*' の3ノード
       expect(nodes, [
-        const ItalicNode([TextNode('斜体')]),
-        const ItalicNode([TextNode('太字')]),
-        const TextNode('*'),
+        const TextNode('*斜体'),
+        const BoldNode([TextNode('太字')]),
       ]);
     });
 
@@ -188,15 +182,14 @@ void main() {
         ]);
       });
 
-      test('斜体内の絵文字を解析できる', () {
+      test('絵文字コードを含む斜体構文はテキストとして扱う', () {
         final result = parser.parse('*Hello :wave:*');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
         expect(nodes, [
-          const ItalicNode([
-            TextNode('Hello '),
-            EmojiCodeNode('wave'),
-          ]),
+          const TextNode('*Hello '),
+          const EmojiCodeNode('wave'),
+          const TextNode('*'),
         ]);
       });
 

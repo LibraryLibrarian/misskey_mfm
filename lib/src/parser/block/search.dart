@@ -1,6 +1,7 @@
 import 'package:petitparser/petitparser.dart';
 
 import '../../ast.dart';
+import '../core/guards.dart';
 
 /// 検索ブロックパーサー
 ///
@@ -40,14 +41,17 @@ class SearchParser {
             .pick(2);
     final query = queryChar.plus().flatten();
 
+    // 先頭の改行を消費した直後が、実際の行頭であることを検証する
+    final startPart = seq2(newline.optional(), lineBegin());
+
     // seq5で型安全なシーケンスパース
     return seq5(
-      newline.optional(),
+      startPart,
       query,
       space.flatten(),
       button,
       lineEnd.optional(),
-    ).map5((leadingNewline, queryStr, spaceStr, buttonStr, trailingLineEnd) {
+    ).map5((start, queryStr, spaceStr, buttonStr, trailingLineEnd) {
       final content = '$queryStr$spaceStr$buttonStr';
       return SearchNode(query: queryStr, content: content);
     });

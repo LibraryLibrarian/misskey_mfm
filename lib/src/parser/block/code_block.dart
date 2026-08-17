@@ -24,8 +24,9 @@ class CodeBlockParser {
     // 言語指定 (改行まで)
     final langPart = (newline.not() & any()).star().flatten();
 
-    // 内容: 次の "\n```" まで
-    final content = any().starLazy(string('\n```')).flatten();
+    // 内容: 行末まで含めて正しい終了フェンスと判定できる位置まで
+    final closingFenceLine = string('\n```') & lineEnd();
+    final content = (closingFenceLine.not() & any()).star().flatten();
 
     // 開始部分を型安全にパース
     final startPart = seq4(lineBegin(), fence, langPart, newline);
@@ -40,7 +41,7 @@ class CodeBlockParser {
       endPart,
       newline.optional(),
     ).map((result) {
-      final lang = result.$2.$3;
+      final lang = result.$2.$3.trim();
       final code = result.$3;
       return CodeBlockNode(
         code: code,

@@ -38,23 +38,21 @@ class ItalicParser {
     return withPrevCharGuard(core, _allowPrev);
   }
 
-  /// 斜体ノードのパーサー（* ... *）: 再帰合成版
-  /// [state] ネスト状態（共有される）
-  Parser<MfmNode> buildWithInner(Parser<MfmNode> inline, {NestState? state}) {
-    final start = string('*');
-    final end = string('*');
-    final parser = seqOrText<MfmNode>(start, nest(inline, state: state), end)
-        .map<MfmNode>(
-          (result) {
-            return switch (result) {
-              SeqOrTextFallback(:final text) => TextNode(text),
-              SeqOrTextSuccess(:final children) => ItalicNode(
-                mergeAdjacentTextNodes(children),
-              ),
-            };
-          },
-        );
-    return withPrevCharGuard(parser, _allowPrev);
+  /// 斜体アスタリスク構文パーサー（* ... *）
+  ///
+  /// mfm-js仕様:
+  /// - 内容は `[a-z0-9 \t]` のみ許可（英数字、半角スペース、全角スペース、タブ）
+  /// - 再帰パースなし（内部のインライン構文は解釈されない）
+  Parser<MfmNode> buildAsta() {
+    final mark = string('*');
+    final inner = pattern('a-zA-Z0-9\u0020\u3000\t').plusString();
+
+    final core = seq3(mark, inner, mark).map((result) {
+      final text = result.$2;
+      return ItalicNode(mergeAdjacentTextNodes([TextNode(text)]));
+    });
+
+    return withPrevCharGuard(core, _allowPrev);
   }
 
   /// 斜体タグ（<i> ... </i>）: 基本版
@@ -94,23 +92,15 @@ class ItalicParser {
 
   /// 斜体ノードのパーサー（_ ... _）
   Parser<MfmNode> buildAlt2() {
-    final inner = any()
-        .starLazy(string('_'))
-        .flatten()
-        .map<MfmNode>(TextNode.new);
+    final mark = string('_');
+    final inner = pattern('a-zA-Z0-9\u0020\u3000\t').plusString();
 
-    final core = seq3(string('_'), inner, string('_')).map((result) {
-      final content = result.$2;
-      return ItalicNode(mergeAdjacentTextNodes([content]));
+    final core = seq3(mark, inner, mark).map((result) {
+      final text = result.$2;
+      return ItalicNode(mergeAdjacentTextNodes([TextNode(text)]));
     });
 
-    final complete = withPrevCharGuard(core, _allowPrev);
-
-    final fallback = (string('_') & any().star()).flatten().map<MfmNode>(
-      TextNode.new,
-    );
-
-    return (complete | fallback).cast<MfmNode>();
+    return withPrevCharGuard(core, _allowPrev);
   }
 
   /// 斜体またはフォールバックのパーサー（* ... *）

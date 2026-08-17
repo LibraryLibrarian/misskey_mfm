@@ -1,5 +1,6 @@
 import 'package:misskey_mfm_parser/src/ast.dart';
 import 'package:misskey_mfm_parser/src/parser/inline/italic.dart';
+import 'package:misskey_mfm_parser/src/parser/parser.dart';
 import 'package:petitparser/petitparser.dart';
 import 'package:test/test.dart';
 
@@ -87,11 +88,63 @@ void main() {
   group('ItalicParser（斜体構文: alt2 _..._）', () {
     final alt2Parser = ItalicParser().buildAlt2();
 
-    test('改行含む: _line1\nline2_', () {
+    test('改行を含む場合は解析に失敗する', () {
       final result = alt2Parser.parse('_line1\nline2_');
+      expect(result is Failure, isTrue);
+    });
+  });
+
+  group('MfmParser統合テスト（制限文字セット）', () {
+    final parser = MfmParser().build();
+
+    test('*hello, world!* はテキストとして扱う', () {
+      final result = parser.parse('*hello, world!*');
       expect(result is Success, isTrue);
-      final node = (result as Success).value as MfmNode;
-      expect(node, const ItalicNode([TextNode('line1\nline2')]));
+      expect(
+        (result as Success).value,
+        const [TextNode('*hello, world!*')],
+      );
+    });
+
+    test('_hello, world!_ はテキストとして扱う', () {
+      final result = parser.parse('_hello, world!_');
+      expect(result is Success, isTrue);
+      expect(
+        (result as Success).value,
+        const [TextNode('_hello, world!_')],
+      );
+    });
+
+    test('*line1\nline2* はテキストとして扱う', () {
+      final result = parser.parse('*line1\nline2*');
+      expect(result is Success, isTrue);
+      expect(
+        (result as Success).value,
+        const [TextNode('*line1\nline2*')],
+      );
+    });
+
+    test('*hello world* は斜体として扱う', () {
+      final result = parser.parse('*hello world*');
+      expect(result is Success, isTrue);
+      expect(
+        (result as Success).value,
+        const [
+          ItalicNode([TextNode('hello world')]),
+        ],
+      );
+    });
+
+    test('_hello_world_ は最初の範囲のみ斜体として扱う', () {
+      final result = parser.parse('_hello_world_');
+      expect(result is Success, isTrue);
+      expect(
+        (result as Success).value,
+        const [
+          ItalicNode([TextNode('hello')]),
+          TextNode('world_'),
+        ],
+      );
     });
   });
 

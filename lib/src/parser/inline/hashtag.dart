@@ -28,7 +28,7 @@ class HashtagParser {
   /// 注意:
   /// - 括弧類 () [] 「」（） はペアリング処理で個別に扱う
   /// - _ はハッシュタグ名として有効なので禁止文字には含めない
-  static final _forbiddenPattern = RegExp(r'[ \u3000\t\n.,!?\x27"#:/【】<>]');
+  static final _forbiddenPattern = RegExp(r'[ \u3000\t\r\n.,!?\x27"#:/【】<>]');
 
   /// 括弧開始文字パターン
   static final _bracketOpenPattern = RegExp(r'[(\[「（]');
