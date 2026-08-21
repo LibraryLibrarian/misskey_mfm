@@ -14,9 +14,8 @@ dependencies:
   petitparser: ^7.0.1
 dev_dependencies:
   build_runner: ^2.10.5
-  freezed: ^3.2.4
-  pedantic_mono: ^1.33.0
-  pubspec_dependency_sorter: ^1.0.5
+  freezed: ^3.2.3
+  pedantic_mono: ^1.32.0
   test: ^1.26.2
 repository: https://github.com/LibraryLibrarian/misskey_mfm_parser
 issue_tracker: https://github.com/LibraryLibrarian/misskey_mfm_parser/issues
