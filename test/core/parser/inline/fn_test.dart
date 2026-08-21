@@ -1,4 +1,5 @@
 import 'package:misskey_mfm_parser/src/ast.dart';
+import 'package:misskey_mfm_parser/src/parser/inline/fn.dart';
 import 'package:misskey_mfm_parser/src/parser/parser.dart';
 import 'package:petitparser/petitparser.dart';
 import 'package:test/test.dart';
@@ -232,11 +233,102 @@ void main() {
   group('FnParser フォールバックテスト', () {
     final parser = MfmParser().build();
 
+    group('mfm.js latestIndex semantics', () {
+      final directParser = FnParser().buildWithInner(
+        any().map<MfmNode>(TextNode.new),
+      );
+
+      void expectDirectFallback(
+        String input,
+        String expectedText,
+        int expectedPosition,
+      ) {
+        final result = directParser.parse(input);
+        expect(result, isA<Success<MfmNode>>());
+        expect((result as Success<MfmNode>).value, TextNode(expectedText));
+        expect(result.position, expectedPosition);
+      }
+
+      test(r'開始markerが失敗した場合はfallbackしない', () {
+        expect(directParser.parse('plain'), isA<Failure>());
+      });
+
+      test(r'fn name失敗時は$[までをfallbackする', () {
+        expectDirectFallback(r'$[!', r'$[', 2);
+      });
+
+      test('malformed argsはoptional開始位置へ戻してfallbackする', () {
+        expectDirectFallback(r'$[foo.', r'$[foo', 5);
+      });
+
+      test('成功済みargs後のspace失敗はargs末尾までfallbackする', () {
+        expectDirectFallback(r'$[foo.bar!', r'$[foo.bar', 9);
+      });
+
+      test('space失敗時はfn name末尾までfallbackする', () {
+        expectDirectFallback(r'$[foo!', r'$[foo', 5);
+      });
+
+      test('空contentはspace末尾までfallbackする', () {
+        expectDirectFallback(r'$[foo ]', r'$[foo ', 6);
+      });
+
+      test('closing失敗時はcontentが到達した末尾までfallbackする', () {
+        const input = r'$[foo text';
+        expectDirectFallback(input, input, input.length);
+      });
+    });
+
     test('閉じ括弧がない場合はテキストとして扱う', () {
       final result = parser.parse(r'$[shake text');
       expect(result is Success, isTrue);
       final nodes = (result as Success).value as List<MfmNode>;
       expect(nodes, [const TextNode(r'$[shake text')]);
+    });
+
+    for (final syntaxCase in const [
+      (name: 'URL', input: r'$[foo https://example.com'),
+      (name: 'mention', input: r'$[foo @alice'),
+      (name: 'hashtag', input: r'$[foo #tag'),
+      (name: 'emoji', input: r'$[foo :wave:'),
+      (name: 'bold', input: r'$[foo **bold**'),
+    ]) {
+      test('未閉じfn内の${syntaxCase.name}をNodeへ再パースしない', () {
+        final result = parser.parse(syntaxCase.input);
+        expect(result, isA<Success<List<MfmNode>>>());
+        expect((result as Success<List<MfmNode>>).value, [
+          TextNode(syntaxCase.input),
+        ]);
+      });
+    }
+
+    test('contentとして到達した改行後のboldも未閉じfn全体のTextにする', () {
+      const input = '\$[foo first\n**bold**';
+      final result = parser.parse(input);
+      expect(result, isA<Success<List<MfmNode>>>());
+      expect((result as Success<List<MfmNode>>).value, const [
+        TextNode(input),
+      ]);
+    });
+
+    test('space失敗で未到達の改行後からboldの解析を再開する', () {
+      const input = '\$[foo\n**bold**';
+      final result = parser.parse(input);
+      expect(result, isA<Success<List<MfmNode>>>());
+      expect((result as Success<List<MfmNode>>).value, const [
+        TextNode('\$[foo\n'),
+        BoldNode([TextNode('bold')]),
+      ]);
+    });
+
+    test('空contentで未到達のclosing以降からboldの解析を再開する', () {
+      const input = r'$[foo ]**bold**';
+      final result = parser.parse(input);
+      expect(result, isA<Success<List<MfmNode>>>());
+      expect((result as Success<List<MfmNode>>).value, const [
+        TextNode(r'$[foo ]'),
+        BoldNode([TextNode('bold')]),
+      ]);
     });
 
     test('スペースがない場合はテキストとして扱う', () {
