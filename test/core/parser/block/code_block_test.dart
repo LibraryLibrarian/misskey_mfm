@@ -1,4 +1,5 @@
 import 'package:misskey_mfm_parser/src/ast.dart';
+import 'package:misskey_mfm_parser/src/parser/block/code_block.dart';
 import 'package:misskey_mfm_parser/src/parser/parser.dart';
 import 'package:petitparser/petitparser.dart';
 import 'package:test/test.dart';
@@ -82,6 +83,57 @@ void main() {
             ),
           ],
         );
+      });
+    });
+
+    group('mfm-js互換: 空の本文を拒否する', () {
+      final codeBlockParser = CodeBlockParser().build();
+      final fullParser = MfmParser().build();
+
+      for (final newlineCase in const [
+        (name: 'LF', value: '\n'),
+        (name: 'CRLF', value: '\r\n'),
+        (name: 'CR', value: '\r'),
+      ]) {
+        test('${newlineCase.name}の空コードブロックは基本パーサーで失敗する', () {
+          final input = '```${newlineCase.value}${newlineCase.value}```';
+          expect(codeBlockParser.parse(input), isA<Failure>());
+        });
+
+        test('${newlineCase.name}の空コードブロックは入力全体をTextにする', () {
+          final input = '```${newlineCase.value}${newlineCase.value}```';
+          final result = fullParser.parse(input);
+          expect(result, isA<Success<List<MfmNode>>>());
+          expect((result as Success<List<MfmNode>>).value, [TextNode(input)]);
+        });
+      }
+
+      test('言語指定があっても空の本文は入力全体をTextにする', () {
+        const input = '```dart\n\n```';
+        final result = fullParser.parse(input);
+        expect(result, isA<Success<List<MfmNode>>>());
+        expect((result as Success<List<MfmNode>>).value, const [
+          TextNode(input),
+        ]);
+      });
+
+      test('空コードブロックの後でもboldを解析する', () {
+        const input = '```\n\n```\n**bold**';
+        final result = fullParser.parse(input);
+        expect(result, isA<Success<List<MfmNode>>>());
+        expect((result as Success<List<MfmNode>>).value, const [
+          TextNode('```\n\n```\n'),
+          BoldNode([TextNode('bold')]),
+        ]);
+      });
+
+      test('本文中の空行は非空コードブロックの内容として維持する', () {
+        const input = '```dart\na\n\nb\n```';
+        final result = fullParser.parse(input);
+        expect(result, isA<Success<List<MfmNode>>>());
+        expect((result as Success<List<MfmNode>>).value, const [
+          CodeBlockNode(code: 'a\n\nb', language: 'dart'),
+        ]);
       });
     });
 

@@ -24,9 +24,9 @@ class CodeBlockParser {
     // 言語指定 (改行まで)
     final langPart = (lineBreak.not() & any()).star().flatten();
 
-    // 内容: 行末まで含めて正しい終了フェンスと判定できる位置まで
+    // 内容: 1文字以上。正しい終了フェンスと判定できる位置まで
     final closingFenceLine = lineBreak & fence & lineEnd();
-    final content = (closingFenceLine.not() & any()).star().flatten();
+    final content = (closingFenceLine.not() & any()).plus().flatten();
 
     // 開始部分を型安全にパース
     final startPart = seq4(lineBegin(), fence, langPart, lineBreak);

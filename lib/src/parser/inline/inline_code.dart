@@ -5,6 +5,7 @@ import '../../ast.dart';
 /// インラインコード構文パーサー
 ///
 /// バッククォート ` で囲まれた1行のコードを解析する
+/// 内容は1文字以上必要で、連続する2つのバッククォートはテキストとして扱う
 /// 改行およびアキュートアクセント（´ U+00B4）を内容に含む場合は無効として扱う
 class InlineCodeParser {
   /// インラインコード（` ... `）の基本パーサー
@@ -12,7 +13,7 @@ class InlineCodeParser {
     final backtick = char('`');
     final notNewlineOrAcute =
         newline().not() & char('´').not() & backtick.not() & any();
-    final inner = notNewlineOrAcute.starLazy(backtick).flatten();
+    final inner = notNewlineOrAcute.plusLazy(backtick).flatten();
 
     return seq3(backtick, inner, backtick).map((result) {
       final code = result.$2;
