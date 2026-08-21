@@ -19,27 +19,27 @@ class CodeBlockParser {
   /// - 終了の ``` は行末でなければならない（lineEnd）
   Parser<MfmNode> build() {
     final fence = string('```');
-    final newline = char('\n');
+    final lineBreak = newline();
 
     // 言語指定 (改行まで)
-    final langPart = (newline.not() & any()).star().flatten();
+    final langPart = (lineBreak.not() & any()).star().flatten();
 
     // 内容: 行末まで含めて正しい終了フェンスと判定できる位置まで
-    final closingFenceLine = string('\n```') & lineEnd();
+    final closingFenceLine = lineBreak & fence & lineEnd();
     final content = (closingFenceLine.not() & any()).star().flatten();
 
     // 開始部分を型安全にパース
-    final startPart = seq4(lineBegin(), fence, langPart, newline);
+    final startPart = seq4(lineBegin(), fence, langPart, lineBreak);
 
     // 終了部分を型安全にパース
-    final endPart = seq3(string('\n'), fence, lineEnd());
+    final endPart = seq3(lineBreak, fence, lineEnd());
 
     return seq5(
-      newline.optional(),
+      lineBreak.optional(),
       startPart,
       content,
       endPart,
-      newline.optional(),
+      lineBreak.optional(),
     ).map((result) {
       final lang = result.$2.$3.trim();
       final code = result.$3;

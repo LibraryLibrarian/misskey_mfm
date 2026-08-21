@@ -190,7 +190,7 @@ class MfmParser {
         char('#') | // hashtag用
         char('[') | // link用
         char(']') | // fn終端用
-        char('\n') | // 改行（ブロック構文のため）
+        newline() | // 改行（ブロック構文のため）
         string('?[') | // silent link用
         string(r'$[') | // fn用
         string('<https://') | // urlAlt用
@@ -264,7 +264,7 @@ class MfmParser {
 
     final blocks = codeBlock | mathBlock | center | quote;
     final newlineBeforeInlineSyntax = seq2(
-      char('\n'),
+      newline(),
       inlineSyntax.and(),
     ).map<MfmNode>((result) => TextNode(result.$1));
 

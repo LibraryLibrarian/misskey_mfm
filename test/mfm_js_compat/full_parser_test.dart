@@ -295,12 +295,12 @@ void main() {
       });
 
       // mfm.js/test/parser.ts:294-302
-      test('mfm-js互換テスト: ブロックの前後にあるテキストが正しく解釈される', () {
+      test('mfm-js互換テスト: ブロック前後の境界改行を数式ブロックが消費する', () {
         final result = parser.parse('abc\n\\[math\\]\nxyz');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
         expect(nodes, [
-          const TextNode('abc\n'),
+          const TextNode('abc'),
           const MathBlockNode('math'),
           const TextNode('xyz'),
         ]);

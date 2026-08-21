@@ -29,10 +29,10 @@ class QuoteParser {
       char('>'),
       pattern(' \u3000\t').optional(),
     );
-    final endLine = char('\n');
+    final lineBreak = newline();
 
     // 1行のテキスト（改行直前まで）を文字列として取得
-    final lineText = seq2(endLine.not(), any()).star().flatten();
+    final lineText = seq2(lineBreak.not(), any()).star().flatten();
 
     // 最初の行: ">" + 空白? + テキスト
     final firstLine = seq2(startMarker, lineText).map<String>(
@@ -40,7 +40,7 @@ class QuoteParser {
     );
 
     // 続く行: "\n" + ">" + 空白? + テキスト
-    final nextLine = seq3(endLine, startMarker, lineText).map<String>(
+    final nextLine = seq3(lineBreak, startMarker, lineText).map<String>(
       (result) => result.$3,
     );
 
@@ -51,7 +51,7 @@ class QuoteParser {
 
     // 前後の改行を処理
     // 前の改行を最大2つ消費（optional）
-    final newlineOpt = char('\n').optional();
+    final newlineOpt = lineBreak.optional();
 
     // パーサー全体
     final parser = seq5(

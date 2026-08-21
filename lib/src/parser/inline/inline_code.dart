@@ -11,7 +11,7 @@ class InlineCodeParser {
   Parser<MfmNode> build() {
     final backtick = char('`');
     final notNewlineOrAcute =
-        char('\n').not() & char('´').not() & backtick.not() & any();
+        newline().not() & char('´').not() & backtick.not() & any();
     final inner = notNewlineOrAcute.starLazy(backtick).flatten();
 
     return seq3(backtick, inner, backtick).map((result) {

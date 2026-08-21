@@ -18,11 +18,11 @@ class PlainParser {
   Parser<MfmNode> build() {
     final open = string('<plain>');
     final close = string('</plain>');
-    final newline = char('\n');
+    final lineBreak = newline();
 
     // 内容: </plain>が出現するまでの任意の文字（改行も含む）
     // pick(1)で実際の文字のみ取得し、flatten()で結合
-    final content = ((newline.optional() & close).not() & any())
+    final content = ((lineBreak.optional() & close).not() & any())
         .pick(1)
         .plus()
         .flatten();
@@ -30,9 +30,9 @@ class PlainParser {
     // seq5で型安全なシーケンスパース
     return seq5(
       open,
-      newline.optional(),
+      lineBreak.optional(),
       content,
-      newline.optional(),
+      lineBreak.optional(),
       close,
     ).map5((openTag, leadingNewline, text, trailingNewline, closeTag) {
       // PlainNodeは子ノードとしてTextNodeのリストを持つ
