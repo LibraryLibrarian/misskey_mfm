@@ -10,7 +10,6 @@ environment:
   sdk: ^3.8.0
 description: A library for parsing MFM rewritten in Dart. Developed with the aim of conducting tests as expected by mfm.js and obtaining equivalent parsing results.
 dependencies:
-  emoji_regex: ^0.0.5
   freezed_annotation: ^3.1.0
   petitparser: ^7.0.1
 dev_dependencies:
