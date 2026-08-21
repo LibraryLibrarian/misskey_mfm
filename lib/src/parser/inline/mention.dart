@@ -14,10 +14,11 @@ typedef MentionRawResult = (String, String, MentionHostPart?);
 /// `@user` または `@user@host` 形式のメンションを解析
 /// mfm-js仕様:
 /// - 直前文字が `[a-zA-Z0-9]` に一致しない場合のみ有効
-/// - ユーザー名: `[A-Za-z0-9_.-]+` でマッチ後、末尾の `[.-]+` を除去
+/// - ユーザー名: `[A-Za-z0-9_.-]+` でマッチ後、localなら末尾の `[.-]+` を除去
+/// - remote usernameが `[.-]+` で終わる場合はメンション全体をテキスト化
 /// - ホスト名: `[A-Za-z0-9_.-]+` でマッチ後、末尾の `[.-]+` を除去
 /// - 先頭が `[.-]` の場合は無効
-/// - 末尾の無効文字は除去され、その部分はテキストとして扱われる
+/// - 有効なmentionの末尾から除去した文字は、後続テキストとして扱われる
 
 class MentionParser {
   /// 英数字パターン（直前文字チェック用）
@@ -99,6 +100,7 @@ class _MentionParserImpl extends Parser<MfmNode> {
     // 末尾の [.-] を除去してトリム量を計算
     var trimmedFromUsername = 0;
     var trimmedFromHost = 0;
+    var invalidMention = false;
 
     if (host != null) {
       final originalHost = host;
@@ -110,30 +112,45 @@ class _MentionParserImpl extends Parser<MfmNode> {
       }
     }
 
-    // ホストがない場合のみユーザー名末尾をトリム
-    if (host == null && hostPartRecord == null) {
-      final originalUsername = username;
-      final trimmedUsername = MentionParser.trimTrailingInvalid(username);
-      if (trimmedUsername == null) {
-        // ユーザー名が空になる場合は無効
-        return context.failure('invalid mention: empty username after trim');
+    // ユーザー名末尾の [.-] は、ホストがない場合のみ切り離せる。
+    // ホストがある場合は `@user.@host` 全体を無効なmentionとする。
+    final originalUsername = username;
+    final trimmedUsername = MentionParser.trimTrailingInvalid(username);
+    if (trimmedUsername != username) {
+      if (host == null) {
+        if (trimmedUsername == null) {
+          invalidMention = true;
+        } else {
+          trimmedFromUsername =
+              originalUsername.length - trimmedUsername.length;
+          username = trimmedUsername;
+        }
+      } else {
+        invalidMention = true;
       }
-      trimmedFromUsername = originalUsername.length - trimmedUsername.length;
-      username = trimmedUsername;
     }
 
     // 先頭が [.-] なら無効
     if (MentionParser.startsWithInvalid(username)) {
-      return context.failure('invalid mention: username starts with [.-]');
+      invalidMention = true;
     }
     if (host != null && MentionParser.startsWithInvalid(host)) {
-      return context.failure('invalid mention: host starts with [.-]');
+      invalidMention = true;
     }
 
     // ホスト部分が無効文字のみだった場合
     if (hostPartRecord != null && host == null) {
       // @user@... の形式で、ホストが無効文字のみの場合は無効
-      return context.failure('invalid mention: invalid host');
+      invalidMention = true;
+    }
+
+    // mfm.jsは、構文全体を試行できたinvalid mentionをその範囲の
+    // TEXTとして返す。内部の2つ目の `@`から別mentionになることを防ぐ。
+    if (invalidMention) {
+      return context.success(
+        TextNode(context.buffer.substring(context.position, result.position)),
+        result.position,
+      );
     }
 
     // パース位置を調整（トリムした分だけ戻す）
