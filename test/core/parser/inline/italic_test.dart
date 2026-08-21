@@ -19,8 +19,8 @@ void main() {
       final result = parser.parse('*abc');
       expect(result is Success, isTrue);
       final node = (result as Success).value as MfmNode;
-      // *で始まるが閉じタグがない場合は、*以降の内容も含めてテキストとして返される
-      expect(node, const TextNode('*abc'));
+      expect(node, const TextNode('*'));
+      expect(result.position, 1);
     });
 
     test('空の斜体タグを解析できる', () {
@@ -52,10 +52,9 @@ void main() {
     });
 
     test('閉じタグがない場合の詳細テスト', () {
-      // *で始まるが閉じタグがない場合は、*以降の内容も含めてテキストとして返される
       final testCases = [
-        ('*abc', '*abc'),
-        ('*abc def', '*abc def'),
+        ('*abc', '*'),
+        ('*abc def', '*'),
         ('*', '*'),
       ];
 
@@ -64,6 +63,7 @@ void main() {
         expect(result is Success, isTrue);
         final node = (result as Success).value as MfmNode;
         expect(node, TextNode(expected));
+        expect(result.position, 1);
       }
     });
 

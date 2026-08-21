@@ -12,7 +12,8 @@ void main() {
       final result = parser.parse('~~abc');
       expect(result is Success, isTrue);
       final node = (result as Success).value as MfmNode;
-      expect(node, const TextNode('~~abc'));
+      expect(node, const TextNode('~~'));
+      expect(result.position, 2);
     });
 
     test('空の打ち消し線タグを解析できる', () {
@@ -20,7 +21,8 @@ void main() {
       expect(result is Success, isTrue);
       final node = (result as Success).value as MfmNode;
       // 空の場合はテキストとして扱われる（内容が必須）
-      expect(node, const TextNode('~~~~'));
+      expect(node, const TextNode('~~'));
+      expect(result.position, 2);
     });
 
     test('改行を含む場合はテキストとして扱う', () {
@@ -28,7 +30,8 @@ void main() {
       expect(result is Success, isTrue);
       final node = (result as Success).value as MfmNode;
       // 改行を含む場合はパースに失敗してテキストになる
-      expect(node, const TextNode('~~line1\nline2~~'));
+      expect(node, const TextNode('~~'));
+      expect(result.position, 2);
     });
 
     test('単独の~~はテキストとして扱う', () {
@@ -40,8 +43,8 @@ void main() {
 
     test('閉じタグがない場合の詳細テスト', () {
       final testCases = [
-        ('~~abc', '~~abc'),
-        ('~~abc def', '~~abc def'),
+        ('~~abc', '~~'),
+        ('~~abc def', '~~'),
         ('~~', '~~'),
       ];
 
@@ -50,6 +53,7 @@ void main() {
         expect(result is Success, isTrue);
         final node = (result as Success).value as MfmNode;
         expect(node, TextNode(expected));
+        expect(result.position, 2);
       }
     });
 

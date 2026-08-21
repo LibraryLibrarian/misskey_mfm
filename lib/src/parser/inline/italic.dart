@@ -106,9 +106,7 @@ class ItalicParser {
   /// 斜体またはフォールバックのパーサー（* ... *）
   Parser<MfmNode> buildWithFallback() {
     final completeItalic = build();
-    final fallback = (string('*') & any().star()).flatten().map<MfmNode>(
-      TextNode.new,
-    );
+    final fallback = string('*').map<MfmNode>(TextNode.new);
     return (completeItalic | fallback).cast<MfmNode>();
   }
 }

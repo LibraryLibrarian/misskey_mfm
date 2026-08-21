@@ -89,13 +89,10 @@ class StrikeParser {
 
   /// 打ち消し線またはフォールバックのパーサー（~~ ... ~~）
   ///
-  /// 打ち消し線として解析できない場合は、先頭"~~"以降の全文字列をテキストとして扱う
+  /// 打ち消し線として解析できない場合は、先頭"~~"だけをテキストとして扱う
   Parser<MfmNode> buildWithFallback() {
     final completedStrike = build();
-
-    final fallback = (string('~~') & any().star()).flatten().map<MfmNode>(
-      TextNode.new,
-    );
+    final fallback = string('~~').map<MfmNode>(TextNode.new);
 
     return (completedStrike | fallback).cast<MfmNode>();
   }

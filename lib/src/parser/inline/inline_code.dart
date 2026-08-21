@@ -22,12 +22,10 @@ class InlineCodeParser {
 
   /// フォールバック付き
   ///
-  /// マッチしない場合、先頭の "`" 以降の全文をテキストとして返す
+  /// マッチしない場合、先頭の "`" だけをテキストとして返す
   Parser<MfmNode> buildWithFallback() {
     final complete = build();
-    final fallback = (char('`') & any().star()).flatten().map<MfmNode>(
-      TextNode.new,
-    );
+    final fallback = char('`').map<MfmNode>(TextNode.new);
     return (complete | fallback).cast<MfmNode>();
   }
 }
