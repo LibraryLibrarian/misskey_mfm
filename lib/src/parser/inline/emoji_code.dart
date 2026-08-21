@@ -8,11 +8,11 @@ import '../../ast.dart';
 /// mfm-js仕様:
 /// - 内容には `[a-z0-9_+-]i` にマッチする文字のみ使用可
 /// - 内容を空にすることはできない
-/// - 前後が英数字でないこと（行頭/行末は許可）
+/// - 閉じ `:` の直後が英数字でないこと（行末は許可）
 class EmojiCodeParser {
   /// カスタム絵文字パーサーを構築
   ///
-  /// mfm-js準拠: 前後文字チェック付き
+  /// mfm-js準拠: 閉じ `:` の後方文字チェック付き
   Parser<MfmNode> build() {
     return _EmojiCodeParserImpl();
   }
@@ -35,7 +35,7 @@ class EmojiCodeParser {
 /// カスタム絵文字パーサーの実装
 ///
 /// mfm-js仕様に準拠:
-/// - 前: 行頭または非英数字
+/// - 前: 制約なし
 /// - 後: 行末または非英数字
 class _EmojiCodeParserImpl extends Parser<MfmNode> {
   /// 英数字パターン
@@ -45,14 +45,6 @@ class _EmojiCodeParserImpl extends Parser<MfmNode> {
   Result<MfmNode> parseOn(Context context) {
     final buffer = context.buffer;
     var position = context.position;
-
-    // 前方チェック: 行頭または非英数字
-    if (position > 0) {
-      final prevChar = buffer[position - 1];
-      if (_alphanumericPattern.hasMatch(prevChar)) {
-        return context.failure('prev char is alphanumeric');
-      }
-    }
 
     // `:` で始まることを確認
     if (position >= buffer.length || buffer[position] != ':') {

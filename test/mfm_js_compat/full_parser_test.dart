@@ -295,12 +295,12 @@ void main() {
       });
 
       // mfm.js/test/parser.ts:294-302
-      test('mfm-js互換テスト: ブロックの前後にあるテキストが正しく解釈される', () {
+      test('mfm-js互換テスト: ブロック前後の境界改行を数式ブロックが消費する', () {
         final result = parser.parse('abc\n\\[math\\]\nxyz');
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
         expect(nodes, [
-          const TextNode('abc\n'),
+          const TextNode('abc'),
           const MathBlockNode('math'),
           const TextNode('xyz'),
         ]);
@@ -991,6 +991,56 @@ void main() {
           const MentionNode(username: 'abc', host: 'aaa', acct: '@abc@aaa'),
           const TextNode('-'),
         ]);
+      });
+
+      test('issue #6: remote username末尾dotはmention全体をTEXTにする', () {
+        const input = '@abc.@def';
+        final result = parser.parse(input);
+        expect(result, isA<Success<List<MfmNode>>>());
+        expect(
+          (result as Success<List<MfmNode>>).value,
+          [const TextNode(input)],
+        );
+      });
+
+      test('issue #6: invalid mentionの後ろの別mentionは解析を継続する', () {
+        const input = '@abc.@def @ghi';
+        final result = parser.parse(input);
+        expect(result, isA<Success<List<MfmNode>>>());
+        expect((result as Success<List<MfmNode>>).value, const [
+          TextNode('@abc.@def '),
+          MentionNode(username: 'ghi', acct: '@ghi'),
+        ]);
+      });
+
+      test('issue #6: invalid mentionの後ろの他構文は解析を継続する', () {
+        const input = '@abc.@def **bold**';
+        final result = parser.parse(input);
+        expect(result, isA<Success<List<MfmNode>>>());
+        expect((result as Success<List<MfmNode>>).value, const [
+          TextNode('@abc.@def '),
+          BoldNode([TextNode('bold')]),
+        ]);
+      });
+
+      test('issue #6: local username末尾dotは従来どおりtrimする', () {
+        const input = '@abc.';
+        final result = parser.parse(input);
+        expect(result, isA<Success<List<MfmNode>>>());
+        expect((result as Success<List<MfmNode>>).value, const [
+          MentionNode(username: 'abc', acct: '@abc'),
+          TextNode('.'),
+        ]);
+      });
+
+      test('issue #6: username先頭dotは全体TEXTにする', () {
+        const input = '@.abc';
+        final result = parser.parse(input);
+        expect(result, isA<Success<List<MfmNode>>>());
+        expect(
+          (result as Success<List<MfmNode>>).value,
+          [const TextNode(input)],
+        );
       });
     });
 

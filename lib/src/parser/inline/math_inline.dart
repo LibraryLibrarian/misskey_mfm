@@ -15,14 +15,14 @@ class MathInlineParser {
   Parser<MfmNode> build() {
     final open = string(r'\(');
     final close = string(r'\)');
-    final newline = char('\n');
+    final lineBreak = newline();
 
     // 数式内容: \) または改行以外の文字
     // mfm-js:
     // P.seq(
     //  P.notMatch(P.alt([close, newLine])),
     //  P.char).select(1).many(1)
-    final formulaChar = (close.not() & newline.not() & any()).pick(2);
+    final formulaChar = (close.not() & lineBreak.not() & any()).pick(2);
     final formula = formulaChar.plus().flatten();
 
     // seq3で型安全なシーケンスパース

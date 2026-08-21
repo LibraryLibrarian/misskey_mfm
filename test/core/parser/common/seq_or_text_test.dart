@@ -20,14 +20,26 @@ void main() {
       expect(success.children.first, 'abc');
     });
 
-    test('endが無い場合はSeqOrTextFallbackでテキスト', () {
+    test('innerが失敗した場合は直前の成功位置までをフォールバックする', () {
       final parser = seqOrText<String>(start, inner, end);
       final result = parser.parse('*abc');
       expect(result is Success, isTrue);
       expect(result.value, isA<SeqOrTextFallback<String>>());
 
       final fallback = result.value as SeqOrTextFallback<String>;
+      expect(fallback.text, '*');
+      expect(result.position, 1);
+    });
+
+    test('endが失敗した場合はinnerの成功位置までをフォールバックする', () {
+      final parser = seqOrText<String>(start, letter().plusString(), end);
+      final result = parser.parse('*abc!');
+      expect(result is Success, isTrue);
+      expect(result.value, isA<SeqOrTextFallback<String>>());
+
+      final fallback = result.value as SeqOrTextFallback<String>;
       expect(fallback.text, '*abc');
+      expect(result.position, 4);
     });
 
     test('switch式でパターンマッチできること', () {
@@ -47,7 +59,7 @@ void main() {
         SeqOrTextSuccess(:final children) => 'Success: ${children.join()}',
         SeqOrTextFallback(:final text) => 'Fallback: $text',
       };
-      expect(fallbackMessage, 'Fallback: *world');
+      expect(fallbackMessage, 'Fallback: *');
     });
 
     test('複数の内部要素を正しく収集できること', () {

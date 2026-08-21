@@ -1,0 +1,361 @@
+{
+  "schemaVersion": 1,
+  "compatibilityBasis": {
+    "implementation": "mfm.js",
+    "branch": "develop",
+    "commit": "61c9dd10d29a054489a346629b0bb420659aa626",
+    "expectations": "mfm.js is the default compatibility basis; approved project semantics that differ require fail-closed case-level deviation provenance. Expectations are manually reviewed, not generated blindly from parser output."
+  },
+  "cases": [
+    {
+      "name": "full-inline-leaf-variants-and-unicode-17",
+      "parser": "full",
+      "input": "hello `code` :wave: 🍋‍🟩 #tag \\(x+1\\)",
+      "expected": [
+        {"type": "text", "props": {"text": "hello "}, "children": []},
+        {"type": "inlineCode", "props": {"code": "code"}, "children": []},
+        {"type": "text", "props": {"text": " "}, "children": []},
+        {"type": "emojiCode", "props": {"name": "wave"}, "children": []},
+        {"type": "text", "props": {"text": " "}, "children": []},
+        {"type": "unicodeEmoji", "props": {"emoji": "🍋‍🟩"}, "children": []},
+        {"type": "text", "props": {"text": " "}, "children": []},
+        {"type": "hashtag", "props": {"hashtag": "tag"}, "children": []},
+        {"type": "text", "props": {"text": " "}, "children": []},
+        {"type": "mathInline", "props": {"formula": "x+1"}, "children": []}
+      ]
+    },
+    {
+      "name": "full-nested-formatting-variants",
+      "parser": "full",
+      "input": "**bold <i>italic</i>** ~~strike~~ <small>small</small>",
+      "expected": [
+        {
+          "type": "bold",
+          "props": {},
+          "children": [
+            {"type": "text", "props": {"text": "bold "}, "children": []},
+            {
+              "type": "italic",
+              "props": {},
+              "children": [
+                {"type": "text", "props": {"text": "italic"}, "children": []}
+              ]
+            }
+          ]
+        },
+        {"type": "text", "props": {"text": " "}, "children": []},
+        {
+          "type": "strike",
+          "props": {},
+          "children": [
+            {"type": "text", "props": {"text": "strike"}, "children": []}
+          ]
+        },
+        {"type": "text", "props": {"text": " "}, "children": []},
+        {
+          "type": "small",
+          "props": {},
+          "children": [
+            {"type": "text", "props": {"text": "small"}, "children": []}
+          ]
+        }
+      ]
+    },
+    {
+      "name": "full-quote-variant",
+      "parser": "full",
+      "input": "> quote",
+      "expected": [
+        {
+          "type": "quote",
+          "props": {},
+          "children": [
+            {"type": "text", "props": {"text": "quote"}, "children": []}
+          ]
+        }
+      ]
+    },
+    {
+      "name": "full-center-variant",
+      "parser": "full",
+      "input": "<center>center</center>",
+      "expected": [
+        {
+          "type": "center",
+          "props": {},
+          "children": [
+            {"type": "text", "props": {"text": "center"}, "children": []}
+          ]
+        }
+      ]
+    },
+    {
+      "name": "full-plain-variant",
+      "parser": "full",
+      "input": "<plain>**plain**</plain>",
+      "expected": [
+        {
+          "type": "plain",
+          "props": {},
+          "children": [
+            {"type": "text", "props": {"text": "**plain**"}, "children": []}
+          ]
+        }
+      ]
+    },
+    {
+      "name": "full-url-and-link-variants",
+      "parser": "full",
+      "input": "https://example.com <https://example.org/a> [**label**](https://link.example)",
+      "expected": [
+        {"type": "url", "props": {"brackets": false, "url": "https://example.com"}, "children": []},
+        {"type": "text", "props": {"text": " "}, "children": []},
+        {"type": "url", "props": {"brackets": true, "url": "https://example.org/a"}, "children": []},
+        {"type": "text", "props": {"text": " "}, "children": []},
+        {
+          "type": "link",
+          "props": {"silent": false, "url": "https://link.example"},
+          "children": [
+            {
+              "type": "bold",
+              "props": {},
+              "children": [
+                {"type": "text", "props": {"text": "label"}, "children": []}
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "full-mention-nullable-host-variants",
+      "parser": "full",
+      "input": "@alice @bob@example.com",
+      "expected": [
+        {"type": "mention", "props": {"acct": "@alice", "host": null, "username": "alice"}, "children": []},
+        {"type": "text", "props": {"text": " "}, "children": []},
+        {"type": "mention", "props": {"acct": "@bob@example.com", "host": "example.com", "username": "bob"}, "children": []}
+      ]
+    },
+    {
+      "name": "full-fn-sorted-args-and-nested-child",
+      "parser": "full",
+      "input": "$[spin.speed=2s,left **move**]",
+      "expected": [
+        {
+          "type": "fn",
+          "props": {"args": {"left": true, "speed": "2s"}, "name": "spin"},
+          "children": [
+            {
+              "type": "bold",
+              "props": {},
+              "children": [
+                {"type": "text", "props": {"text": "move"}, "children": []}
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "full-code-block-null-language",
+      "parser": "full",
+      "input": "```\ncode\n```",
+      "expected": [
+        {"type": "codeBlock", "props": {"code": "code", "language": null}, "children": []}
+      ]
+    },
+    {
+      "name": "full-code-block-language-and-internal-newline",
+      "parser": "full",
+      "input": "```dart\nline1\nline2\n```",
+      "expected": [
+        {"type": "codeBlock", "props": {"code": "line1\nline2", "language": "dart"}, "children": []}
+      ]
+    },
+    {
+      "name": "full-math-block-variant",
+      "parser": "full",
+      "input": "\\[\nx+1\n\\]",
+      "expected": [
+        {"type": "mathBlock", "props": {"formula": "x+1"}, "children": []}
+      ]
+    },
+    {
+      "name": "full-search-variant",
+      "parser": "full",
+      "input": "MFM 書き方 123 Search",
+      "expected": [
+        {"type": "search", "props": {"content": "MFM 書き方 123 Search", "query": "MFM 書き方 123"}, "children": []}
+      ]
+    },
+    {
+      "name": "simple-parser-mode",
+      "parser": "simple",
+      "input": "hello 🍋‍🟩 :wave: **text**",
+      "expected": [
+        {"type": "text", "props": {"text": "hello "}, "children": []},
+        {"type": "unicodeEmoji", "props": {"emoji": "🍋‍🟩"}, "children": []},
+        {"type": "text", "props": {"text": " "}, "children": []},
+        {"type": "emojiCode", "props": {"name": "wave"}, "children": []},
+        {"type": "text", "props": {"text": " **text**"}, "children": []}
+      ]
+    },
+    {
+      "name": "issue-2-unclosed-inline-code-keeps-following-bold",
+      "parser": "full",
+      "input": "don't use ` here **bold**",
+      "expected": [
+        {"type": "text", "props": {"text": "don't use ` here "}, "children": []},
+        {
+          "type": "bold",
+          "props": {},
+          "children": [
+            {"type": "text", "props": {"text": "bold"}, "children": []}
+          ]
+        }
+      ]
+    },
+    {
+      "name": "issue-3-second-line-inline-wins-over-search",
+      "parser": "full",
+      "input": "before\n**bold** search\nafter",
+      "deviation": {
+        "issue": 3,
+        "rationale": "Project-approved search priority preserves inline syntax at the start of a later line; mfm.js 61c9dd10 parses that line as Search."
+      },
+      "expected": [
+        {"type": "text", "props": {"text": "before\n"}, "children": []},
+        {
+          "type": "bold",
+          "props": {},
+          "children": [
+            {"type": "text", "props": {"text": "bold"}, "children": []}
+          ]
+        },
+        {"type": "text", "props": {"text": " search\nafter"}, "children": []}
+      ]
+    },
+    {
+      "name": "issue-7-crlf-code-block-boundaries",
+      "parser": "full",
+      "input": "```\r\ncode\r\n```",
+      "expected": [
+        {"type": "codeBlock", "props": {"code": "code", "language": null}, "children": []}
+      ]
+    },
+    {
+      "name": "issue-7-cr-quote-normalizes-newline",
+      "parser": "full",
+      "input": "> abc\r> def",
+      "expected": [
+        {
+          "type": "quote",
+          "props": {},
+          "children": [
+            {"type": "text", "props": {"text": "abc\ndef"}, "children": []}
+          ]
+        }
+      ]
+    },
+    {
+      "name": "issue-10-empty-inline-code-is-text",
+      "parser": "full",
+      "input": "``**bold**",
+      "expected": [
+        {"type": "text", "props": {"text": "``"}, "children": []},
+        {
+          "type": "bold",
+          "props": {},
+          "children": [
+            {"type": "text", "props": {"text": "bold"}, "children": []}
+          ]
+        }
+      ]
+    },
+    {
+      "name": "issue-10-empty-code-block-is-text",
+      "parser": "full",
+      "input": "```\n\n```",
+      "expected": [
+        {"type": "text", "props": {"text": "```\n\n```"}, "children": []}
+      ]
+    },
+    {
+      "name": "issue-12-unclosed-fn-keeps-inner-url-as-text",
+      "parser": "full",
+      "input": "$[foo https://example.com",
+      "expected": [
+        {"type": "text", "props": {"text": "$[foo https://example.com"}, "children": []}
+      ]
+    },
+    {
+      "name": "issue-9-emoji-code-after-alphanumeric-full",
+      "parser": "full",
+      "input": "abc:foo:",
+      "expected": [
+        {"type": "text", "props": {"text": "abc"}, "children": []},
+        {"type": "emojiCode", "props": {"name": "foo"}, "children": []}
+      ]
+    },
+    {
+      "name": "issue-9-emoji-code-after-alphanumeric-simple",
+      "parser": "simple",
+      "input": "hello:smile:",
+      "expected": [
+        {"type": "text", "props": {"text": "hello"}, "children": []},
+        {"type": "emojiCode", "props": {"name": "smile"}, "children": []}
+      ]
+    },
+    {
+      "name": "issue-11-consecutive-unicode-17-sequences",
+      "parser": "full",
+      "input": "🍋‍🟩🫩🫆",
+      "expected": [
+        {"type": "unicodeEmoji", "props": {"emoji": "🍋‍🟩"}, "children": []},
+        {"type": "unicodeEmoji", "props": {"emoji": "🫩"}, "children": []},
+        {"type": "unicodeEmoji", "props": {"emoji": "🫆"}, "children": []}
+      ]
+    },
+    {
+      "name": "issue-6-invalid-remote-mention-keeps-following-bold",
+      "parser": "full",
+      "input": "@abc.@def **bold**",
+      "expected": [
+        {"type": "text", "props": {"text": "@abc.@def "}, "children": []},
+        {
+          "type": "bold",
+          "props": {},
+          "children": [
+            {"type": "text", "props": {"text": "bold"}, "children": []}
+          ]
+        }
+      ]
+    },
+    {
+      "name": "issue-13-fullwidth-space-terminates-bracket-url",
+      "parser": "full",
+      "input": "<https://example.com/　a>",
+      "expected": [
+        {"type": "text", "props": {"text": "<"}, "children": []},
+        {"type": "url", "props": {"brackets": false, "url": "https://example.com/"}, "children": []},
+        {"type": "text", "props": {"text": "　a>"}, "children": []}
+      ]
+    },
+    {
+      "name": "issue-13-link-label-obeys-nest-limit",
+      "parser": "full",
+      "nestLimit": 1,
+      "input": "[**Bold Link**](https://example.com)",
+      "expected": [
+        {
+          "type": "link",
+          "props": {"silent": false, "url": "https://example.com"},
+          "children": [
+            {"type": "text", "props": {"text": "**Bold Link**"}, "children": []}
+          ]
+        }
+      ]
+    }
+  ]
+}

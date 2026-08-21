@@ -12,7 +12,8 @@ void main() {
       final result = parser.parse('***abc');
       expect(result is Success, isTrue);
       final node = (result as Success).value as MfmNode;
-      expect(node, const TextNode('***abc'));
+      expect(node, const TextNode('***'));
+      expect(result.position, 3);
     });
 
     test('空のbig構文を解析できる', () {

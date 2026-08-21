@@ -77,13 +77,10 @@ class BoldParser {
 
   /// 太字またはフォールバックのパーサー（** ... **）
   ///
-  /// 太字として解析できない場合は、先頭"**"以降の全文字列をテキストとして扱う
+  /// 太字として解析できない場合は、先頭"**"だけをテキストとして扱う
   Parser<MfmNode> buildWithFallback() {
     final completeBold = build();
-
-    final fallback = (string('**') & any().star()).flatten().map<MfmNode>(
-      TextNode.new,
-    );
+    final fallback = string('**').map<MfmNode>(TextNode.new);
 
     return (completeBold | fallback).cast<MfmNode>();
   }

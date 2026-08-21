@@ -15,7 +15,7 @@ import '../core/guards.dart';
 class SearchParser {
   /// 検索ブロックパーサー
   Parser<MfmNode> build() {
-    final newline = char('\n');
+    final lineBreak = newline();
     // スペース（半角・全角・タブ）
     final space = pattern(' \u3000\t');
 
@@ -31,18 +31,18 @@ class SearchParser {
     final button = buttonBracket | buttonNoBracket;
 
     // 行末判定
-    final lineEnd = newline.not() & endOfInput() | newline;
+    final lineEnd = lineBreak.not() & endOfInput() | lineBreak;
 
     // クエリ部分: 改行またはスペース+ボタン+行末が出現するまでの文字列
     final queryChar =
-        (newline.not() &
-                (space & button & (newline | endOfInput())).not() &
+        (lineBreak.not() &
+                (space & button & (lineBreak | endOfInput())).not() &
                 any())
             .pick(2);
     final query = queryChar.plus().flatten();
 
     // 先頭の改行を消費した直後が、実際の行頭であることを検証する
-    final startPart = seq2(newline.optional(), lineBegin());
+    final startPart = seq2(lineBreak.optional(), lineBegin());
 
     // seq5で型安全なシーケンスパース
     return seq5(

@@ -1,7 +1,7 @@
-import 'package:emoji_regex/emoji_regex.dart' as emoji_regex;
 import 'package:petitparser/petitparser.dart';
 
 import '../../ast.dart';
+import 'generated/unicode_emoji_regex.dart';
 
 /// Unicode絵文字パーサー
 ///
@@ -10,10 +10,15 @@ import '../../ast.dart';
 /// - Unicodeの絵文字シーケンスを認識
 /// - 肌色修飾子、ZWJ結合絵文字、国旗なども対応
 ///
-/// emoji_regexパッケージを使用（npm emoji-regex v10.2.1ベース）
+/// Unicode 17.0のRGI emoji sequenceから生成した正規表現を使用。
 class UnicodeEmojiParser {
-  /// emoji_regexパッケージから取得した正規表現
-  static final RegExp _emojiRegex = emoji_regex.emojiRegex();
+  /// Unicode 17.0のemoji-test dataから生成した正規表現。
+  ///
+  /// 出典と再生成手順は生成ファイルのヘッダーを参照。
+  static final RegExp _emojiRegex = RegExp(
+    unicodeEmojiRegexPattern,
+    unicode: true,
+  );
 
   /// Unicode絵文字パーサーを構築
   Parser<MfmNode> build() {
