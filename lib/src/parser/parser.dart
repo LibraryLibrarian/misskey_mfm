@@ -222,34 +222,35 @@ class MfmParser {
         .flatten()
         .map(TextNode.new);
     final oneChar = any().map(TextNode.new);
-    inline.set(
-      (inlineCode |
-              unicodeEmoji |
-              emojiCode |
-              mention |
-              hashtag |
-              fn | // $[name content] 形式
-              urlAlt | // <https://...> 形式（HTMLタグより前）
-              plainTag | // <plain>...</plain> 形式
-              smallTag |
-              strikeTag |
-              boldTag |
-              italicTag |
-              strike |
-              big | // *** は ** より先にチェック
-              bold |
-              boldUnder | // __ は _ より先にチェック
-              italicAlt2 |
-              italicAsterisk |
-              mathInline | // \(...\) 形式
-              link | // [label](url) 形式
-              url | // https://... 形式
-              textParser |
-              oneChar)
-          .cast<MfmNode>(),
-    );
+    final inlineSyntax =
+        (inlineCode |
+                unicodeEmoji |
+                emojiCode |
+                mention |
+                hashtag |
+                fn | // $[name content] 形式
+                urlAlt | // <https://...> 形式（HTMLタグより前）
+                plainTag | // <plain>...</plain> 形式
+                smallTag |
+                strikeTag |
+                boldTag |
+                italicTag |
+                strike |
+                big | // *** は ** より先にチェック
+                bold |
+                boldUnder | // __ は _ より先にチェック
+                italicAlt2 |
+                italicAsterisk |
+                mathInline | // \(...\) 形式
+                link | // [label](url) 形式
+                url) // https://... 形式
+            .cast<MfmNode>();
+    final inlineText = (textParser | oneChar).cast<MfmNode>();
 
-    // blocks: code block > math block > center > quote > search
+    // ネスト内では従来どおり、構文に続けて通常テキストを解析する。
+    inline.set((inlineSyntax | inlineText).cast<MfmNode>());
+
+    // blocks: code block > math block > center > quote
     final codeBlock = CodeBlockParser().build();
     final mathBlock = MathBlockParser().build();
     final center = CenterParser().buildWithInner(inline, state: nestState);
@@ -261,10 +262,21 @@ class MfmParser {
     // mfm-js互換: quoteはfullParser（blocks + inline）を内部でパース
     final quote = QuoteParser().buildWithInner(full, state: nestState);
 
-    final blocks = codeBlock | mathBlock | center | quote | search;
+    final blocks = codeBlock | mathBlock | center | quote;
+    final newlineBeforeInlineSyntax = seq2(
+      char('\n'),
+      inlineSyntax.and(),
+    ).map<MfmNode>((result) => TextNode(result.$1));
 
-    // fullをblocks | inlineに設定（循環参照を解決）
-    full.set((blocks | inline).cast<MfmNode>());
+    // fullを設定してquoteからの循環参照を解決
+    // mfm.js互換: インライン構文をsearchより先に試し、通常テキストは
+    // searchより後にする。inline全体を先にするとtextParserがsearchを奪う。
+    // searchは先頭の改行も消費できるため、次行がインライン構文で始まる場合は
+    // 改行だけを先にテキスト化し、次の反復でinlineSyntaxを優先する。
+    full.set(
+      (blocks | inlineSyntax | newlineBeforeInlineSyntax | search | inlineText)
+          .cast<MfmNode>(),
+    );
 
     final start = full.plus().map(mergeAdjacentTextNodes).end();
 
