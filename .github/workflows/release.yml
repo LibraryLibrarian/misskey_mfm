@@ -1,0 +1,57 @@
+name: Prepare Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'リリースするバージョン（例: 1.2.0 / 1.2.0-beta.1）'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/create-github-app-token@v2
+        id: app-token
+        with:
+          app-id: ${{ vars.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+
+      - uses: actions/checkout@v7
+        with:
+          ref: develop
+          token: ${{ steps.app-token.outputs.token }}
+
+      - uses: dart-lang/setup-dart@v1
+
+      - name: Bump version
+        env:
+          TZ: Asia/Tokyo
+          VERSION: ${{ inputs.version }}
+        run: dart run tool/bump_version.dart "$VERSION"
+
+      - name: Create release branch
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git switch -c "release/$VERSION"
+          git commit -am "chore(release): $VERSION"
+          git push -u origin "release/$VERSION"
+
+      - name: Open pull request
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          gh pr create \
+            --base main \
+            --head "release/$VERSION" \
+            --title "release: $VERSION" \
+            --body "\`tool/bump_version.dart\` による自動生成。マージすると \`v$VERSION\` タグが作成され、pub.devへの公開とGitHub Release作成まで自動実行される。"
