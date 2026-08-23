@@ -15,7 +15,7 @@ class StrikeParser {
   Parser<MfmNode> build() {
     final mark = string('~~');
     // `~` と改行以外の文字のみ許可
-    final inner = (mark.not() & char('~').not() & char('\n').not() & any())
+    final inner = (mark.not() & char('~').not() & newline().not() & any())
         .pick(3)
         .plus()
         .flatten()
@@ -34,7 +34,7 @@ class StrikeParser {
   Parser<MfmNode> buildWithInner(Parser<MfmNode> inline, {NestState? state}) {
     final mark = string('~~');
     // `~~` と改行以外を許可
-    final stopCondition = mark | char('\n');
+    final stopCondition = mark | newline();
     final inner = (stopCondition.not() & nest(inline, state: state))
         .pick(1)
         .cast<MfmNode>();
@@ -89,13 +89,10 @@ class StrikeParser {
 
   /// 打ち消し線またはフォールバックのパーサー（~~ ... ~~）
   ///
-  /// 打ち消し線として解析できない場合は、先頭"~~"以降の全文字列をテキストとして扱う
+  /// 打ち消し線として解析できない場合は、先頭"~~"だけをテキストとして扱う
   Parser<MfmNode> buildWithFallback() {
     final completedStrike = build();
-
-    final fallback = (string('~~') & any().star()).flatten().map<MfmNode>(
-      TextNode.new,
-    );
+    final fallback = string('~~').map<MfmNode>(TextNode.new);
 
     return (completedStrike | fallback).cast<MfmNode>();
   }

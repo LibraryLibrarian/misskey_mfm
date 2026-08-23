@@ -61,7 +61,7 @@ class FnParser {
   /// fnパーサー（再帰インライン対応版）
   ///
   /// `$[name.args content]` 形式を解析し、FnNodeを生成
-  /// パースに失敗した場合は `$[` をテキストとしてフォールバック
+  /// パースに失敗した場合は最後に成功した構文要素までをテキストとしてフォールバック
   /// [state] ネスト状態（共有される）
   Parser<MfmNode> buildWithInner(Parser<MfmNode> inline, {NestState? state}) {
     final start = string(r'$[');
@@ -73,28 +73,105 @@ class FnParser {
       nest(inline, state: state),
     ).map((result) => result.$2).plus();
 
-    // 正常系: $[ + name + args? + space + content + ]
-    final complete =
-        seq2(
-          seq2(
-            seq2(start, _fnName),
-            seq2(_argsParser.optional(), char(' ')),
-          ),
-          seq2(content, fnEnd),
-        ).map<MfmNode>((result) {
-          final name = result.$1.$1.$2;
-          final argsMap = result.$1.$2.$1 ?? <String, dynamic>{};
-          final children = result.$2.$1;
-          return FnNode(
-            name: name,
-            args: argsMap,
-            children: mergeAdjacentTextNodes(children),
-          );
-        });
-
-    // フォールバック: $[ のみをテキストとして返す
-    final fallback = start.map<MfmNode>(TextNode.new);
-
-    return (complete | fallback).cast<MfmNode>();
+    return _FnSequenceParser(
+      start,
+      _fnName,
+      _argsParser.optional(),
+      char(' '),
+      content,
+      fnEnd,
+    );
   }
+}
+
+/// mfm.jsの`seqOrText`と同じlatestIndex semanticsをfnの6要素へ適用する。
+///
+/// 各要素が成功した時点だけ消費位置を確定し、次の要素が失敗した場合は
+/// fn開始位置から最後に確定した位置までを単一のTextNodeとして返す。
+final class _FnSequenceParser extends Parser<MfmNode> {
+  _FnSequenceParser(
+    this.start,
+    this.name,
+    this.args,
+    this.space,
+    this.content,
+    this.end,
+  );
+
+  Parser<String> start;
+  Parser<String> name;
+  Parser<Map<String, dynamic>?> args;
+  Parser<String> space;
+  Parser<List<MfmNode>> content;
+  Parser<String> end;
+
+  @override
+  Result<MfmNode> parseOn(Context context) {
+    final startResult = start.parseOn(context);
+    if (startResult is Failure) return startResult;
+
+    final nameResult = name.parseOn(startResult);
+    if (nameResult is Failure) {
+      return _fallback(context, startResult.position, nameResult);
+    }
+
+    final argsResult = args.parseOn(nameResult);
+    if (argsResult is Failure) {
+      return _fallback(context, nameResult.position, argsResult);
+    }
+
+    final spaceResult = space.parseOn(argsResult);
+    if (spaceResult is Failure) {
+      return _fallback(context, argsResult.position, spaceResult);
+    }
+
+    final contentResult = content.parseOn(spaceResult);
+    if (contentResult is Failure) {
+      return _fallback(context, spaceResult.position, contentResult);
+    }
+
+    final endResult = end.parseOn(contentResult);
+    if (endResult is Failure) {
+      return _fallback(context, contentResult.position, endResult);
+    }
+
+    return endResult.success<MfmNode>(
+      FnNode(
+        name: nameResult.value,
+        args: argsResult.value ?? <String, dynamic>{},
+        children: mergeAdjacentTextNodes(contentResult.value),
+      ),
+    );
+  }
+
+  Result<MfmNode> _fallback(
+    Context context,
+    int latestPosition,
+    Failure failure,
+  ) {
+    if (latestPosition == context.position) return failure;
+
+    return context.success<MfmNode>(
+      TextNode(context.buffer.substring(context.position, latestPosition)),
+      latestPosition,
+    );
+  }
+
+  @override
+  List<Parser> get children => [start, name, args, space, content, end];
+
+  @override
+  void replace(Parser source, Parser target) {
+    super.replace(source, target);
+    if (start == source) start = target as Parser<String>;
+    if (name == source) name = target as Parser<String>;
+    if (args == source) args = target as Parser<Map<String, dynamic>?>;
+    if (space == source) space = target as Parser<String>;
+    if (content == source) content = target as Parser<List<MfmNode>>;
+    if (end == source) end = target as Parser<String>;
+  }
+
+  @override
+  Parser<MfmNode> copy() =>
+      _FnSequenceParser(start, name, args, space, content, end);
 }

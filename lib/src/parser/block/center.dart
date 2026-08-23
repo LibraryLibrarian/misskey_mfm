@@ -16,23 +16,29 @@ import '../core/nest.dart';
 class CenterParser {
   /// center タグ（基本版）
   Parser<MfmNode> build() {
-    final newline = char('\n');
+    final lineBreak = newline();
     final start = string('<center>');
     final end = string('</center>');
-    final inner = (end.not() & any()).plus().flatten().map<MfmNode>(
-      TextNode.new,
-    );
+    final inner = ((lineBreak.optional() & end).not() & any())
+        .pick(1)
+        .plus()
+        .flatten()
+        .map<MfmNode>(TextNode.new);
 
     // mfm-js仕様: 行頭/行末チェック、前後の改行消費
-    return seq5(
-      newline.optional(), // 開始前の改行を消費
-      seq2(lineBegin(), start), // 行頭チェック + <center>
-      inner,
-      seq2(end, lineEnd()), // </center> + 行末チェック
-      newline.optional(), // 終了後の改行を消費
-    ).map((result) {
-      return CenterNode(mergeAdjacentTextNodes([result.$3]));
-    });
+    return (lineBreak.optional() &
+            lineBegin() &
+            start &
+            lineBreak.optional() &
+            inner &
+            lineBreak.optional() &
+            end &
+            lineEnd() &
+            lineBreak.optional())
+        .map<MfmNode>((result) {
+          final content = result[4] as MfmNode;
+          return CenterNode(mergeAdjacentTextNodes([content]));
+        });
   }
 
   /// center タグ（再帰合成版）
@@ -44,12 +50,12 @@ class CenterParser {
   /// - 開始タグ前/終了タグ後の改行はブロック構文として消費される
   /// - 開始タグ直後/終了タグ直前の改行はトリミングされる
   Parser<MfmNode> buildWithInner(Parser<MfmNode> inline, {NestState? state}) {
-    final newline = char('\n');
+    final lineBreak = newline();
     final start = string('<center>');
     final end = string('</center>');
 
     // 開始タグ直後の改行を削除
-    final optionalNewlineAfterStart = newline.optional();
+    final optionalNewlineAfterStart = lineBreak.optional();
 
     // 内容: 終了タグが出現するまでのインラインノード
     // mfm-js:
@@ -59,17 +65,17 @@ class CenterParser {
     //    ), nest(r.inline)
     //   ).select(1).many(1)
     final innerList = seq2(
-      (newline.optional() & end).not(),
+      (lineBreak.optional() & end).not(),
       nest(inline, state: state),
     ).map((r) => r.$2).plus();
 
     // 終了タグ直前の改行チェック
-    final optionalNewlineBeforeEnd = newline.optional();
+    final optionalNewlineBeforeEnd = lineBreak.optional();
 
     // mfm-js仕様に基づくパーサー構造:
     // [改行?, 行頭, <center>, 改行?, 内容, 改行?, </center>, 行末, 改行?]
     final parser =
-        (newline.optional() &
+        (lineBreak.optional() &
                 lineBegin() &
                 start &
                 optionalNewlineAfterStart &
@@ -77,7 +83,7 @@ class CenterParser {
                 optionalNewlineBeforeEnd &
                 end &
                 lineEnd() &
-                newline.optional())
+                lineBreak.optional())
             .map<MfmNode>((result) {
               final children = result[4] as List<MfmNode>;
               return CenterNode(mergeAdjacentTextNodes(children));

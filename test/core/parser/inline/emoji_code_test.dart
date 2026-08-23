@@ -49,6 +49,30 @@ void main() {
       final result = parser.parse(':emoji name:');
       expect(result is Failure, isTrue);
     });
+
+    test('非0位置で直前が英数字でも解析し、終了位置を返す', () {
+      const input = 'abc:foo: tail';
+      final result = parser.parseOn(const Context(input, 3));
+      expect(result, isA<Success<MfmNode>>());
+      expect((result as Success<MfmNode>).value, const EmojiCodeNode('foo'));
+      expect(result.position, 8);
+    });
+
+    test('非0位置でも閉じcolon直後が英数字なら開始位置で失敗する', () {
+      const input = 'abc:foo:x';
+      final result = parser.parseOn(const Context(input, 3));
+      expect(result, isA<Failure>());
+      expect(result.position, 3);
+    });
+
+    test('大文字とplus・minus・underscoreを含む名前を解析できる', () {
+      final result = parser.parse(':UPPER_+1-:');
+      expect(result, isA<Success<MfmNode>>());
+      expect(
+        (result as Success<MfmNode>).value,
+        const EmojiCodeNode('UPPER_+1-'),
+      );
+    });
   });
 
   group('EmojiCodeParser（フォールバック付き）', () {
@@ -111,9 +135,28 @@ void main() {
     });
   });
 
-  // mfm-js準拠テスト（前後文字チェック）
-  group('EmojiCodeParser（mfm-js準拠 - 前後文字チェック）', () {
+  // mfm-js準拠テスト（開始前は制約なし、閉じcolon後だけ英数字を拒否）
+  group('EmojiCodeParser（mfm-js準拠 - 後方文字チェック）', () {
     final parser = MfmParser().build();
+    final simpleParser = MfmParser().buildSimple();
+
+    test('英数字直後のemoji codeをfull parserで解析する', () {
+      final result = parser.parse('abc:foo:');
+      expect(result, isA<Success<List<MfmNode>>>());
+      expect((result as Success<List<MfmNode>>).value, const [
+        TextNode('abc'),
+        EmojiCodeNode('foo'),
+      ]);
+    });
+
+    test('英数字直後のemoji codeをsimple parserでも解析する', () {
+      final result = simpleParser.parse('hello:smile:');
+      expect(result, isA<Success<List<MfmNode>>>());
+      expect((result as Success<List<MfmNode>>).value, const [
+        TextNode('hello'),
+        EmojiCodeNode('smile'),
+      ]);
+    });
 
     test('英数字に囲まれた絵文字コードは無効（foo:bar:baz）', () {
       // mfm-js: foo:bar:baz → TEXT('foo:bar:baz')
@@ -173,13 +216,12 @@ void main() {
       ]);
     });
 
-    test('前が英数字、後が非英数字の場合は無効', () {
-      // foo:bar: → TEXT('foo:bar:')
+    test('前が英数字でも後が非英数字なら有効', () {
+      // mfm-js: foo:bar: → TEXT('foo'), EMOJI_CODE('bar')
       final result = parser.parse('foo:bar:');
       expect(result is Success, isTrue);
       final nodes = (result as Success).value as List<MfmNode>;
-      // 前が英数字なのでマッチしない
-      expect(nodes, [const TextNode('foo:bar:')]);
+      expect(nodes, [const TextNode('foo'), const EmojiCodeNode('bar')]);
     });
 
     test('前が非英数字、後が英数字の場合は無効', () {
@@ -211,6 +253,33 @@ void main() {
         const TextNode('text\n'),
         const EmojiCodeNode('emoji'),
         const TextNode('\nmore'),
+      ]);
+    });
+
+    test('URLのschemeとportはfull parserでURLのまま維持する', () {
+      const input = 'https://example.com:8080/path';
+      final result = parser.parse(input);
+      expect(result, isA<Success<List<MfmNode>>>());
+      expect((result as Success<List<MfmNode>>).value, const [
+        UrlNode(url: input),
+      ]);
+    });
+
+    test('URLのschemeとportはsimple parserでTextのまま維持する', () {
+      const input = 'https://example.com:8080/path';
+      final result = simpleParser.parse(input);
+      expect(result, isA<Success<List<MfmNode>>>());
+      expect((result as Success<List<MfmNode>>).value, const [
+        TextNode(input),
+      ]);
+    });
+
+    test('closing colonのない通常文はTextのまま維持する', () {
+      const input = 'key:value and ratio 16:9';
+      final result = parser.parse(input);
+      expect(result, isA<Success<List<MfmNode>>>());
+      expect((result as Success<List<MfmNode>>).value, const [
+        TextNode(input),
       ]);
     });
   });

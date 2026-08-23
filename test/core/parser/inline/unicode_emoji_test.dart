@@ -5,8 +5,30 @@ import 'package:petitparser/petitparser.dart';
 import 'package:test/test.dart';
 
 void main() {
+  const unicode17Emoji = <String, String>{
+    'lime': '🍋‍🟩',
+    'head shaking horizontally': '🙂‍↔️',
+    'broken chain': '⛓️‍💥',
+    'phoenix': '🐦‍🔥',
+    'face with bags under eyes': '🫩',
+    'leafless tree': '🪾',
+    'fingerprint': '🫆',
+  };
+
   group('UnicodeEmojiParser（Unicode絵文字）', () {
     final parser = UnicodeEmojiParser().build();
+
+    for (final entry in unicode17Emoji.entries) {
+      test('Unicode 17.0: ${entry.key}を1ノード分だけ解析できる', () {
+        final result = parser.parse(entry.value);
+        expect(result, isA<Success<MfmNode>>());
+        expect(
+          (result as Success<MfmNode>).value,
+          UnicodeEmojiNode(entry.value),
+        );
+        expect(result.position, entry.value.length);
+      });
+    }
 
     test('ハンドサインの絵文字を解析できる', () {
       final result = parser.parse('👍');
@@ -50,6 +72,54 @@ void main() {
       expect(node, const UnicodeEmojiNode('👨‍💻'));
     });
 
+    test('keycap sequenceを1ノード分だけ解析できる', () {
+      const emoji = '#️⃣';
+      final result = parser.parse(emoji);
+      expect(result, isA<Success<MfmNode>>());
+      expect((result as Success<MfmNode>).value, const UnicodeEmojiNode(emoji));
+      expect(result.position, emoji.length);
+    });
+
+    test('subdivision flag tag sequenceを1ノード分だけ解析できる', () {
+      const emoji =
+          '\u{1F3F4}\u{E0067}\u{E0062}\u{E0065}\u{E006E}\u{E0067}\u{E007F}';
+      final result = parser.parse(emoji);
+      expect(result, isA<Success<MfmNode>>());
+      expect((result as Success<MfmNode>).value, const UnicodeEmojiNode(emoji));
+      expect(result.position, emoji.length);
+    });
+
+    test('非0位置から最長のZWJ sequenceに一致し終了位置を返す', () {
+      const emoji = '🐦‍🔥';
+      const input = 'a${emoji}z';
+      final result = parser.parseOn(const Context(input, 1));
+      expect(result, isA<Success<MfmNode>>());
+      expect(
+        (result as Success<MfmNode>).value,
+        const UnicodeEmojiNode(emoji),
+      );
+      expect(result.position, 1 + emoji.length);
+    });
+
+    test('非RGIのZWJ列は全体を1絵文字として消費しない', () {
+      const base = '🍋';
+      const input = '$base\u200D🟥';
+      final result = parser.parse(input);
+      expect(result, isA<Success<MfmNode>>());
+      expect((result as Success<MfmNode>).value, const UnicodeEmojiNode(base));
+      expect(result.position, base.length);
+    });
+
+    test('単独variation selectorは解析失敗する', () {
+      final result = parser.parse('\uFE0F');
+      expect(result, isA<Failure>());
+    });
+
+    test('単独regional indicatorは解析失敗する', () {
+      final result = parser.parse('🇯');
+      expect(result, isA<Failure>());
+    });
+
     test('通常のテキストは解析失敗する', () {
       final result = parser.parse('hello');
       expect(result is Failure, isTrue);
@@ -63,6 +133,27 @@ void main() {
 
   group('MfmParser統合テスト（Unicode絵文字）', () {
     final parser = MfmParser().build();
+    final simpleParser = MfmParser().buildSimple();
+
+    for (final entry in unicode17Emoji.entries) {
+      test('full parserがUnicode 17.0 ${entry.key}を1ノードにする', () {
+        final result = parser.parse(entry.value);
+        expect(result, isA<Success<List<MfmNode>>>());
+        expect(
+          (result as Success<List<MfmNode>>).value,
+          [UnicodeEmojiNode(entry.value)],
+        );
+      });
+
+      test('simple parserがUnicode 17.0 ${entry.key}を1ノードにする', () {
+        final result = simpleParser.parse(entry.value);
+        expect(result, isA<Success<List<MfmNode>>>());
+        expect(
+          (result as Success<List<MfmNode>>).value,
+          [UnicodeEmojiNode(entry.value)],
+        );
+      });
+    }
     test('テキスト内のUnicode絵文字を解析できる', () {
       final result = parser.parse('Hello 👋 World');
       expect(result is Success, isTrue);
@@ -82,6 +173,59 @@ void main() {
         const UnicodeEmojiNode('😀'),
         const UnicodeEmojiNode('😁'),
         const UnicodeEmojiNode('😂'),
+      ]);
+    });
+
+    test('隣接するUnicode 17.0絵文字を別々のノードにする', () {
+      final result = parser.parse('🍋‍🟩🫩🫆');
+      expect(result, isA<Success<List<MfmNode>>>());
+      expect((result as Success<List<MfmNode>>).value, const [
+        UnicodeEmojiNode('🍋‍🟩'),
+        UnicodeEmojiNode('🫩'),
+        UnicodeEmojiNode('🫆'),
+      ]);
+    });
+
+    test('テキストに隣接するUnicode 17.0絵文字を分離する', () {
+      final result = parser.parse('a🍋‍🟩b🫩c');
+      expect(result, isA<Success<List<MfmNode>>>());
+      expect((result as Success<List<MfmNode>>).value, const [
+        TextNode('a'),
+        UnicodeEmojiNode('🍋‍🟩'),
+        TextNode('b'),
+        UnicodeEmojiNode('🫩'),
+        TextNode('c'),
+      ]);
+    });
+
+    test('旧来のRGI sequenceと単独variation selectorの扱いを維持する', () {
+      const subdivisionFlag =
+          '\u{1F3F4}\u{E0067}\u{E0062}\u{E0065}\u{E006E}\u{E0067}\u{E007F}';
+      final result = parser.parse(
+        '👨‍👩‍👧‍👦 🇯🇵 👍🏻 #️⃣ $subdivisionFlag \uFE0F',
+      );
+      expect(result, isA<Success<List<MfmNode>>>());
+      expect((result as Success<List<MfmNode>>).value, const [
+        UnicodeEmojiNode('👨‍👩‍👧‍👦'),
+        TextNode(' '),
+        UnicodeEmojiNode('🇯🇵'),
+        TextNode(' '),
+        UnicodeEmojiNode('👍🏻'),
+        TextNode(' '),
+        UnicodeEmojiNode('#️⃣'),
+        TextNode(' '),
+        UnicodeEmojiNode(subdivisionFlag),
+        TextNode(' \uFE0F'),
+      ]);
+    });
+
+    test('非RGIのZWJ列は1つのUnicodeEmojiNodeにしない', () {
+      final result = parser.parse('🍋\u200D🟥');
+      expect(result, isA<Success<List<MfmNode>>>());
+      expect((result as Success<List<MfmNode>>).value, const [
+        UnicodeEmojiNode('🍋'),
+        TextNode('\u200D'),
+        UnicodeEmojiNode('🟥'),
       ]);
     });
 

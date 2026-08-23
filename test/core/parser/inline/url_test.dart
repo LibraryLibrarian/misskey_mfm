@@ -196,7 +196,7 @@ void main() {
         expect(node.brackets, isTrue);
       });
 
-      group('無効なケース', () {
+      group('境界ケース', () {
         test('閉じ括弧がない場合は失敗', () {
           final result = parser.parse('<https://example.com');
           expect(result is Failure, isTrue);
@@ -207,15 +207,34 @@ void main() {
           expect(result is Failure, isTrue);
         });
 
-        test('スペースを含む場合は失敗', () {
-          final result = parser.parse('<https://example.com/path with space>');
-          expect(result is Failure, isTrue);
-        });
+        for (final whitespace in [' ', '\u3000', '\t']) {
+          test('mfm.jsのspace `$whitespace` を含む場合は失敗', () {
+            final result = parser.parse(
+              '<https://example.com/path${whitespace}with-space>',
+            );
+            expect(result is Failure, isTrue);
+          });
+        }
 
-        test('改行を含む場合は失敗', () {
-          final result = parser.parse('<https://example.com/\npath>');
-          expect(result is Failure, isTrue);
-        });
+        for (final newline in ['\n', '\r\n', '\r']) {
+          test('mfm.jsと同様に改行 `${newline.codeUnits}` を許可する', () {
+            final input =
+                '<https://example.com/$newline'
+                'path>';
+            final result = parser.parse(input);
+            expect(result, isA<Success<MfmNode>>());
+            expect(result.position, input.length);
+            expect(
+              result.value,
+              UrlNode(
+                url:
+                    'https://example.com/$newline'
+                    'path',
+                brackets: true,
+              ),
+            );
+          });
+        }
 
         test('スキーマがない場合は失敗', () {
           final result = parser.parse('<example.com>');
@@ -245,6 +264,95 @@ void main() {
         final nodes = (result as Success).value as List<MfmNode>;
         expect(nodes, [const TextNode('http://')]);
       });
+
+      for (final whitespace in [' ', '\u3000', '\t']) {
+        test('角括弧URLは `$whitespace` で失敗し生URLとして継続する', () {
+          final result = fullParser.parse(
+            '<https://example.com/${whitespace}a>',
+          );
+          expect(result, isA<Success<List<MfmNode>>>());
+          expect(
+            result.position,
+            '<https://example.com/${whitespace}a>'.length,
+          );
+          expect(result.value, [
+            const TextNode('<'),
+            const UrlNode(url: 'https://example.com/'),
+            TextNode('${whitespace}a>'),
+          ]);
+        });
+      }
+
+      for (final newline in ['\n', '\r\n', '\r']) {
+        test('角括弧URL内の改行 `${newline.codeUnits}` はURLに保持する', () {
+          final input =
+              '<https://example.com/$newline'
+              'path>';
+          final result = fullParser.parse(input);
+          expect(result, isA<Success<List<MfmNode>>>());
+          expect(result.position, input.length);
+          expect(result.value, [
+            UrlNode(
+              url:
+                  'https://example.com/$newline'
+                  'path',
+              brackets: true,
+            ),
+          ]);
+        });
+      }
+
+      test('閉じ山括弧なしは先頭だけTextへ戻し生URLを解析する', () {
+        const input = '<https://example.com/path';
+        final result = fullParser.parse(input);
+        expect(result, isA<Success<List<MfmNode>>>());
+        expect(result.position, input.length);
+        expect(result.value, [
+          const TextNode('<'),
+          const UrlNode(url: 'https://example.com/path'),
+        ]);
+      });
+
+      test('全角空白で失敗した角括弧URLの後続構文を解析する', () {
+        const input = '<https://example.com/\u3000a> **bold**';
+        final result = fullParser.parse(input);
+        expect(result, isA<Success<List<MfmNode>>>());
+        expect(result.position, input.length);
+        expect(result.value, [
+          const TextNode('<'),
+          const UrlNode(url: 'https://example.com/'),
+          const TextNode('\u3000a> '),
+          const BoldNode([TextNode('bold')]),
+        ]);
+      });
+
+      test('生URLは全角空白で終了し後続構文を解析する', () {
+        const input = 'https://example.com/\u3000**bold**';
+        final result = fullParser.parse(input);
+        expect(result, isA<Success<List<MfmNode>>>());
+        expect(result.position, input.length);
+        expect(result.value, [
+          const UrlNode(url: 'https://example.com/'),
+          const TextNode('\u3000'),
+          const BoldNode([TextNode('bold')]),
+        ]);
+      });
+
+      for (final boundary in [' ', '\u3000', '\t', '\n', '\r\n', '\r']) {
+        test('生URLは境界 `${boundary.codeUnits}` で終了する', () {
+          final input =
+              'https://example.com/$boundary'
+              '**bold**';
+          final result = fullParser.parse(input);
+          expect(result, isA<Success<List<MfmNode>>>());
+          expect(result.position, input.length);
+          expect(result.value, [
+            const UrlNode(url: 'https://example.com/'),
+            TextNode(boundary),
+            const BoldNode([TextNode('bold')]),
+          ]);
+        });
+      }
     });
   });
 }

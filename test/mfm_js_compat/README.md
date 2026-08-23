@@ -19,6 +19,43 @@
 3. コメントで元の行番号を記載（例: `// mfm.js:123-130`）
 4. テスト名に `mfm-js互換:` プレフィックスを付ける
 
+## ASTゴールデンテスト
+
+`test/goldens/mfm_ast_v1.json` は、パーサー結果を決定的なJSONへ正規化して
+比較するファイルベースのASTゴールデンです。個別テストだけでは見落としやすい
+ノード型、nullable/defaultプロパティ、ネスト、改行、Unicode、過去Issueの
+代表回帰を、レビュー可能な固定fixtureとして保持します。
+
+- schema version: `1`
+- 互換基準: mfm.js `develop`
+  (`61c9dd10d29a054489a346629b0bb420659aa626`)
+- 原則は上記mfm.js基準。承認済みproject semanticsとの差はcase-levelの
+  `deviation`（Issue番号と理由）を必須とし、未承認の例外はschemaで拒否
+- parser mode: `full` または `simple`
+- test-only serializer: `test/support/ast_json.dart`
+
+固定commitのmfm.js buildとの実測では26件中25件が一致します。例外はIssue #3
+`issue-3-second-line-inline-wins-over-search`の1件で、本projectでは後続行頭の
+inline構文をSearchより優先するレビュー済みsemanticsを維持します。このcaseの
+期待ASTをmfm.jsへ合わせて変更せず、`deviation`に出典と理由を記録しています。
+
+fixtureは通常のテスト実行では更新されません。変更が必要な場合は次の手順で
+手動レビューしてください。
+
+1. mfm.jsの基準commit、既存の厳密ASTテスト、関連Issueの期待値を確認する
+2. `input`、必要なら`nestLimit`、`expected`を手で更新する
+3. 意図しない大量差分や、現在の実装結果をそのまま正解化していないか確認する
+4. `dart test test/golden`を実行し、case名付きの差分を確認する
+5. `dart format --output=none --set-exit-if-changed .`、`dart analyze`、
+   `dart test`をすべて通す
+
+新しい`MfmNode` variantを追加するとserializerのexhaustive switchがコンパイル
+エラーになるため、JSON表現、serializer単体テスト、fixtureを同時に更新します。
+
+GitHub Actionsはpull request、`develop`へのpush、手動実行で、最低対応SDK
+`3.8.0`とstableの両方について依存解決、format check、analyze、goldenを含む
+全testを実行します。
+
 ## mfm.js テスト構造との対応表
 
 | mfm.js 行番号 | セクション | Dart ファイル |

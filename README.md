@@ -86,6 +86,12 @@ For more examples, see [example](example/).
 | Search | `SearchNode` | `query Search` |
 | Plain | `PlainNode` | `<plain>text</plain>` |
 
+### AST compatibility note
+
+mfm.js stores a code block's language identifier in `blockCode.props.lang`.
+This package exposes the same value as `CodeBlockNode.language`; consumers
+converting between the two AST representations need to map `lang` to `language`.
+
 ## Additional information
 
 - [API Documentation](https://pub.dev/documentation/misskey_mfm_parser/latest/)
@@ -181,6 +187,12 @@ void main() {
 | 数式（ブロック） | `MathBlockNode` | `\[formula\]` |
 | 検索 | `SearchNode` | `query Search` |
 | プレーン | `PlainNode` | `<plain>text</plain>` |
+
+### AST互換性に関する注意
+
+mfm.js はコードブロックの言語識別子を `blockCode.props.lang` に格納します。
+本パッケージでは同じ値を `CodeBlockNode.language` として公開しているため、
+両AST表現を相互変換する場合は `lang` と `language` を対応付けてください。
 
 ## 追加情報
 

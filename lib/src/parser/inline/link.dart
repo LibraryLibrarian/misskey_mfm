@@ -60,6 +60,12 @@ class _LinkParserImpl extends Parser<MfmNode> {
   /// URLパーサー（ブラケット付き）を取得
   Parser<MfmNode> get _urlAltParser => UrlParser().buildAlt();
 
+  /// mfm.js の `nest(labelInline)` と同様に、ラベルの各要素をネストとして解析する。
+  late final Parser<MfmNode> _nestedLabelInlineParser = nest(
+    _labelInlineParser,
+    state: state,
+  );
+
   @override
   Result<MfmNode> parseOn(Context context) {
     final buffer = context.buffer;
@@ -95,15 +101,9 @@ class _LinkParserImpl extends Parser<MfmNode> {
       }
 
       // インラインパーサーでラベル内容をパース
-      final result = _labelInlineParser.parseOn(labelContext);
-      if (result is Failure) {
-        // パースできない場合は1文字をテキストとして追加
-        labelNodes.add(TextNode(c));
-        labelContext = Context(buffer, labelContext.position + 1);
-      } else {
-        labelNodes.add(result.value);
-        labelContext = Context(buffer, result.position);
-      }
+      final result = _nestedLabelInlineParser.parseOn(labelContext);
+      labelNodes.add(result.value);
+      labelContext = Context(buffer, result.position);
     }
 
     position = labelContext.position;

@@ -44,9 +44,12 @@ void main() {
       expect((result as Success).position, 5);
     });
 
-    test('先頭ピリオドは無効（@.user）', () {
-      final result = parser.parse('@.user');
-      expect(result is Failure, isTrue);
+    test('先頭ピリオドは試行範囲全体をテキストにする（@.user）', () {
+      const input = '@.user';
+      final result = parser.parse(input);
+      expect(result, isA<Success<MfmNode>>());
+      expect((result as Success<MfmNode>).value, const TextNode(input));
+      expect(result.position, input.length);
     });
 
     test('リモートメンションの末尾ハイフンは除去される', () {
@@ -60,9 +63,69 @@ void main() {
       expect((result as Success).position, 10);
     });
 
-    test('リモートメンションのホスト先頭ハイフンは無効', () {
-      final result = parser.parse('@user@-host');
-      expect(result is Failure, isTrue);
+    test('リモートメンションのホスト先頭ハイフンは全体をテキストにする', () {
+      const input = '@user@-host';
+      final result = parser.parse(input);
+      expect(result, isA<Success<MfmNode>>());
+      expect((result as Success<MfmNode>).value, const TextNode(input));
+      expect(result.position, input.length);
+    });
+
+    test('@abc.@defはremote username末尾dotをtrimせず全体TEXTにする', () {
+      const input = '@abc.@def';
+      final result = parser.parse(input);
+      expect(result, isA<Success<MfmNode>>());
+      expect((result as Success<MfmNode>).value, const TextNode(input));
+      expect(result.position, input.length);
+    });
+
+    test('invalid remote mentionは後続テキストまで消費しない', () {
+      const invalidMention = '@abc.@def';
+      const input = '$invalidMention tail';
+      final result = parser.parse(input);
+      expect(result, isA<Success<MfmNode>>());
+      expect(
+        (result as Success<MfmNode>).value,
+        const TextNode(invalidMention),
+      );
+      expect(result.position, invalidMention.length);
+    });
+
+    test('@abc.はlocal username末尾dotの直前までmentionにする', () {
+      const input = '@abc.';
+      final result = parser.parse(input);
+      expect(result, isA<Success<MfmNode>>());
+      expect(
+        (result as Success<MfmNode>).value,
+        const MentionNode(username: 'abc', acct: '@abc'),
+      );
+      expect(result.position, 4);
+    });
+
+    test('@abc@aaa.はhost末尾dotの直前までmentionにする', () {
+      const input = '@abc@aaa.';
+      final result = parser.parse(input);
+      expect(result, isA<Success<MfmNode>>());
+      expect(
+        (result as Success<MfmNode>).value,
+        const MentionNode(username: 'abc', host: 'aaa', acct: '@abc@aaa'),
+      );
+      expect(result.position, 8);
+    });
+
+    test('@bsky.brid.gy@bsky.brid.gyのusername内dotを維持する', () {
+      const input = '@bsky.brid.gy@bsky.brid.gy';
+      final result = parser.parse(input);
+      expect(result, isA<Success<MfmNode>>());
+      expect(
+        (result as Success<MfmNode>).value,
+        const MentionNode(
+          username: 'bsky.brid.gy',
+          host: 'bsky.brid.gy',
+          acct: input,
+        ),
+      );
+      expect(result.position, input.length);
     });
 
     test('大文字を含むユーザー名を解析できる', () {
@@ -97,6 +160,13 @@ void main() {
       final result = parser.parse('@user');
       expect(result is Success, isTrue);
     });
+
+    test('email中の@位置では開始位置のまま失敗する', () {
+      const input = 'abc@example.com';
+      final result = parser.parseOn(const Context(input, 3));
+      expect(result, isA<Failure>());
+      expect(result.position, 3);
+    });
   });
 
   group('MentionParser（フォールバック付き）', () {
@@ -115,6 +185,14 @@ void main() {
       expect(result is Success, isTrue);
       final node = (result as Success).value as MfmNode;
       expect(node, const TextNode('@'));
+    });
+
+    test('remote username末尾がdotなinvalid mentionは内部@も含めて返す', () {
+      const input = '@abc.@def';
+      final result = parser.parse(input);
+      expect(result, isA<Success<MfmNode>>());
+      expect((result as Success<MfmNode>).value, const TextNode(input));
+      expect(result.position, input.length);
     });
   });
 }

@@ -13,7 +13,7 @@ import '../core/nest.dart';
 /// - 末尾の `.` や `,` は除去
 ///
 /// **urlAlt**: `<https://...>` 形式（brackets=true）
-/// - スペースと改行以外の文字を使用可
+/// - 半角/全角スペースとタブ以外の文字を使用可（改行は許可）
 class UrlParser {
   /// 末尾の無効文字パターン（. や ,）
   static final _trailingInvalidPattern = RegExp(r'[.,]+$');
@@ -266,16 +266,15 @@ class _UrlAltParserImpl extends Parser<MfmNode> {
       return context.failure('expected http:// or https://');
     }
 
-    // `>` または スペース/改行まで読み込む
+    // `>` または mfm.js の space（半角/全角スペース、タブ）まで読み込む
     final contentBuffer = StringBuffer();
     while (position < buffer.length) {
       final c = buffer[position];
       if (c == '>') {
         break;
       }
-      if (c == ' ' || c == '\t' || c == '\n' || c == '\r') {
-        // スペースや改行があった場合は無効
-        return context.failure('space or newline in bracketed URL');
+      if (c == ' ' || c == '\u3000' || c == '\t') {
+        return context.failure('space in bracketed URL');
       }
       contentBuffer.write(c);
       position++;

@@ -1,4 +1,6 @@
 import 'package:misskey_mfm_parser/src/ast.dart';
+import 'package:misskey_mfm_parser/src/parser/core/nest.dart';
+import 'package:misskey_mfm_parser/src/parser/inline/link.dart';
 import 'package:misskey_mfm_parser/src/parser/parser.dart';
 import 'package:petitparser/petitparser.dart';
 import 'package:test/test.dart';
@@ -133,6 +135,109 @@ void main() {
         expect(result is Success, isTrue);
         final nodes = (result as Success).value as List<MfmNode>;
         expect(nodes.any((n) => n is LinkNode), isFalse);
+      });
+    });
+
+    group('ラベルのネスト深度', () {
+      const input = '[**Bold Link**](https://example.com)';
+
+      for (final limit in [0, 1]) {
+        test('nestLimit=$limit ではラベル内構文を文字として扱う', () {
+          final result = MfmParser().build(nestLimit: limit).parse(input);
+          expect(result, isA<Success<List<MfmNode>>>());
+          expect(result.position, input.length);
+          expect(result.value, [
+            const LinkNode(
+              silent: false,
+              url: 'https://example.com',
+              children: [TextNode('**Bold Link**')],
+            ),
+          ]);
+        });
+      }
+
+      test('nestLimit=2 ではラベル直下の構文を解析する', () {
+        final result = MfmParser().build(nestLimit: 2).parse(input);
+        expect(result, isA<Success<List<MfmNode>>>());
+        expect(result.position, input.length);
+        expect(result.value, [
+          const LinkNode(
+            silent: false,
+            url: 'https://example.com',
+            children: [
+              BoldNode([TextNode('Bold Link')]),
+            ],
+          ),
+        ]);
+      });
+
+      test('深いラベル構文は深度上限で文字列へフォールバックする', () {
+        const deepInput = '[**<small>deep</small>**](https://example.com)';
+        final result = MfmParser().build(nestLimit: 2).parse(deepInput);
+        expect(result, isA<Success<List<MfmNode>>>());
+        expect(result.position, deepInput.length);
+        expect(result.value, [
+          const LinkNode(
+            silent: false,
+            url: 'https://example.com',
+            children: [
+              BoldNode([TextNode('<small>deep</small>')]),
+            ],
+          ),
+        ]);
+      });
+
+      test('通常ラベルとlink-likeな文字列の既存挙動を維持する', () {
+        const normalInput =
+            '[label https://example.com @user](https://outer.example)';
+        final result = fullParser.parse(normalInput);
+        expect(result, isA<Success<List<MfmNode>>>());
+        expect(result.position, normalInput.length);
+        expect(result.value, [
+          const LinkNode(
+            silent: false,
+            url: 'https://outer.example',
+            children: [TextNode('label https://example.com @user')],
+          ),
+        ]);
+      });
+
+      test('各ラベル要素で深度を1回だけ増減し状態を再利用できる', () {
+        final state = NestState(limit: 20);
+        final observedDepths = <int>[];
+        final labelParser = any().map<MfmNode>((dynamic value) {
+          observedDepths.add(state.depth);
+          return TextNode(value as String);
+        });
+        final parser = LinkParser().buildWithInner(
+          labelParser,
+          state: state,
+        );
+
+        final first = parser.parse('[ab](https://example.com)');
+        expect(first, isA<Success<MfmNode>>());
+        expect(first.position, '[ab](https://example.com)'.length);
+        expect(observedDepths, [1, 1]);
+        expect(state.depth, 0);
+
+        observedDepths.clear();
+        final lookahead = parser.and().parse('[c](https://example.com)');
+        expect(lookahead, isA<Success<MfmNode>>());
+        expect(lookahead.position, 0);
+        expect(observedDepths, [1]);
+        expect(state.depth, 0);
+
+        observedDepths.clear();
+        final failure = parser.parse('[d](invalid)');
+        expect(failure, isA<Failure>());
+        expect(observedDepths, [1]);
+        expect(state.depth, 0);
+
+        observedDepths.clear();
+        final reused = parser.parse('[e](https://example.com)');
+        expect(reused, isA<Success<MfmNode>>());
+        expect(observedDepths, [1]);
+        expect(state.depth, 0);
       });
     });
   });
