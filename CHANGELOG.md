@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.1-beta.1] - 2026-08-24
+
+### Added
+- Unicode Emoji 17.0 RGI sequence support and a reproducible generator for the emoji regular expression
+- AST golden fixtures and serialization-based compatibility tests for detecting unintended parser changes
+- Automated version bumping, tagging, pub.dev publishing, GitHub Release creation, and merge-back workflows
+
+### Fixed
+- Aligned quote, fenced code block, search, italic, hashtag, URL, and link parsing more closely with mfm.js
+- Preserved input and continued parsing after invalid or incomplete syntax fallbacks, including unclosed MFM functions
+- Supported CRLF and standalone CR newlines consistently across block parsers
+- Rejected empty code nodes and invalid mentions while preserving subsequent valid syntax
+- Recognized custom emoji codes that immediately follow alphanumeric characters
+
 ## [2.0.0] - 2026-01-23
 
 ### Changed
