@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.1-beta.1] - 2026-08-24
+
 ### Added
 - Unicode Emoji 17.0 RGI sequence support and a reproducible generator for the emoji regular expression
 - AST golden fixtures and serialization-based compatibility tests for detecting unintended parser changes
